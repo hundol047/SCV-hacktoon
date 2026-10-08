@@ -49,11 +49,13 @@ jobs:
         run: node scripts/probe-deployment.mjs
       - name: Deploy production
         if: inputs.production
+        env:
+          BOPok_APP_URL: ${{ vars.BOPok_APP_URL }}
+          BOPok_RELEASE_ID: ${{ github.sha }}
         run: |
           npx --yes vercel@63.1.0 pull --yes --environment=production --token="$VERCEL_TOKEN"
           npx --yes vercel@63.1.0 build --prod --token="$VERCEL_TOKEN"
-          deploy_url=$(npx --yes vercel@63.1.0 deploy --prebuilt --prod --token="$VERCEL_TOKEN")
-          BOPok_DEPLOY_URL="$deploy_url" node scripts/probe-deployment.mjs
+          node scripts/deploy-production.mjs
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

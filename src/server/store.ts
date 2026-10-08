@@ -6,8 +6,17 @@ export interface RPC {call(name:string,args:Record<string,unknown>):Promise<any>
 export class SupabaseRPC implements RPC{
   constructor(private url:string,private key:string,private fetcher:typeof fetch=fetch){const u=new URL(url);if(u.protocol!=='https:'&&!(u.protocol==='http:'&&['127.0.0.1','localhost'].includes(u.hostname)))throw new StoreError('configuration');}
   async call(name:string,args:Record<string,unknown>){
-    const started=Date.now();const response=await this.fetcher(`${this.url.replace(/\/$/,'')}/rest/v1/rpc/${name}`,{method:'POST',headers:{apikey:this.key,Authorization:`Bearer ${this.key}`,'Content-Type':'application/json'},body:JSON.stringify(args),signal:AbortSignal.timeout(10000),cache:'no-store'});
-    const data=response.ok?await response.json():null;const events:Record<string,string>={bopok_trip:'storage',bopok_reserve:args.p_scope==='ai'?'ai':'quota',bopok_cache:'catalog',bopok_identity:'auth',bopok_claim:'auth'};if(events[name])try{await this.fetcher(`${this.url.replace(/\/$/,'')}/rest/v1/rpc/bopok_metric`,{method:'POST',headers:{apikey:this.key,Authorization:`Bearer ${this.key}`,'Content-Type':'application/json'},body:JSON.stringify({p_event:events[name],p_code:!response.ok||data?.error?'failed':data?.allowed===false?'denied':'ok',p_value:Math.min(10000000,Date.now()-started)}),signal:AbortSignal.timeout(1000),cache:'no-store'});}catch{}if(!response.ok)throw new StoreError('unavailable');if(data?.error)throw new StoreError(data.error);return data;
+    const started=Date.now(),endpoint=`${this.url.replace(/\/$/,'')}/rest/v1/rpc/`,headers={apikey:this.key,Authorization:`Bearer ${this.key}`,'Content-Type':'application/json'};
+    const events:Record<string,string>={bopok_trip:'storage',bopok_reserve:'quota',bopok_cache:'catalog',bopok_identity:'auth',bopok_claim:'auth'};let code='failed';
+    try{
+      const response=await this.fetcher(endpoint+name,{method:'POST',headers,body:JSON.stringify(args),signal:AbortSignal.timeout(10000),cache:'no-store'});
+      if(!response.ok)throw new StoreError('unavailable');
+      const data=await response.json();
+      if(data?.error){code=['forbidden','not_found','conflict','limit','capacity','invalid'].includes(data.error)?'denied':'failed';throw new StoreError(data.error);}
+      code=data?.allowed===false?'denied':'ok';return data;
+    }finally{
+      if(events[name])try{await this.fetcher(endpoint+'bopok_metric',{method:'POST',headers,body:JSON.stringify({p_event:events[name],p_code:code,p_value:Math.min(10000000,Date.now()-started)}),signal:AbortSignal.timeout(1000),cache:'no-store'});}catch{}
+    }
   }
 }
 export function configuredRPC():RPC|null{const url=process.env.BOPok_SUPABASE_URL,key=process.env.BOPok_SUPABASE_KEY;try{return url&&key?new SupabaseRPC(url,key):null;}catch{return null;}}

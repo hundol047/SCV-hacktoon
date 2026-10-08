@@ -1,13 +1,9 @@
+.git/
 node_modules/
 .next/
 .env*
-!.env.example
+*.enc
 test-results/
 playwright-report/
 *.tsbuildinfo
-next-env.d.ts
-
-*.enc
-.vercel/
-
 .operations-alert-state.json

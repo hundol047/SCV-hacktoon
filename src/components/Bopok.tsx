@@ -40,6 +40,7 @@ import {Catalog,catalogFor,demoCatalog,indexCatalog,emptyRealCatalog} from '../d
 import {CatalogContext,useCatalog} from './CatalogContext';
 import RealSearch from './RealSearch';
 import WorldPlan from './WorldPlan';
+import TravelSummary from './TravelSummary';
 import {transportLabel,money,destinationFor,localInstant} from '../domain/world';
 import LibraryPanel from './LibraryPanel';
 import FamilySync from './FamilySync';
@@ -1208,10 +1209,10 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
                     onChange={manualEdit}
                   />
                 ) : (
-                  <Timeline basics={trip.basics}
+                  <><TravelSummary basics={trip.basics} day={day}/><Timeline basics={trip.basics}
                     items={trip.items.filter((i) => i.day === day)}
                     report={report}
-                  />
+                  /></>
                 )}
                 <div className="schedule-actions">
                   <button
@@ -1431,6 +1432,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
                     ),
                   ].join(", ") || "아직 정하지 않았어요"}
                 </p>
+                <TravelSummary basics={trip.basics} day={idx+1}/>
                 {trip.items
                   .filter((i) => i.day === idx + 1)
                   .sort((a, b) => a.start - b.start)

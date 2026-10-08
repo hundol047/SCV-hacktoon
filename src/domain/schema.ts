@@ -34,11 +34,12 @@ export const basicsSchema = z.object({
   transport: z.enum(["taxi", "walk", "driving", "transit"]),
   mode: z.enum(['demo','real']),
   currency:z.string().regex(/^[A-Z]{3}$/).optional(),
-  destinations:z.array(z.object({region:z.string().min(1).max(120),startDay:z.number().int().min(1).max(30),endDay:z.number().int().min(1).max(30),timezone:z.string().max(80).refine(v=>{try{new Intl.DateTimeFormat('en',{timeZone:v});return true;}catch{return false;}}),currency:z.string().regex(/^[A-Z]{3}$/)})).max(10).optional(),
+  destinations:z.array(z.object({region:z.string().min(1).max(120),startDay:z.number().int().min(1).max(30),endDay:z.number().int().min(1).max(30),localStartDate:date.optional(),timezone:z.string().max(80).refine(v=>{try{new Intl.DateTimeFormat('en',{timeZone:v});return true;}catch{return false;}}),currency:z.string().regex(/^[A-Z]{3}$/)})).max(30).optional(),
+  travelDays:z.array(z.number().int().min(1).max(30)).max(30).optional(),
   expenses:z.array(z.object({label:z.string().min(1).max(120),category:z.enum(['lodging','intercity','other']).optional(),amount:z.number().nonnegative().max(100000000).nullable(),currency:z.string().regex(/^[A-Z]{3}$/)})).max(100).optional(),
-  transfers:z.array(z.object({fromRegion:z.string().min(1).max(120),toRegion:z.string().min(1).max(120),departure:z.iso.datetime({offset:true}),arrival:z.iso.datetime({offset:true}),source:z.string().url().max(1000).refine(v=>new URL(v).protocol==='https:'),mode:z.enum(['flight','rail','bus','ferry','driving'])})).max(30).optional(),
+  transfers:z.array(z.object({fromRegion:z.string().min(1).max(120),toRegion:z.string().min(1).max(120),departureDay:z.number().int().min(1).max(30).optional(),arrivalDay:z.number().int().min(1).max(30).optional(),departure:z.iso.datetime({offset:true}),arrival:z.iso.datetime({offset:true}),source:z.string().url().max(1000).refine(v=>new URL(v).protocol==='https:'),mode:z.enum(['flight','rail','bus','ferry','driving'])})).max(30).optional(),
   timezone:z.string().max(80).default('Asia/Seoul').refine(v=>{try{new Intl.DateTimeFormat('ko-KR',{timeZone:v});return true;}catch{return false;}},'IANA 시간대 이름을 확인해 주세요.'),
-}).refine(b=>b.mode!=='demo'||b.days<=2,'시연은 1~2일을 지원합니다.').superRefine((b,ctx)=>{if(b.destinations?.length){for(let day=1;day<=b.days;day++)if(b.destinations.filter(d=>d.startDay<=day&&d.endDay>=day).length!==1)ctx.addIssue({code:'custom',message:day+'일차 도시를 하나씩 지정해 주세요.'});for(const d of b.destinations)if(d.startDay>d.endDay||d.endDay>b.days)ctx.addIssue({code:'custom',message:'도시 날짜 범위를 확인해 주세요.'});}if(b.mode==='demo'&&(b.transport==='driving'||b.transport==='transit'))ctx.addIssue({code:'custom',message:'시연은 택시·도보 경로만 지원합니다.'});}).refine(b=>(b.mode==='demo')===(b.region==='가상 솔바다'),'지역과 데이터 모드가 일치하지 않습니다.');
+}).refine(b=>b.mode!=='demo'||b.days<=2,'시연은 1~2일을 지원합니다.').superRefine((b,ctx)=>{if(b.destinations?.length){for(let day=1;day<=b.days;day++)if(b.destinations.filter(d=>d.startDay<=day&&d.endDay>=day).length!==1)ctx.addIssue({code:'custom',message:day+'일차 도시를 하나씩 지정해 주세요.'});for(const d of b.destinations)if(d.startDay>d.endDay||d.endDay>b.days)ctx.addIssue({code:'custom',message:'도시 날짜 범위를 확인해 주세요.'});}if(b.mode==='demo'&&(b.transport==='driving'||b.transport==='transit'))ctx.addIssue({code:'custom',message:'시연은 택시·도보 경로만 지원합니다.'});}).refine(b=>(b.mode==='demo')===(b.region==='가상 솔바다'),'지역과 데이터 모드가 일치하지 않습니다.').superRefine((b,ctx)=>{if(new Set(b.destinations?.map(d=>d.region)).size>10)ctx.addIssue({code:'custom',message:'도시는 10개까지 지원합니다.'});if(b.travelDays?.some(day=>day>b.days)||b.transfers?.some(t=>(t.departureDay??1)>b.days||(t.arrivalDay??1)>b.days||t.departureDay&&t.arrivalDay&&t.departureDay>t.arrivalDay))ctx.addIssue({code:'custom',message:'이동 기록의 여행일 범위를 확인해 주세요.'});});
 export type Basics = z.infer<typeof basicsSchema>;
 export const itemSchema = z.object({
   id: z.string().min(1).max(100),
@@ -118,7 +119,8 @@ export const minutes = (s: string) => {
   return h * 60 + m;
 };
 export function dayDate(b: Basics, day: number) {
-  const d = new Date(b.date + "T00:00:00Z");
-  d.setUTCDate(d.getUTCDate() + day - 1);
+  const destination=b.destinations?.find(d=>d.startDay<=day&&d.endDay>=day);
+  const d = new Date((destination?.localStartDate??b.date) + "T00:00:00Z");
+  d.setUTCDate(d.getUTCDate() + day - (destination?.localStartDate?destination.startDay:1));
   return d.toISOString().slice(0, 10);
 }

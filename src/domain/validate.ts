@@ -1,6 +1,6 @@
 import { Conditions, Item, Basics, time } from "./schema";
 import { Catalog,catalogFor,indexCatalog } from '../data/catalog';
-import {destinationFor,convertMoney,localInstant,money} from './world';
+import {destinationFor,convertMoney,localInstant,money,isTravelOnlyDay,transferForTransition} from './world';
 import {dayDate} from './schema';
 import {isReviewed} from './verification';
 export type Issue = {
@@ -31,7 +31,7 @@ export function validateSchedule(
     message: string,
     evidenceIds: string[] = [],
   ) => issues.push({ code, status, itemIds: ids, message, evidenceIds });
-  if (!items.length)
+  if (!items.length&&!Array.from({length:b.days},(_,i)=>isTravelOnlyDay(b,i+1)).some(Boolean))
     add(
       "empty",
       "conflict",
@@ -65,7 +65,8 @@ export function validateSchedule(
   if(b.mode==='real'&&b.days>1&&!b.expenses?.some(e=>e.category==='lodging'))add('lodging-cost','unknown',[],'숙박 비용이 기록되지 않아 전체 여행 예산은 미확인입니다. 숙박 비용이 없으면 0으로 기록해 주세요.');
   if((b.destinations?.length??0)>1&&!b.expenses?.some(e=>e.category==='intercity'))add('intercity-cost','unknown',[],'도시 간 교통 비용을 추가 비용에 기록해 주세요.');
   const transfers=b.transfers??[];for(const transfer of transfers){if(Date.parse(transfer.arrival)<=Date.parse(transfer.departure))add('transfer-time','violation',[],'도시 간 도착 시각은 출발 시각보다 늦어야 합니다.');add('transfer-evidence','unknown',[],'도시 간 '+transfer.fromRegion+' → '+transfer.toRegion+' 이동은 사용자 시간표 기록입니다. 운행·예약 상태를 출발 전에 확인해 주세요.');}
-  for(let day=2;day<=b.days;day++){const before=destinationFor(b,day-1),after=destinationFor(b,day);if(before&&after&&before.region!==after.region){const transfer=transfers.find(t=>t.fromRegion===before.region&&t.toRegion===after.region);if(!transfer)add('intercity-transfer','unknown',[],day+'일차 도시를 바꾸는 이동 시간표가 없습니다.');else{const prior=items.filter(i=>i.day===day-1).sort((a,b)=>b.end-a.end)[0],next=items.filter(i=>i.day===day).sort((a,b)=>a.start-b.start)[0];try{if(prior&&Date.parse(localInstant(dayDate(b,day-1),prior.end,before.timezone))>Date.parse(transfer.departure)||next&&Date.parse(localInstant(dayDate(b,day),next.start,after.timezone))<Date.parse(transfer.arrival))add('intercity-overlap','violation',[],'도시 간 이동 시각과 현지 일정이 겹칩니다.');}catch{add('timezone-ambiguous','unknown',[],'일광절약시간 전환일의 현지 시각을 확인해 주세요.');}}}}
+  for(let day=2;day<=b.days;day++){const before=destinationFor(b,day-1),after=destinationFor(b,day);if(before&&after&&before.region!==after.region){try{const match=transferForTransition(b,day),transfer=match.transfer;if(!transfer)add('intercity-transfer','unknown',[],match.ambiguous?'같은 도시 구간의 이동 기록이 여러 개입니다. 도착 여행일을 지정해 주세요.':day+'일차 도시를 바꾸는 이동 시간표가 없습니다.');}catch{add('timezone-ambiguous','unknown',[],'일광절약시간 전환일의 현지 시각을 확인해 주세요.');}}}
+  if(transfers.length)for(const i of items){try{const timezone=destinationFor(b,i.day)?.timezone??b.timezone,start=Date.parse(localInstant(dayDate(b,i.day),i.start,timezone)),end=Date.parse(localInstant(dayDate(b,i.day),i.end,timezone));if(transfers.some(t=>Date.parse(t.arrival)>Date.parse(t.departure)&&start<Date.parse(t.arrival)&&end>Date.parse(t.departure)))add('intercity-overlap','violation',[i.id],'도시 간 이동 시각과 현지 일정이 겹칩니다.');}catch{add('timezone-ambiguous','unknown',[i.id],'현지 시각의 시간대 오프셋을 확인해 주세요.');}}
   const ids = new Set<string>();
   for (let day = 1; day <= b.days; day++) {
     const rows = items
@@ -78,7 +79,9 @@ export function validateSchedule(
       activeStart: number | null = null,
       lastPlace: string | null = null,
       unconfirmedRest = false;
-    if (!rows.length)
+    const travelOnly=isTravelOnlyDay(b,day);
+    if(b.travelDays?.includes(day)&&!travelOnly)add('travel-day-evidence','unknown',[],day+'일차 이동 기록의 시각을 확인해 주세요.');
+    if (!rows.length&&!travelOnly)
       add("empty-day", "conflict", [], `${day}일차 일정이 없습니다.`);
     for (let n = 0; n < rows.length; n++) {
       const i = rows[n],
@@ -358,7 +361,7 @@ export function validateSchedule(
         activeStart = i.end;
       }
     }
-    if (!rows.some((i) => i.kind === "meal"))
+    if (!travelOnly&&!rows.some((i) => i.kind === "meal"))
       add("meal-missing", "unknown", [], `${day}일차 식사 일정이 없습니다.`);
   }
   for (const i of items)

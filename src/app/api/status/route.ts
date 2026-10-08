@@ -1,3 +1,3 @@
 import {inspectStorage} from '../../../server/readiness';
 import {json} from '../../../server/security';
-export async function GET(){const storage=await inspectStorage();return json({storage,ai:{configured:!!(process.env.BOPok_AI_KEY&&process.env.BOPok_AI_MODEL),budgetConfigured:!!(storage.ready&&process.env.BOPok_AI_INPUT_USD_PER_MILLION&&process.env.BOPok_AI_OUTPUT_USD_PER_MILLION)},realData:{configured:!!process.env.BOPok_APP_URL,routeConfigured:!!process.env.BOPok_ROUTE_KEY},version:'0.3.0'});}
+export async function GET(){const storage=await inspectStorage();return json({storage,ai:{configured:!!(process.env.BOPok_AI_KEY&&process.env.BOPok_AI_MODEL),budgetConfigured:!!(storage.ready&&process.env.BOPok_AI_INPUT_USD_PER_MILLION&&process.env.BOPok_AI_OUTPUT_USD_PER_MILLION)},realData:{configured:!!process.env.BOPok_APP_URL,routeConfigured:!!process.env.BOPok_ROUTE_KEY},version:'0.4.0'});}

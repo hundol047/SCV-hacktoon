@@ -1,5 +1,6 @@
 import {appURL,quotaLimit} from '../../../server/config';
 import {z} from 'zod';
+import {measure} from '../../../server/metrics';
 import {TransitProvider} from '../../../adapters/transit';
 import {OpenRouteProvider} from '../../../adapters/real-data';
 import {catalogSchema} from '../../../data/catalog';
@@ -36,6 +37,6 @@ export async function POST(request:Request){
   if(!catalog&&appURL())catalog=await loadCatalog(rpc,body.region,appURL()!);
  }
  const from=catalog?.places.find(p=>p.id===body.fromId),to=catalog?.places.find(p=>p.id===body.toId);if(!from||!to)return json({error:'출발·도착 후보가 최신 자료에 없습니다. 실제 장소 자료를 갱신하고 후보를 다시 선택해 주세요.'},400);
- if(body.transport==='transit'){if(!body.departureAt)return json({error:'대중교통은 현지 출발 시각이 필요합니다.'},400);return json(await new TransitProvider(key).route(from,to,body.departureAt));}return json(await new OpenRouteProvider(key).route(from,to,body.transport));
+ if(body.transport==='transit'){if(!body.departureAt)return json({error:'대중교통은 현지 출발 시각이 필요합니다.'},400);return json(await measure('routing',()=>new TransitProvider(key).route(from,to,body.departureAt!),rpc));}return json(await measure('routing',()=>new OpenRouteProvider(key).route(from,to,body.transport as 'walk'|'taxi'|'driving'),rpc));
  }catch(e){if(e instanceof z.ZodError)return json({error:'조회 요청 형식을 확인해 주세요.'},400);return failure(e);}
 }

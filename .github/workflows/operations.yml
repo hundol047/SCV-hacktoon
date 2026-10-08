@@ -7,7 +7,7 @@ on:
         default: false
         description: Create encrypted backup and restore into an isolated test database
   schedule:
-    - cron: '17 * * * *'
+    - cron: '*/5 * * * *'
     - cron: '31 18 * * *'
 permissions:
   contents: read
@@ -21,10 +21,22 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-      - run: node scripts/monitor.mjs
+      - uses: actions/cache/restore@v4
+        with:
+          path: .operations-alert-state.json
+          key: bopok-monitor-${{ github.run_id }}
+          restore-keys: bopok-monitor-
+      - run: node scripts/external-monitor.mjs
         env:
           BOPok_DEPLOY_URL: ${{ vars.BOPok_DEPLOY_URL }}
           BOPok_OPS_SECRET: ${{ secrets.BOPok_OPS_SECRET }}
+          BOPok_ALERT_WEBHOOK_URL: ${{ secrets.BOPok_ALERT_WEBHOOK_URL }}
+          BOPok_MONITOR_STATE: .operations-alert-state.json
+      - uses: actions/cache/save@v4
+        if: always() && hashFiles('.operations-alert-state.json') != ''
+        with:
+          path: .operations-alert-state.json
+          key: bopok-monitor-${{ github.run_id }}
   backup:
     if: vars.BOPok_OPERATIONS_ENABLED == 'true' && (inputs.backup || github.event_name == 'schedule' && github.event.schedule == '31 18 * * *')
     runs-on: ubuntu-latest
@@ -42,7 +54,7 @@ jobs:
         with:
           node-version: 24
       - name: Prepare isolated restore roles
-        run: docker exec '${{ job.services.postgres.id }}' psql -U postgres -X -v ON_ERROR_STOP=1 -c 'create role anon; create role authenticated; create role service_role;'
+        run: docker exec '${{ job.services.postgres.id }}' psql -U postgres -X -v ON_ERROR_STOP=1 -c 'select 1;'
         env:
           PGHOST: localhost
           PGUSER: postgres
@@ -66,3 +78,17 @@ jobs:
           name: encrypted-database-backup
           path: database.enc
           retention-days: 7
+
+  providers:
+    if: vars.BOPok_OPERATIONS_ENABLED == 'true' && github.event_name == 'schedule' && github.event.schedule == '31 18 * * *'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: node scripts/probe-connections.mjs ${{ vars.BOPok_PROVIDER_PAID_PROBES == 'true' && '--paid' || '' }}
+        env:
+          BOPok_DEPLOY_URL: ${{ vars.BOPok_DEPLOY_URL }}
+          BOPok_OPS_SECRET: ${{ secrets.BOPok_OPS_SECRET }}

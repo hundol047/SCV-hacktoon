@@ -1,7 +1,7 @@
 import { Basics,Conditions,Item } from './schema';
 import { Catalog,catalogFor,indexCatalog } from '../data/catalog';
 import { Place } from '../data/demo';
-import {destinationFor} from './world';
+import {destinationFor,isTravelOnlyDay} from './world';
 import { validateSchedule } from './validate';
 
 type Task={place:Place;kind:'visit'|'meal'}|{fixed:Item};
@@ -72,6 +72,7 @@ export function optimize(c:Conditions,b:Basics,original:Item[]=[],feedback:strin
     const items:Item[]=[],used=new Set<string>(),covered=new Set<string>(),notes=new Set<string>();
     const fewer=feedback.includes('걷는 구간을 줄여 주세요'),restMin=(c.restMin??20)+(feedback.includes('쉬는 시간을 늘려 주세요')?10:0);
     for(let day=1;day<=b.days;day++){
+      if(isTravelOnlyDay(b,day))continue;
       const dayRegion=destinationFor(b,day)?.region,cityVisits=availableVisits.filter(p=>!dayRegion||(p.region??catalog.region)===dayRegion);let candidates=cityVisits.filter(p=>!used.has(p.id));
       if(!candidates.length&&cityVisits.length){candidates=cityVisits;notes.add('추가 관광 후보가 없어 일부 장소를 반복했습니다. 다른 후보를 조회하거나 직접 선택해 주세요.');}
       candidates.sort((a,b)=>c.requiredExperiences.filter(x=>!covered.has(x)&&b.experiences.includes(x)).length-c.requiredExperiences.filter(x=>!covered.has(x)&&a.experiences.includes(x)).length||requested.filter(x=>!covered.has(x)&&b.experiences.includes(x)).length-requested.filter(x=>!covered.has(x)&&a.experiences.includes(x)).length);
@@ -112,6 +113,7 @@ export function optimize(c:Conditions,b:Basics,original:Item[]=[],feedback:strin
   let beam:State[]=[{items:[],score:0,covered:new Set(),cost:0}],searched=0,limited=false;
   const restMin=(c.restMin??20)+(feedback.includes('쉬는 시간을 늘려 주세요')?10:0);
   for(let day=1;day<=b.days;day++){
+    if(isTravelOnlyDay(b,day)&&!locked.some(i=>i.day===day))continue;
     const anchors=original.filter(i=>i.day===day&&i.locked).sort((a,b)=>a.start-b.start).map(fixed=>({fixed}));
     const fixedVisits=anchors.filter(a=>a.fixed.kind==='visit').length,hasMeal=anchors.some(a=>a.fixed.kind==='meal');
     const next:State[]=[];

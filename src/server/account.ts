@@ -1,3 +1,4 @@
+import {measure} from './metrics';
 import {appURL} from './config';
 import {createHmac,timingSafeEqual} from 'node:crypto';
 import {z} from 'zod';
@@ -13,7 +14,7 @@ export function hasAccount(request:Request){return !!(cookieValue(request,ACCOUN
 export function roleOf(account:Account|null,role:'reviewer'|'operator'){return !!account&&((process.env[role==='reviewer'?'BOPok_REVIEWER_IDS':'BOPok_OPERATOR_IDS']??'').split(',').map(v=>v.trim()).includes(account.id));}
 export class AuthProvider{
  constructor(private url=process.env.BOPok_SUPABASE_URL??'',private anon=process.env.BOPok_SUPABASE_ANON_KEY??'',private fetcher:typeof fetch=fetch){const u=new URL(url);if((u.protocol!=='https:'&&!['localhost','127.0.0.1'].includes(u.hostname))||!anon)throw Error('Auth configuration');}
- async call(path:string,body?:unknown,access?:string){const response=await this.fetcher(this.url.replace(/\/$/,'')+'/auth/v1/'+path,{method:body?'POST':'GET',headers:{apikey:this.anon,'Content-Type':'application/json',...(access?{Authorization:'Bearer '+access}:{})},...(body?{body:JSON.stringify(body)}:{}),signal:AbortSignal.timeout(10000),cache:'no-store'});if(!response.ok)throw Error('Auth rejected');return response.status===204?{}:await response.json();}
+ async call(path:string,body?:unknown,access?:string){return measure('auth',async()=>{const response=await this.fetcher(this.url.replace(/\/$/,'')+'/auth/v1/'+path,{method:body?'POST':'GET',headers:{apikey:this.anon,'Content-Type':'application/json',...(access?{Authorization:'Bearer '+access}:{})},...(body?{body:JSON.stringify(body)}:{}),signal:AbortSignal.timeout(10000),cache:'no-store'});if(!response.ok)throw Error('Auth rejected');return response.status===204?{}:await response.json();});}
  async request(email:string){await this.call('otp',{email,create_user:true});}
  async verified(session:any){const token=z.string().min(1).parse(session.access_token),refresh=z.string().min(1).max(10000).parse(session.refresh_token);const user=z.object({id:z.string().uuid(),email:z.string().email()}).parse(await this.call('user',undefined,token));const lifetime=Math.min(3600,z.number().positive().parse(session.expires_in));return {account:{...user,exp:Math.floor(Date.now()/1000+lifetime)},refresh};}
  async verify(email:string,code:string){return this.verified(await this.call('verify',{email,token:code,type:'email'}));}
