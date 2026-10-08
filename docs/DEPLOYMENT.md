@@ -130,3 +130,10 @@ standalone은 비루트 Node 사용자로 실행합니다. HTTPS 앞단과 같�
 이 클라우드의 소스 빌드는 기존 프록시 호스트의 해석 주소를 `--add-host`로 전달하고 `--network host`, `--build-arg HTTP_PROXY --build-arg HTTPS_PROXY --build-arg NO_PROXY`, 신뢰 CA `--secret id=proxy-ca,src=CA_파일`을 사용해 검증했습니다. 프록시 주소·인증값을 고정하거나 TLS 검증을 끄지 않습니다. 최종 이미지에는 프록시 CA를 복사하지 않습니다.
 
 설치/시작 지침과 필요한 도메인·변수 요구사항은 클라우드 설정 초안으로 저장합니다. 초안 저장은 실제 적용·게시·앱 배포가 아닙니다. 환경 설정에서 값을 입력하고 검토·저장한 뒤 환경을 게시해야 다음 환경에 적용됩니다.
+
+
+## 0.5.0 전국 수집 파일
+
+Git에 포함된 data/korea-tourism/snapshot.json.gz와 manifest.json을 함께 배포하세요. /api/tourism, /api/tourism/download, /api/catalog의 standalone file tracing에 포함됩니다. 국내 검색/목록/후보 API는 이 파일을 읽고 외부 키/DB 없이 동작합니다. 원본 수집 JSON은 gzip 6,743,975bytes이므로 /api/tourism/download는 스트리밍합니다. 실제 Vercel 계정에서는 이 다운로드를 추가로 확인해야 합니다. Docker/standalone에서 파일 SHA와 chunked 스트리밍을 확인했습니다.
+
+수집을 반복하려면 Node24에서 npm run data:korea를 실행하고 검증·빌드·서버 재시작/재배포하세요. 일반 install/build에는 외부 수집을 넣지 않습니다. 공식 관광공사 기본 목록용 BOPok_TOURAPI_KEY는 별도 원문 process 값이고 키 누락은 기존 OSM 검색을 막지 않습니다. 공식 자료는 현재 미수집이며 별도 수집 파일을 앱에 자동 통합하지 않습니다. 자세한 수집/갱신/지역 경계/주소 누락/라이선스 범위는 docs/KOREA_TOURISM.md에 있습니다.

@@ -1,6 +1,6 @@
 {
   "name": "bopok",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -15,7 +15,9 @@
     "test:devices": "node scripts/test-physical-devices.mjs",
     "probe:deployment": "node scripts/probe-deployment.mjs",
     "probe:providers": "node scripts/probe-providers.mjs",
-    "test:storage-load": "node scripts/storage-load.mjs"
+    "test:storage-load": "node scripts/storage-load.mjs",
+    "data:korea": "node scripts/collect-korea-tourism.mjs",
+    "data:korea:official": "node scripts/collect-tourapi.mjs"
   },
   "dependencies": {
     "lucide-react": "1.52.0",

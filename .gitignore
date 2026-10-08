@@ -11,3 +11,6 @@ next-env.d.ts
 .vercel/
 
 .operations-alert-state.json
+
+.cache/
+data/korea-tourism/*.tmp

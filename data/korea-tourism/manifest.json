@@ -1,0 +1,215 @@
+{
+  "version": 1,
+  "queryVersion": 1,
+  "collectedAt": "2026-10-08T15:30:15.857Z",
+  "license": "ODbL-1.0",
+  "attribution": "© OpenStreetMap contributors",
+  "source": "https://overpass-api.de/api/interpreter",
+  "coverage": [
+    {
+      "code": "KR-11",
+      "name": "서울특별시",
+      "relationId": 2297418,
+      "boundaryStatus": "administrative",
+      "currentName": null,
+      "collectedAt": "2026-10-08T14:50:27.464Z",
+      "sourceTimestamp": "2026-10-08T14:47:36Z",
+      "count": 57701
+    },
+    {
+      "code": "KR-26",
+      "name": "부산광역시",
+      "relationId": 2396450,
+      "boundaryStatus": "administrative",
+      "currentName": null,
+      "collectedAt": "2026-10-08T14:50:48.756Z",
+      "sourceTimestamp": "2026-10-08T14:47:36Z",
+      "count": 5381
+    },
+    {
+      "code": "KR-27",
+      "name": "대구광역시",
+      "relationId": 2395674,
+      "boundaryStatus": "administrative",
+      "currentName": null,
+      "collectedAt": "2026-10-08T14:54:29.370Z",
+      "sourceTimestamp": "2026-10-08T14:51:33Z",
+      "count": 3181
+    },
+    {
+      "code": "KR-28",
+      "name": "인천광역시",
+      "relationId": 2297419,
+      "boundaryStatus": "administrative",
+      "currentName": null,
+      "collectedAt": "2026-10-08T14:54:46.455Z",
+      "sourceTimestamp": "2026-10-08T14:51:33Z",
+      "count": 5676
+    },
+    {
+      "code": "KR-29",
+      "name": "광주광역시",
+      "relationId": 2399220,
+      "boundaryStatus": "historic",
+      "currentName": "전남광주통합특별시",
+      "collectedAt": "2026-10-08T14:57:33.792Z",
+      "sourceTimestamp": "2026-10-08T14:54:26Z",
+      "count": 2942
+    },
+    {
+      "code": "KR-30",
+      "name": "대전광역시",
+      "relationId": 2349984,
+      "boundaryStatus": "administrative",
+      "currentName": null,
+      "collectedAt": "2026-10-08T14:57:54.195Z",
+      "sourceTimestamp": "2026-10-08T14:55:44Z",
+      "count": 2465
+    },
+    {
+      "code": "KR-31",
+      "name": "울산광역시",
+      "relationId": 2395867,
+      "boundaryStatus": "administrative",
+      "currentName": null,
+      "collectedAt": "2026-10-08T14:58:06.690Z",
+      "sourceTimestamp": "2026-10-08T14:55:44Z",
+      "count": 2016
+    },
+    {
+      "code": "KR-50",
+      "name": "세종특별자치시",
+      "relationId": 2349795,
+      "boundaryStatus": "administrative",
+      "currentName": null,
+      "collectedAt": "2026-10-08T15:01:09.752Z",
+      "sourceTimestamp": "2026-10-08T14:58:20Z",
+      "count": 1486
+    },
+    {
+      "code": "KR-41",
+      "name": "경기도",
+      "relationId": 2306392,
+      "boundaryStatus": "administrative",
+      "currentName": null,
+      "collectedAt": "2026-10-08T15:06:11.747Z",
+      "sourceTimestamp": "2026-10-08T15:03:35Z",
+      "count": 27800
+    },
+    {
+      "code": "KR-42",
+      "name": "강원특별자치도",
+      "relationId": 2308426,
+      "boundaryStatus": "administrative",
+      "currentName": null,
+      "collectedAt": "2026-10-08T15:06:22.961Z",
+      "sourceTimestamp": "2026-10-08T15:03:35Z",
+      "count": 6251
+    },
+    {
+      "code": "KR-43",
+      "name": "충청북도",
+      "relationId": 2327258,
+      "boundaryStatus": "administrative",
+      "currentName": null,
+      "collectedAt": "2026-10-08T15:08:18.541Z",
+      "sourceTimestamp": "2026-10-08T15:05:04Z",
+      "count": 3617
+    },
+    {
+      "code": "KR-44",
+      "name": "충청남도",
+      "relationId": 2327259,
+      "boundaryStatus": "administrative",
+      "currentName": null,
+      "collectedAt": "2026-10-08T15:11:34.065Z",
+      "sourceTimestamp": "2026-10-08T15:07:52Z",
+      "count": 5552
+    },
+    {
+      "code": "KR-45",
+      "name": "전북특별자치도",
+      "relationId": 2355168,
+      "boundaryStatus": "administrative",
+      "currentName": null,
+      "collectedAt": "2026-10-08T15:26:49.044Z",
+      "sourceTimestamp": "2026-10-08T15:24:06Z",
+      "count": 4543
+    },
+    {
+      "code": "KR-46",
+      "name": "전라남도",
+      "relationId": 2398104,
+      "boundaryStatus": "historic",
+      "currentName": null,
+      "collectedAt": "2026-10-08T15:27:03.896Z",
+      "sourceTimestamp": "2026-10-08T15:24:06Z",
+      "count": 11775
+    },
+    {
+      "code": "KR-47",
+      "name": "경상북도",
+      "relationId": 2304454,
+      "boundaryStatus": "administrative",
+      "currentName": null,
+      "collectedAt": "2026-10-08T15:27:19.790Z",
+      "sourceTimestamp": "2026-10-08T15:24:06Z",
+      "count": 6938
+    },
+    {
+      "code": "KR-48",
+      "name": "경상남도",
+      "relationId": 2393403,
+      "boundaryStatus": "administrative",
+      "currentName": null,
+      "collectedAt": "2026-10-08T15:27:57.348Z",
+      "sourceTimestamp": "2026-10-08T15:24:06Z",
+      "count": 9586
+    },
+    {
+      "code": "KR-49",
+      "name": "제주특별자치도",
+      "relationId": 2398560,
+      "boundaryStatus": "administrative",
+      "currentName": null,
+      "collectedAt": "2026-10-08T15:30:15.857Z",
+      "sourceTimestamp": "2026-10-08T15:25:30Z",
+      "count": 9581
+    }
+  ],
+  "total": 166427,
+  "compressedBytes": 6743975,
+  "sha256": "f2bcbcb77c16e53856148bf99f36d6bf3686abeea7821b7e96f33985b4f83ccb",
+  "categories": {
+    "attraction": 12235,
+    "culture": 3886,
+    "heritage": 5544,
+    "nature": 23446,
+    "food": 82957,
+    "cafe": 13462,
+    "lodging": 14810,
+    "shopping": 823,
+    "leisure": 1005,
+    "rest": 8259
+  },
+  "missingNames": 31124,
+  "missingCoordinates": 0,
+  "missingAddresses": 100965,
+  "sourceScope": {
+    "objectTypes": [
+      "node",
+      "way",
+      "relation"
+    ],
+    "filters": [
+      "[\"tourism\"]",
+      "[\"historic\"]",
+      "[\"amenity\"~\"^(restaurant|fast_food|food_court|cafe|bench|theatre|arts_centre)$\"]",
+      "[\"natural\"=\"beach\"]",
+      "[\"leisure\"~\"^(park|nature_reserve|garden|water_park|sports_centre)$\"]",
+      "[\"boundary\"=\"national_park\"]",
+      "[\"shop\"~\"^(mall|department_store|gift|souvenir)$\"]"
+    ]
+  },
+  "completeness": "선택한 OSM 분류의 17개 지역 구획 응답 건수 대조 완료. 대한민국의 모든 실제 시설·축제·운영정보를 뜻하지 않음."
+}
