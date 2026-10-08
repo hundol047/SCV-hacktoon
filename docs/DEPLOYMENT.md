@@ -50,7 +50,7 @@ docker build -t bopok .
 docker run --rm -p 3000:3000 --env-file .env.production bopok
 ```
 
-Dockerfile은 standalone 빌드를 비루트 Node 사용자로 실행합니다. 앞단 HTTPS와 같은 서버 환경 설정이 필요합니다. 이 환경에서 Linux/Node 24로 빌드한 결과를 `Dockerfile.runtime`에 넣은 이미지의 실행은 검증했습니다. 전체 소스 Docker 빌드는 컨테이너 의존성 설치 연결을 별도로 확인해야 합니다. 자체 서버에서는 `npm run build && npm run start`로 같은 standalone 앱을 실행할 수 있습니다.
+Dockerfile은 standalone 빌드를 비루트 Node 사용자로 실행합니다. 앞단 HTTPS와 같은 서버 환경 설정이 필요합니다. 이 환경에서 전체 소스 이미지와 Linux standalone 결과를 사용하는 `Dockerfile.runtime` 이미지 모두 빌드했습니다. 비루트 사용자로 홈/규칙 추출을 검증했습니다. 자체 서버에서는 `npm run build && npm run start`로 같은 standalone 앱을 실행할 수 있습니다.
 
 클라우드 환경 초안의 설치/시작 지침, 도메인, 누락 변수/키 요구사항은 저장했습니다. 설정에서 값을 입력하고 검토·저장한 뒤 환경을 게시해야 다음 환경에 적용됩니다. 초안 저장 자체는 실행 환경 변경이나 앱 배포가 아닙니다.
 
@@ -64,3 +64,5 @@ docker run --rm -p 3000:3000 --env-file .env.production bopok
 ```
 
 이 경로는 빌드한 시스템과 컨테이너의 CPU 아키텍처·Node 버전·Linux libc가 호환되어야 합니다. Windows/macOS 빌드 결과 대신 Linux CI 결과를 사용하세요. 클라우드 프록시가 있는 소스 빌드는 Docker의 HTTP_PROXY/HTTPS_PROXY 전달과 신뢰할 수 있는 CA를 BuildKit `proxy-ca` secret으로 주입하는 방식을 지원합니다. TLS 검증을 끄지 않습니다. CA 파일은 최종 이미지에 복사하지 않습니다.
+
+이 클라우드의 Docker 소스 빌드에서는 컨테이너가 프록시 이름을 찾지 못해, 실행 환경에서 해석한 기존 프록시 주소를 `--add-host`로 전달했습니다. `--network host`, `--build-arg HTTP_PROXY --build-arg HTTPS_PROXY --build-arg NO_PROXY`, `--secret id=proxy-ca,src=신뢰_CA_파일`을 함께 사용해 빌드를 확인했습니다. DNS 주소나 인증값을 저장소에 고정하지 마세요.
