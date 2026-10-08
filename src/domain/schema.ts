@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { catalogSchema } from '../data/catalog';
 
 const optionalLimit = (max: number) =>
   z.number().int().min(1).max(max).nullable();
@@ -26,13 +27,14 @@ const date = z
   }, "올바른 날짜를 입력해 주세요.");
 export const basicsSchema = z.object({
   title: z.string().trim().min(1).max(80),
-  region: z.literal("가상 솔바다"),
+  region: z.string().min(1).max(120),
   date,
   days: z.number().int().min(1).max(2),
   budget: z.number().int().min(0).max(10000000),
   transport: z.enum(["taxi", "walk"]),
-  mode: z.literal("demo"),
-});
+  mode: z.enum(['demo','real']),
+  timezone:z.string().max(80).default('Asia/Seoul').refine(v=>{try{new Intl.DateTimeFormat('ko-KR',{timeZone:v});return true;}catch{return false;}},'IANA 시간대 이름을 확인해 주세요.'),
+}).refine(b=>(b.mode==='demo')===(b.region==='가상 솔바다'),'지역과 데이터 모드가 일치하지 않습니다.');
 export type Basics = z.infer<typeof basicsSchema>;
 export const itemSchema = z.object({
   id: z.string().min(1).max(100),
@@ -45,7 +47,7 @@ export const itemSchema = z.object({
   toId: z.string().max(100).nullable(),
   transport: z.enum(["taxi", "walk"]).nullable(),
   locked: z.boolean(),
-  mode: z.literal("demo"),
+  mode: z.enum(['demo','real']),
 });
 export type Item = z.infer<typeof itemSchema>;
 export const feedbackSchema = z.object({
@@ -67,7 +69,8 @@ export const tripSchema = z.object({
   items: z.array(itemSchema).max(100),
   history: z.array(z.array(itemSchema).max(100)).max(20),
   feedback: z.array(feedbackSchema).max(30),
-});
+  catalog: catalogSchema.optional(),
+}).superRefine((t,ctx)=>{if(t.items.some(i=>i.mode!==t.basics.mode)||t.history.some(h=>h.some(i=>i.mode!==t.basics.mode))||t.catalog&&t.catalog.mode!==t.basics.mode)ctx.addIssue({code:'custom',message:'실제·가상 여행 데이터를 섞을 수 없습니다.'});if(t.basics.mode==='real'&&!t.catalog)ctx.addIssue({code:'custom',message:'실제 여행은 출처가 있는 자료 집합이 필요합니다.'});});
 export type Trip = z.infer<typeof tripSchema>;
 export const defaultConditions: Conditions = {
   activity: "unknown",
@@ -102,6 +105,7 @@ export const defaultBasics: Basics = {
   budget: 300000,
   transport: "taxi",
   mode: "demo",
+  timezone:'Asia/Seoul',
 };
 export const time = (m: number) =>
   `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;

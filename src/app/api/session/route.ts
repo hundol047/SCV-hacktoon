@@ -1,0 +1,3 @@
+import { configuredRPC } from '../../../server/store';
+import {COOKIE,issueSession,ownerOf,sameOrigin,json} from '../../../server/security';
+export async function POST(request:Request){if(!sameOrigin(request))return json({error:'잘못된 요청 출처입니다.'},403);if(!configuredRPC()||!process.env.BOPok_SESSION_SECRET||process.env.BOPok_SESSION_SECRET.length<32)return json({error:'서버 저장소와 세션 설정이 필요합니다.'},503);if(ownerOf(request))return json({ready:true});const value=issueSession();const response=json({ready:true});const secure=(process.env.BOPok_APP_URL??request.url).startsWith('https:');response.headers.set('Set-Cookie',`${COOKIE}=${value}; HttpOnly; SameSite=Strict; Path=/; Max-Age=2592000${secure?'; Secure':''}`);return response;}

@@ -1,5 +1,5 @@
 import { Conditions, Item, Basics, time } from "./schema";
-import { placeById, getRoute } from "../data/demo";
+import { Catalog,catalogFor,indexCatalog } from '../data/catalog';
 export type Issue = {
   code: string;
   status: "violation" | "unknown" | "conflict";
@@ -16,7 +16,10 @@ export function validateSchedule(
   items: Item[],
   c: Conditions,
   b: Basics,
+  suppliedCatalog?: Catalog,
 ): Report {
+  const catalog=catalogFor(b.mode,suppliedCatalog);
+  const {placeById,getRoute}=indexCatalog(catalog);
   const issues: Issue[] = [];
   const add = (
     code: string,
@@ -132,6 +135,7 @@ export function validateSchedule(
           meters = r.walkM.value;
           evidence = [r.walkMin.evidenceId, r.walkM.evidenceId];
           cost += r.cost.value ?? 0;
+          if(b.mode==='real'&&r.cost.value===null)add('cost-unknown','unknown',[i.id],'이동 비용은 미확인입니다. 예산 충족을 판정할 수 없습니다.',[r.cost.evidenceId]);
           if (i.end - i.start < r.duration.value)
             add(
               "travel-time",
@@ -179,7 +183,7 @@ export function validateSchedule(
           p.hours.value &&
           (i.start < p.hours.value[0] || i.end > p.hours.value[1])
         )
-          add("hours", "violation", [i.id], "가상 운영 시간을 벗어납니다.", [
+          add("hours", "violation", [i.id], "자료에 기록된 운영 시간을 벗어납니다.", [
             p.hours.evidenceId,
           ]);
         if (c.avoidStairs) {
@@ -199,6 +203,11 @@ export function validateSchedule(
               "계단 정보가 확인되지 않은 장소예요.",
               [p.stairs.evidenceId],
             );
+        }
+        if(b.mode==='real'){
+          if(p.hours.value===null)add('hours-unknown','unknown',[i.id],'운영 시간·휴무일을 확인해 주세요.',[p.hours.evidenceId]);
+          if(p.cost.value===null)add('cost-unknown','unknown',[i.id],'이 항목 비용은 미확인입니다. 예산 충족을 판정할 수 없습니다.',[p.cost.evidenceId]);
+          if(!catalog.collectedAt||Date.now()-Date.parse(catalog.collectedAt)>7*86400000)add('stale-data','unknown',[i.id],'자료 수집 후 7일 이상 지났거나 수집 시각이 없습니다. 최신 정보 확인이 필요합니다.');
         }
         if (c.avoidSituations.some((v) => p.situations.value?.includes(v)))
           add(

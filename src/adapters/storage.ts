@@ -1,4 +1,5 @@
 import { z } from "zod";
+import {catalogSchema} from '../data/catalog';
 import {
   Trip,
   tripSchema,
@@ -8,6 +9,9 @@ import {
 } from "../domain/schema";
 export const STORAGE_KEY = "bopok:trip:v1";
 export const FORM_KEY = "bopok:form:v1";
+export const LIBRARY_KEY='bopok:library:v1';
+const librarySchema=z.object({version:z.literal(1),trips:z.array(tripSchema).max(20)});
+export function loadLibrary(storage:Pick<Storage,'getItem'>):Trip[]{try{const raw=storage.getItem(LIBRARY_KEY);return raw?librarySchema.parse(JSON.parse(raw)).trips:[];}catch{return [];}}
 export const draftSchema = z.object({
   version: z.literal(1),
   conditions: conditionsSchema,
@@ -16,6 +20,7 @@ export const draftSchema = z.object({
   existing: z.boolean(),
   importText: z.string().max(10000),
   importItems: z.array(itemSchema).max(100),
+  catalog:catalogSchema.optional(),
 });
 export type FormDraft = z.infer<typeof draftSchema>;
 export function loadDraft(storage: Pick<Storage, "getItem">): FormDraft | null {
@@ -66,7 +71,10 @@ export function saveTrip(
   trip: Trip,
 ): string | null {
   try {
-    storage.setItem(STORAGE_KEY, JSON.stringify(tripSchema.parse(trip)));
+    const validated=tripSchema.parse(trip);
+    storage.setItem(STORAGE_KEY, JSON.stringify(validated));
+    const readable=storage as Pick<Storage,'setItem'|'getItem'>;
+    if(typeof readable.getItem==='function'){const library=loadLibrary(readable).filter(t=>t.id!==trip.id);storage.setItem(LIBRARY_KEY,JSON.stringify({version:1,trips:[validated,...library].slice(0,20)}));}
     return null;
   } catch {
     return "여행을 저장하지 못했습니다. 현재 화면은 사용할 수 있지만 새로고침하면 내용이 사라질 수 있습니다.";

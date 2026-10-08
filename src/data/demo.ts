@@ -3,8 +3,9 @@ export type Fact<T> = {
   value: T | null;
   evidenceId: string;
   source: string;
-  nature: "demo";
-  checked: "simulated";
+  nature: "demo" | "real";
+  checked: "simulated" | "source" | "unknown";
+  collectedAt?: string | null;
 };
 const fact = <T>(id: string, field: string, value: T | null): Fact<T> => ({
   value,
@@ -27,6 +28,8 @@ export type Place = {
   cost: Fact<number>;
   hours: Fact<[number, number]>;
   situations: Fact<string[]>;
+  latitude?: number;
+  longitude?: number;
 };
 const names = [
   "바다마루 전망길",
@@ -135,7 +138,7 @@ export type Route = {
   walkMin: Fact<number>;
   walkM: Fact<number>;
   cost: Fact<number>;
-  mode: "demo";
+  mode: "demo" | "real";
   stairs: Fact<boolean>;
 };
 // Authored synthetic route table; these values are scenarios, not geodesic or actual routes.

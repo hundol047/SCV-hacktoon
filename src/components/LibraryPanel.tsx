@@ -1,0 +1,8 @@
+'use client';
+import {useRef,useState} from 'react';
+import {Trip,tripSchema} from '../domain/schema';
+export default function LibraryPanel({trips,current,onSelect}:{trips:Trip[];current:Trip|null;onSelect:(t:Trip)=>void}){const input=useRef<HTMLInputElement>(null),[error,setError]=useState('');
+  async function restore(file:File|undefined){if(!file)return;try{if(file.size>524288)throw Error('512KB 이하의 보폭 JSON 파일을 선택해 주세요.');const trip=tripSchema.parse(JSON.parse(await file.text()));onSelect(trip);setError('');}catch{setError('여행 JSON의 형식·버전·실제/가상 데이터 구분을 확인해 주세요.');}finally{if(input.current)input.current.value='';}}
+  function exportTrip(){if(!current)return;const url=URL.createObjectURL(new Blob([JSON.stringify(current,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download=`bopok-${current.id}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+  return <section className="library-panel no-print"><h2>여행 보관함</h2><p>이 브라우저에 최근 여행 20개를 보관합니다. JSON 파일로 다른 기기에 옮길 수 있어요. 내보낸 파일에는 여행 조건과 가족 의견이 들어 있습니다.</p>{trips.filter(t=>t.id!==current?.id).map(t=><button className="library-row" key={t.id} onClick={()=>onSelect(t)}>{t.basics.title}<span>{t.basics.region} · {t.basics.date}</span></button>)}<div className="schedule-actions"><button className="secondary" disabled={!current} onClick={exportTrip}>여행 JSON 내보내기</button><button className="secondary" onClick={()=>input.current?.click()}>여행 JSON 가져오기</button><input ref={input} type="file" accept="application/json,.json" hidden aria-label="여행 JSON 파일" onChange={e=>restore(e.target.files?.[0])}/></div>{error&&<p role="alert">{error}</p>}</section>;
+}

@@ -1,0 +1,7 @@
+**
+!.next/
+!.next/standalone/**
+!.next/static/**
+!public/**
+!Dockerfile.runtime
+!Dockerfile.runtime.dockerignore

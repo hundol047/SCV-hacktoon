@@ -297,27 +297,9 @@ test("서버 입력 오류와 의료 정보 입력을 거절한다", async ({
     expect(response.status()).toBe(400);
   }
 });
-test("서버는 동일 클라이언트의 11번째 요청을 제한한다", async ({
-  request,
-}, testInfo) => {
-  const headers = { "x-forwarded-for": `qa-rate-${testInfo.project.name}` };
-  for (let n = 0; n < 10; n++)
-    expect(
-      (
-        await request.post("/api/conditions", {
-          data: { text: "한 번에 20분", consent: false },
-          headers,
-        })
-      ).status(),
-    ).toBe(200);
-  expect(
-    (
-      await request.post("/api/conditions", {
-        data: { text: "한 번에 20분", consent: false },
-        headers,
-      })
-    ).status(),
-  ).toBe(429);
+test("위조 전달 헤더로 외부 AI 호출을 켤 수 없다", async ({request}) => {
+ const response=await request.post('/api/conditions',{data:{text:'한 번에 20분',consent:true},headers:{'x-forwarded-for':'forged'}});
+ expect(response.status()).toBe(200);expect((await response.json()).provider).not.toBe('openai');
 });
 test("브라우저 저장소 접근 자체가 거절되어도 시연을 계속한다", async ({
   page,

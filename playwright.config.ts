@@ -21,10 +21,8 @@ export default defineConfig({
       use: { ...devices["iPhone 13"], defaultBrowserType: "chromium" },
     },
   ],
-  webServer: {
-    command: "npm run start",
-    url: "http://127.0.0.1:3000",
-    reuseExistingServer: process.env.BOPok_E2E_REUSE_SERVER === "1",
-    timeout: 60000,
-  },
+  webServer: [
+    {command:"node scripts/test-store.mjs",url:"http://127.0.0.1:3155/health",reuseExistingServer:false,timeout:60000},
+    {command:"npm run start",url:"http://127.0.0.1:3000",reuseExistingServer:false,timeout:60000,env:{BOPok_SUPABASE_URL:"http://127.0.0.1:3155",BOPok_SUPABASE_KEY:"isolated-test-key",BOPok_SESSION_SECRET:"isolated-test-session-secret-at-least-32-characters",BOPok_APP_URL:"http://127.0.0.1:3000",BOPok_AI_KEY:"",BOPok_AI_MODEL:""}},
+  ],
 });

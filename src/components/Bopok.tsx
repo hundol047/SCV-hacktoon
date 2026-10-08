@@ -35,7 +35,15 @@ import {
   minutes,
   dayDate,
 } from "../domain/schema";
-import { places, placeById, getRoute, DEMO_NOTICE } from "../data/demo";
+import { DEMO_NOTICE } from "../data/demo";
+import {Catalog,catalogFor,demoCatalog,indexCatalog,emptyRealCatalog} from '../data/catalog';
+import {CatalogContext,useCatalog} from './CatalogContext';
+import RealSearch from './RealSearch';
+import LibraryPanel from './LibraryPanel';
+import FamilySync from './FamilySync';
+import RouteLookup from './RouteLookup';
+import AIAdvice from './AIAdvice';
+import type {CloudTrip} from '../server/store';
 import { validateSchedule, Report } from "../domain/validate";
 import {
   generate,
@@ -47,6 +55,8 @@ import {
   isCurrentResponse,
 } from "../domain/engine";
 import {
+  loadLibrary,
+  LIBRARY_KEY,
   loadTrip,
   saveTrip,
   loadDraft,
@@ -87,7 +97,7 @@ const feedbackOptions = [
   "식사를 바꾸고 싶어요",
 ] as const;
 const uid = () => crypto.randomUUID();
-export default function Bopok() {
+export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTrip;accessToken?:string}={}) {
   const [screen, setScreen] = useState<Screen>("home"),
     [trip, setTrip] = useState<Trip | null>(null),
     [ready, setReady] = useState(false);
@@ -108,10 +118,15 @@ export default function Bopok() {
     [importItems, setImportItems] = useState<Item[]>([]),
     [customExperience, setCustomExperience] = useState("");
   const [savedDraft, setSavedDraft] = useState<FormDraft | null>(null);
+  const [selectedCatalog,setSelectedCatalog]=useState<Catalog>(demoCatalog),[library,setLibrary]=useState<Trip[]>([]);
+  const currentCatalog=(screen==='conditions'||screen==='basics')?catalogFor(b.mode,selectedCatalog):catalogFor(trip?.basics.mode??'demo',trip?.catalog);
+  const {placeById,getRoute}=indexCatalog(currentCatalog),places=currentCatalog.places;
   const requestRevision = useRef(0);
   const activeRequest = useRef<AbortController | null>(null);
   useEffect(() => {
+    if(initialCloud){setTrip(initialCloud.trip);setScreen('result');setReady(true);return;}
     try {
+      setLibrary(loadLibrary(localStorage));
       const saved = loadTrip(localStorage);
       setTrip(saved.trip);
       setSavedDraft(loadDraft(localStorage));
@@ -128,7 +143,7 @@ export default function Bopok() {
     if (ready && trip) {
       try {
         const e = saveTrip(localStorage, trip);
-        if (e) setError(e);
+        if (e) setError(e);else setLibrary(loadLibrary(localStorage));
       } catch {
         setError(
           "여행을 저장하지 못했습니다. 새로고침 전에 내용을 확인해 주세요.",
@@ -147,6 +162,7 @@ export default function Bopok() {
           existing,
           importText,
           importItems,
+          catalog:b.mode==='real'?selectedCatalog:undefined,
         };
         const e = saveDraft(localStorage, draft);
         if (e) setError(e);
@@ -177,6 +193,7 @@ export default function Bopok() {
     setNotice("");
   };
   const start = (isExisting: boolean) => {
+    setSelectedCatalog(demoCatalog);
     setC(structuredClone(defaultConditions));
     setB({ ...defaultBasics });
     setStep(0);
@@ -212,6 +229,7 @@ export default function Bopok() {
     try {
       localStorage.removeItem(STORAGE_KEY);
       localStorage.removeItem(FORM_KEY);
+      localStorage.removeItem(LIBRARY_KEY);setLibrary([]);
       setSavedDraft(null);
       setTrip(null);
       setProposal(null);
@@ -293,7 +311,9 @@ export default function Bopok() {
       setError("기존 일정을 텍스트로 가져오거나 시간표에 추가해 주세요.");
       return;
     }
-    const p = generate(pc.data, pb.data);
+    if(pb.data.mode==='real'&&currentCatalog.places.length===0){setError('먼저 실제 장소를 조회해 주세요. 가상 자료로 자동 대체하지 않습니다.');return;}
+    if(existing&&importItems.some(i=>i.mode!==pb.data.mode)){setError('실제/가상 일정의 모드가 맞지 않습니다.');return;}
+    const p = generate(pc.data, pb.data,[],[],currentCatalog);
     const items = existing ? importItems : p.items;
     setTrip({
       version: 1,
@@ -304,6 +324,7 @@ export default function Bopok() {
       items,
       history: [],
       feedback: [],
+      catalog:pb.data.mode==='real'?currentCatalog:undefined,
     });
     try {
       localStorage.removeItem(FORM_KEY);
@@ -323,6 +344,7 @@ export default function Bopok() {
         trip.basics,
         trip.items,
         trip.feedback.map((f) => f.text),
+        trip.catalog,
       ),
     );
     navigate("compare");
@@ -347,11 +369,11 @@ export default function Bopok() {
     setProposal(null);
   }
   const report = trip
-    ? validateSchedule(trip.items, trip.conditions, trip.basics)
+    ? validateSchedule(trip.items, trip.conditions, trip.basics,trip.catalog)
     : null;
   const progress = screen === "conditions" ? step + 1 : 4;
   return (
-    <div className={screen === "parent" ? "app parent-mode" : "app"}>
+    <CatalogContext.Provider value={currentCatalog}><div className={screen === "parent" ? "app parent-mode" : "app"}>
       <a className="skip-link" href="#main">
         본문 바로가기
       </a>
@@ -547,7 +569,8 @@ export default function Bopok() {
                 <button
                   className="secondary"
                   onClick={() => {
-                    setC(savedDraft.conditions);
+                    setSelectedCatalog(savedDraft.catalog??demoCatalog);
+                      setC(savedDraft.conditions);
                     setB(savedDraft.basics);
                     setStep(savedDraft.step);
                     setExisting(savedDraft.existing);
@@ -578,6 +601,7 @@ export default function Bopok() {
                 </button>
               </section>
             )}
+            <LibraryPanel trips={library} current={trip} onSelect={t=>{setTrip(t);setDay(1);navigate('result');}}/><FamilySync trip={trip} onTrip={t=>{setTrip(t);navigate('result');}}/>
             <section className="intro-section">
               <div className="section-heading">
                 <span className="eyebrow">HOW WE TRAVEL</span>
@@ -692,7 +716,7 @@ export default function Bopok() {
               <div className="demo-banner">
                 <Leaf size={18} />
                 <div>
-                  <strong>현재는 가상 솔바다 여행만 지원해요.</strong>
+                  <strong>{b.mode==='demo'?'가상 시연과 전국·해외 실제 도시 검색을 구분해요.':currentCatalog.sourceNotice}</strong>
                   <span>{DEMO_NOTICE}</span>
                 </div>
               </div>
@@ -977,7 +1001,7 @@ export default function Bopok() {
                   <div className="field-grid">
                     <label>
                       여행 지역
-                      <input value="가상 솔바다 (시연 전용)" readOnly />
+                      <select aria-label="데이터 모드" value={b.mode} onChange={e=>{const mode=e.target.value as Basics['mode'];setB({...b,mode,region:mode==='demo'?'가상 솔바다':'실제 지역'});setSelectedCatalog(mode==='demo'?demoCatalog:emptyRealCatalog);setImportItems([]);}}><option value="demo">가상 솔바다 · 시연</option><option value="real">전국·해외 실제 도시</option></select>
                     </label>
                     <label>
                       출발 날짜
@@ -1042,15 +1066,16 @@ export default function Bopok() {
                       </select>
                     </label>
                   </div>
+                  {b.mode==='real'&&<><RealSearch onLoaded={catalog=>{setSelectedCatalog(catalog);setB({...b,region:catalog.region});setImportItems([]);}}/><label>현지 시간대 (IANA)<input value={b.timezone} onChange={e=>setB({...b,timezone:e.target.value})} placeholder="Asia/Seoul, Asia/Tokyo, Europe/Paris"/></label></>}
                   {existing && (
                     <section className="importer">
-                      <h2>기존 가상 일정 입력</h2>
+                      <h2>기존 일정 입력</h2>
                       <p>
                         지원 범위는 아래 후보 장소입니다. 실제 장소명은 가져오지
                         않습니다. 이동 구간은 시간표에서 별도로 추가해 주세요.
                       </p>
                       <details>
-                        <summary>가상 후보 장소 30곳 보기</summary>
+                        <summary>후보 장소 목록 보기</summary>
                         <ul className="candidate-list">
                           {places.map((p) => (
                             <li key={p.id}>
@@ -1073,7 +1098,7 @@ export default function Bopok() {
                       <button
                         className="secondary"
                         onClick={() => {
-                          const parsed = parseItinerary(importText);
+                          const parsed = parseItinerary(importText, 1, currentCatalog);
                           if (parsed.errors.length)
                             setError(parsed.errors.join(" "));
                           else {
@@ -1131,7 +1156,7 @@ export default function Bopok() {
                 <h1 tabIndex={-1}>{trip.basics.title}</h1>
                 <p>
                   {trip.basics.region} · {trip.basics.date}부터{" "}
-                  {trip.basics.days}일 · Asia/Seoul
+                  {trip.basics.days}일 · {trip.basics.timezone}
                 </p>
               </div>
               <button className="secondary" onClick={() => navigate("parent")}>
@@ -1139,6 +1164,8 @@ export default function Bopok() {
               </button>
             </div>
             <DemoBanner />
+            <AIAdvice key={`${trip.id}:${trip.revision}`} trip={trip}/><RouteLookup trip={trip} onTrip={setTrip}/><FamilySync trip={trip} onTrip={setTrip} initialCloud={initialCloud} accessToken={accessToken}/>
+            <LibraryPanel trips={library} current={trip} onSelect={t=>{setTrip(t);setDay(1);setProposal(null);}}/>
             <div className="result-layout">
               <div className="schedule">
                 <div className="timeline-toolbar">
@@ -1245,13 +1272,13 @@ export default function Bopok() {
                   부모님 조건에 맞게 수정하기 <ArrowRight size={18} />
                 </button>
                 <p className="helper">
-                  규칙 기반 시연 · 조건을 완화하지 않고 가상 후보를 다시
+                  규칙 기반 점검 · 조건을 완화하지 않고 후보를 다시
                   조합합니다.
                 </p>
                 <div className="source-note">
                   <strong>판정의 범위를 확인해 주세요.</strong>
                   <p>
-                    모든 수치와 시설 정보는 가상입니다. 정보 부족은 충족으로
+                    {trip.basics.mode==='demo'?'모든 수치와 시설 정보는 가상입니다.':'실제 자료의 시설·메뉴·내부 보행 정보는 미확인일 수 있습니다.'} 정보 부족은 충족으로
                     계산하지 않습니다. 실제 여행의 안전·편안함을 보증하지
                     않습니다.
                   </p>
@@ -1324,6 +1351,7 @@ export default function Bopok() {
                   proposal.items,
                   trip.conditions,
                   trip.basics,
+                  trip.catalog,
                 )}
               />
             </div>
@@ -1410,10 +1438,10 @@ export default function Bopok() {
                         </span>
                         <div>
                           <span className="parent-kind">{labels[i.kind]}</span>
-                          <h3>{itemName(i)}</h3>
+                          <h3>{itemName(i,currentCatalog)}</h3>
                           <p>
                             {i.kind === "rest"
-                              ? `${i.end - i.start}분 쉬어요. ${p?.seat.value === true ? "앉을 자리가 있는 가상 공간입니다." : "앉을 자리 확인이 필요해요."}`
+                              ? `${i.end - i.start}분 쉬어요. ${p?.seat.value === true ? "자료에 앉을 자리가 있다고 표시된 공간입니다." : "앉을 자리 확인이 필요해요."}`
                               : i.kind === "move"
                                 ? `${i.transport === "walk" ? "걸어서" : "택시로"} 이동해요. 예상 ${r?.duration.value ?? "확인 필요"}분.`
                                 : (p?.description ?? "장소를 확인해 주세요.")}
@@ -1439,7 +1467,7 @@ export default function Bopok() {
             ))}
             <section className="parent-check">
               <h2>떠나기 전에 함께 확인해요</h2>
-              <p>이 일정은 가상 예시예요. 실제 여행에 사용하지 마세요.</p>
+              <p>{trip.basics.mode==='demo'?'이 일정은 가상 예시예요. 실제 여행에 사용하지 마세요.':'출발 전 미확인 시설·영업시간·동선을 직접 확인해 주세요.'}</p>
               {report.issues.map((i, n) => (
                 <p key={n}>• {i.message}</p>
               ))}
@@ -1499,21 +1527,21 @@ export default function Bopok() {
           <span>함께 떠나는 여행, 서로의 속도로.</span>
         </div>
         <div className="footer-meta">
-          <span>MVP · 규칙 기반 시연 · 실제 여행 데이터 미연동</span>
+          <span>규칙 기반 점검 · 실제 도시 검색 · 서버 공유는 연결 후 사용</span>
           <span>
-            여행과 가족 의견은 같은 브라우저에만 저장됩니다. 실시간 공유는
-            지원하지 않습니다.
+            로컬 기록은 같은 브라우저에 저장됩니다. 서버 저장·가족 링크는 서버 설정 후 사용할 수 있습니다.
           </span>
           <button className="text-button" onClick={remove}>
             <Trash2 size={14} /> 내 여행 데이터 삭제
           </button>
         </div>
       </footer>
-    </div>
+    </div></CatalogContext.Provider>
   );
 }
 
 function DemoBanner() {
+  const {catalog}=useCatalog();if(catalog.mode==='real')return <div className="demo-banner"><Leaf size={18}/><div><strong>{catalog.sourceNotice}</strong><span>수집 {catalog.collectedAt??'미확인'} · 실제 소요 시간·계단·메뉴 확인이 필요합니다.</span><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap 기여자 · ODbL</a></div></div>;
   return (
     <div className="demo-banner">
       <Leaf size={18} />
@@ -1663,7 +1691,8 @@ function ConditionCard({ c }: { c: Conditions }) {
     </div>
   );
 }
-function itemName(i: Item) {
+function itemName(i: Item,catalog:Catalog=demoCatalog) {
+  const {placeById}=indexCatalog(catalog);
   if (i.kind === "move")
     return `${placeById.get(i.fromId ?? "")?.name ?? "출발지 미확인"} → ${placeById.get(i.toId ?? "")?.name ?? "도착지 미확인"}`;
   return placeById.get(i.placeId ?? "")?.name ?? "장소 미확인";
@@ -1677,6 +1706,7 @@ function Timeline({
   report: Report;
   showDay?: boolean;
 }) {
+  const {catalog,placeById,getRoute}=useCatalog();
   return (
     <div className="timeline">
       {!items.length && (
@@ -1713,14 +1743,14 @@ function Timeline({
               <div className="timeline-content">
                 <div className="item-kicker">
                   {labels[i.kind]} {i.locked && "· 고정 일정"}{" "}
-                  <span>{i.end - i.start}분</span>
+                  <span>{i.end - i.start}분{catalog.mode==='real'?' 배정':''}</span>
                 </div>
-                <h3>{itemName(i)}</h3>
+                <h3>{itemName(i,catalog)}</h3>
                 {i.kind === "rest" ? (
                   <p>
                     앉아서 쉬기 ·{" "}
                     {p?.seat.value === true
-                      ? "가상 좌석 정보 있음"
+                      ? "자료에 좌석 정보 있음"
                       : "좌석 확인 필요"}
                   </p>
                 ) : (
@@ -1748,14 +1778,13 @@ function Timeline({
                   </p>
                 ))}
                 <details className="evidence">
-                  <summary>가상 데이터 근거 보기</summary>
+                  <summary>장소 데이터 근거 보기</summary>
                   <p>
-                    보폭 가상 시연 데이터 v1 · 실제 조사 없음 · 확인 상태: 가상
-                    시나리오 설정
+                    {catalog.mode==='demo'?'보폭 가상 시연 데이터 v1 · 실제 조사 없음 · 가상 시나리오 설정':catalog.sourceNotice}
                   </p>
                   {p && (
                     <p>
-                      보행 {p.walkMin.evidenceId}, 거리 {p.walkM.evidenceId},
+                      {catalog.mode==='real'&&<><a href={p.walkMin.source} target="_blank" rel="noreferrer">실제 장소 출처</a> · 수집 {p.walkMin.collectedAt}<br/></>}보행 {p.walkMin.evidenceId}, 거리 {p.walkM.evidenceId},
                       계단 {p.stairs.evidenceId}, 좌석 {p.seat.evidenceId}, 메뉴{" "}
                       {p.foods.evidenceId}, 운영 {p.hours.evidenceId}
                     </p>
@@ -1793,7 +1822,7 @@ function ReportView({ report }: { report: Report }) {
       </h2>
       {report.issues.length === 0 ? (
         <p>
-          입력한 조건을 가상 데이터 기준으로 충족합니다. 실제 여행에 대한 보증은
+          입력한 조건을 현재 자료 기준으로 충족합니다. 실제 여행에 대한 보증은
           아닙니다.
         </p>
       ) : (
@@ -1827,6 +1856,7 @@ function Editor({
   days: number;
   onChange: (i: Item[]) => void;
 }) {
+  const {catalog}=useCatalog();
   const update = (id: string, patch: Partial<Item>) =>
     onChange(items.map((i) => (i.id === id ? { ...i, ...patch } : i)));
   return (
@@ -1965,12 +1995,12 @@ function Editor({
               start: 600,
               end: 630,
               kind: "rest",
-              placeId: "p24",
+              placeId: catalog.mode==='demo'?'p24':catalog.places.find(p=>p.kind==='rest')?.id??null,
               fromId: null,
               toId: null,
               transport: null,
               locked: false,
-              mode: "demo",
+              mode: catalog.mode,
             },
           ])
         }
@@ -1991,6 +2021,7 @@ function PlaceSelect({
   disabled: boolean;
   onChange: (v: string) => void;
 }) {
+  const {places}=useCatalog();
   return (
     <label>
       {label}
