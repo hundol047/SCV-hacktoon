@@ -1,0 +1,20 @@
+import {appURL} from './config';
+import {z} from 'zod';
+import {configuredRPC,type RPC} from './store';
+export const REQUIRED_SCHEMA=11;
+const resultSchema=z.object({contractVersion:z.number().int().optional(),schemaVersion:z.number().int(),requiredVersion:z.number().int(),ready:z.boolean(),features:z.object({identity:z.boolean(),quotas:z.boolean(),accounts:z.boolean(),reviews:z.boolean()}),maintenance:z.object({scheduled:z.boolean(),lastSuccessAt:z.string().nullable(),lastFailureAt:z.string().nullable(),lastCleanupAt:z.string().nullable(),backupVerifiedAt:z.string().nullable().optional()})});
+export type StorageState={configured:boolean;connected:boolean;ready:boolean;sessionConfigured:boolean;schemaVersion:number;requiredVersion:number;reason:string;features?:z.infer<typeof resultSchema>['features'];maintenance?:z.infer<typeof resultSchema>['maintenance']};
+export async function inspectStorage(rpc:RPC|null=configuredRPC(),required=REQUIRED_SCHEMA):Promise<StorageState>{
+ const sessionConfigured=(process.env.BOPok_SESSION_SECRET?.length??0)>=32;
+ if(!rpc)return {configured:false,connected:false,ready:false,sessionConfigured,schemaVersion:0,requiredVersion:required,reason:'not_configured'};
+ try{const data=resultSchema.parse(await rpc.call('bopok_health',{p_required:required})),current=data.ready&&(data.contractVersion??0)>=required;return {configured:true,connected:true,sessionConfigured,...data,ready:current&&sessionConfigured,reason:current?(sessionConfigured?'ready':'session_missing'):'migration_missing'};}
+ catch{let connected=false;try{connected=(await rpc.call('bopok_trip',{p_action:'health'})).ready===true;}catch{}return {configured:true,connected,ready:false,sessionConfigured,schemaVersion:0,requiredVersion:required,reason:connected?'migration_missing':'unavailable'};}
+}
+export async function readiness(){
+ const storage=await inspectStorage(),authConfigured=!!(process.env.BOPok_SUPABASE_URL&&process.env.BOPok_SUPABASE_ANON_KEY),routingConfigured=!!process.env.BOPok_ROUTE_KEY,aiConfigured=!!(process.env.BOPok_AI_KEY&&process.env.BOPok_AI_MODEL&&Number(process.env.BOPok_AI_INPUT_USD_PER_MILLION)>0&&Number(process.env.BOPok_AI_OUTPUT_USD_PER_MILLION)>0),botConfigured=!!(process.env.BOPok_TURNSTILE_SITE_KEY&&process.env.BOPok_TURNSTILE_SECRET);
+ const missing:string[]=[];if(!storage.ready)missing.push(storage.reason);if(!appURL())missing.push('app_url_missing');
+ const features=new Set((process.env.BOPok_REQUIRED_FEATURES??(process.env.NODE_ENV==='production'?'storage,auth,routing,ai,bot,maintenance,reviews,alerts,backup':'storage')).split(',').map(s=>s.trim()));
+ if(features.has('reviews')&&(!storage.features?.reviews||!process.env.BOPok_REVIEWER_IDS))missing.push('reviewers_missing');if(features.has('alerts')&&!(process.env.BOPok_ALERTS_ENABLED==='true'&&process.env.BOPok_ALERT_WEBHOOK_URL))missing.push('alerts_missing');if(features.has('backup')&&(!storage.maintenance?.backupVerifiedAt||Date.now()-Date.parse(storage.maintenance.backupVerifiedAt)>7*86400000))missing.push('backup_unverified');
+ if(features.has('auth')&&(!authConfigured||!storage.features?.accounts))missing.push('auth_missing');if(features.has('routing')&&!routingConfigured)missing.push('routing_missing');if(features.has('ai')&&!aiConfigured)missing.push('ai_missing');if(features.has('bot')&&!botConfigured)missing.push('bot_missing');if(features.has('maintenance')){if(!storage.maintenance?.scheduled)missing.push('maintenance_unscheduled');if(!storage.maintenance?.lastCleanupAt||Date.now()-Date.parse(storage.maintenance.lastCleanupAt)>86400000)missing.push('maintenance_stale');if(storage.maintenance?.lastFailureAt&&(!storage.maintenance.lastSuccessAt||storage.maintenance.lastFailureAt>storage.maintenance.lastSuccessAt))missing.push('maintenance_failed');}
+ return {ready:missing.length===0,missing,storage,authConfigured,routingConfigured,aiConfigured,botConfigured,checkedAt:new Date().toISOString()};
+}

@@ -7,9 +7,9 @@ const metadataKey='bopok:cloud:v1';
 type Metadata={id:string;storageVersion:number;tripId:string;saved:string};
 class APIError extends Error {constructor(message:string,public status:number){super(message);}}
 export default function FamilySync({trip,onTrip,onOpen,initialCloud,accessToken,hidden=false}:{trip:Trip|null;onTrip:(t:Trip)=>void;onOpen?:()=>void;initialCloud?:CloudTrip;accessToken?:string;hidden?:boolean}){
- const [status,setStatus]=useState<{storage:{connected:boolean;sessionConfigured:boolean}}|null>(null),[cloud,setCloud]=useState<CloudTrip|null>(initialCloud??null),[message,setMessage]=useState(''),[busy,setBusy]=useState(false),[restoring,setRestoring]=useState(false),[link,setLink]=useState(''),[list,setList]=useState<{id:string;title:string}[]>([]),[conflict,setConflict]=useState(false),[recoveryKey,setRecoveryKey]=useState(''),[recoveryInput,setRecoveryInput]=useState('');
+ const [status,setStatus]=useState<{storage:{connected:boolean;ready?:boolean;sessionConfigured:boolean}}|null>(null),[cloud,setCloud]=useState<CloudTrip|null>(initialCloud??null),[message,setMessage]=useState(''),[busy,setBusy]=useState(false),[restoring,setRestoring]=useState(false),[link,setLink]=useState(''),[list,setList]=useState<{id:string;title:string}[]>([]),[conflict,setConflict]=useState(false),[recoveryKey,setRecoveryKey]=useState(''),[recoveryInput,setRecoveryInput]=useState('');
  const saved=useRef(initialCloud?fingerprint(initialCloud.trip):''),latest=useRef(trip),onChange=useRef(onTrip),connections=useRef(new Map<string,Metadata>());latest.current=trip;onChange.current=onTrip;
- const available=status?.storage.connected&&status.storage.sessionConfigured;
+ const available=status?.storage.ready===true&&status.storage.sessionConfigured;
  async function api(path:string,method='GET',body?:unknown){const r=await fetch(path,{method,headers:{'Content-Type':'application/json',...(accessToken?{Authorization:`Bearer ${accessToken}`}:{})},body:body?JSON.stringify(body):undefined,cache:'no-store'});const data=await r.json();if(!r.ok)throw new APIError(data.error??'서버 요청에 실패했습니다.',r.status);return data;}
  async function session(){await api('/api/session','POST');}
  function remember(value:CloudTrip){
@@ -20,7 +20,7 @@ export default function FamilySync({trip,onTrip,onOpen,initialCloud,accessToken,
  function accept(value:CloudTrip,open=false){saved.current=fingerprint(value.trip);setCloud(value);remember(value);onChange.current(value.trip);setConflict(false);if(open)onOpen?.();}
  function unauthorized(e:unknown){if(e instanceof APIError&&[401,403,404].includes(e.status)){setCloud(null);setLink('');setConflict(false);if(latest.current)connections.current.delete(latest.current.id);try{localStorage.setItem(metadataKey,JSON.stringify([...connections.current.values()]));}catch{}}}
  useEffect(()=>{const controller=new AbortController();fetch('/api/status',{signal:controller.signal}).then(r=>r.json()).then(setStatus).catch(()=>{});try{const entries=JSON.parse(localStorage.getItem(metadataKey)??'[]');if(Array.isArray(entries))for(const v of entries.slice(-20))if(typeof v.id==='string'&&typeof v.tripId==='string'&&typeof v.saved==='string'&&Number.isInteger(v.storageVersion))connections.current.set(v.tripId,v);}catch{}return ()=>controller.abort();},[]);
- useEffect(()=>{if(!available||accessToken)return;api('/api/session','POST',{action:'refresh'}).catch(e=>setMessage(e.message));const timer=setInterval(()=>api('/api/session','POST',{action:'refresh'}).catch(e=>setMessage(e.message)),12*3600000);return ()=>clearInterval(timer);},[available,accessToken]);
+ useEffect(()=>{if(!available||accessToken)return;api('/api/session','POST',{action:'refresh'}).catch(e=>setMessage(e.message));const timer=setInterval(()=>api('/api/session','POST',{action:'refresh'}).catch(e=>setMessage(e.message)),10*60000);return ()=>clearInterval(timer);},[available,accessToken]);
  useEffect(()=>{
   if(!available)return;let active=true;setLink('');setConflict(false);
   if(!trip){setCloud(null);try{if(!initialCloud&&!localStorage.getItem(metadataKey))connections.current.clear();}catch{}return;}
@@ -35,7 +35,7 @@ export default function FamilySync({trip,onTrip,onOpen,initialCloud,accessToken,
   }).catch(e=>{if(active){unauthorized(e);setMessage(e.message);}}).finally(()=>{if(active)setRestoring(false);});return ()=>{active=false;setRestoring(false);};
  },[trip?.id,available]);
  useEffect(()=>{if(!cloud)return;let active=true;const controller=new AbortController();let pending=false;
-  const poll=async()=>{if(pending)return;pending=true;try{const r=await fetch(`/api/trips/${cloud.id}`,{headers:accessToken?{Authorization:`Bearer ${accessToken}`}:{},cache:'no-store',signal:controller.signal});const data=await r.json();if(!r.ok)throw new APIError(data.error,r.status);const remote=cloudSchema.parse(data);if(!active||remote.storageVersion===cloud.storageVersion||latest.current?.id!==remote.trip.id)return;
+  const poll=async()=>{if(pending)return;pending=true;try{if(!accessToken)await api('/api/session','POST',{action:'refresh'});const r=await fetch(`/api/trips/${cloud.id}`,{headers:accessToken?{Authorization:`Bearer ${accessToken}`}:{},cache:'no-store',signal:controller.signal});const data=await r.json();if(!r.ok)throw new APIError(data.error,r.status);const remote=cloudSchema.parse(data);if(!active||remote.storageVersion===cloud.storageVersion||latest.current?.id!==remote.trip.id)return;
    const local=latest.current;if(local&&fingerprint(local)!==saved.current){
     if(fingerprint(remote.trip)!==saved.current){setConflict(true);setMessage('다른 기기에서 변경되었어요. 로컬 수정안을 보존했습니다. 최신 일정을 읽은 뒤 다시 저장해 주세요.');}
     setCloud(remote);remember(remote);
@@ -45,7 +45,7 @@ export default function FamilySync({trip,onTrip,onOpen,initialCloud,accessToken,
   }catch(e){if(active){unauthorized(e);if(e instanceof APIError)setMessage(e.message);}}finally{pending=false;}};const timer=setInterval(poll,5000);return ()=>{active=false;controller.abort();clearInterval(timer);};
  },[cloud?.id,cloud?.storageVersion,accessToken]);
  async function action(fn:()=>Promise<void>){setBusy(true);setMessage('');try{await fn();}catch(e){unauthorized(e);setMessage(e instanceof Error?e.message:'연결을 확인해 주세요.');}finally{setBusy(false);}}
- if(!available)return <section hidden={hidden} className="cloud-panel no-print"><h2>서버 보관·가족 확인</h2><p>서버 저장소가 연결되면 여러 기기에서 일정과 의견을 확인할 수 있어요. 현재는 로컬 보관함·JSON 내보내기를 사용할 수 있습니다.</p></section>;
+ if(!available)return <section hidden={hidden} className="cloud-panel no-print"><h2>서버 보관·가족 확인</h2><p>서버 저장소·세션과 최신 DB 설정이 준비되면 여러 기기에서 일정과 의견을 확인할 수 있어요. 현재는 로컬 보관함·JSON 내보내기를 사용할 수 있습니다.</p></section>;
  return <section hidden={hidden} className="cloud-panel no-print"><h2>서버 보관·가족 확인</h2><p>서버 여행은 마지막 저장 후 30일간 보관합니다. 공유 링크는 7일간 유효하며, 링크를 가진 사람이 접근할 수 있습니다. 부모님 확인 링크는 의견만 남길 수 있고, 편집 링크는 일정 수정도 허용합니다.</p>
  <div className="schedule-actions"><button className="secondary" disabled={busy||restoring} onClick={()=>action(async()=>{await session();const result=await api('/api/trips');setList(result.trips);setMessage(result.trips.length?'서버 보관함을 불러왔어요.':'서버에 저장된 여행이 없어요.');})}>서버 보관함 열기</button>
  {trip&&<button className="secondary" disabled={busy||restoring||conflict||cloud?.role==='viewer'} onClick={()=>action(async()=>{if(!accessToken)await session();const submitted=trip;let result=cloudSchema.parse(cloud?await api(`/api/trips/${cloud.id}`,'PUT',{trip:submitted,storageVersion:cloud.storageVersion}):await api('/api/trips','POST',submitted));

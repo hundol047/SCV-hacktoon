@@ -1,0 +1,3 @@
+import {appURL} from './config';
+import {z} from 'zod';
+export async function verifyBot(token:unknown,action:string,fetcher:typeof fetch=fetch){const secret=process.env.BOPok_TURNSTILE_SECRET;if(!secret)return process.env.BOPok_REQUIRE_BOT!=='true';const parsed=z.string().min(1).max(2048).safeParse(token);if(!parsed.success)return false;try{const response=await fetcher('https://challenges.cloudflare.com/turnstile/v0/siteverify',{method:'POST',body:new URLSearchParams({secret,response:parsed.data}),signal:AbortSignal.timeout(10000)});const data=await response.json();return response.ok&&data.success===true&&data.action===action&&!!appURL()&&data.hostname===new URL(appURL()!).hostname;}catch{return false;}}

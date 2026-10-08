@@ -1,0 +1,62 @@
+name: Deploy verified Bopok
+on:
+  workflow_dispatch:
+    inputs:
+      production:
+        description: Deploy to production after a healthy preview
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: bopok-deployment
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment: ${{ inputs.production && 'production' || 'preview' }}
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Require deployment credentials
+        run: |
+          test -n "$VERCEL_TOKEN" && test -n "$VERCEL_ORG_ID" && test -n "$VERCEL_PROJECT_ID"
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium firefox webkit
+      - run: npm run test:e2e
+      - name: Load Vercel project configuration
+        run: npx --yes vercel@63.1.0 pull --yes --environment=preview --token="$VERCEL_TOKEN"
+      - name: Build and deploy a preview
+        id: preview
+        run: |
+          npx --yes vercel@63.1.0 build --token="$VERCEL_TOKEN"
+          deploy_url=$(npx --yes vercel@63.1.0 deploy --prebuilt --token="$VERCEL_TOKEN")
+          echo "url=$deploy_url" >> "$GITHUB_OUTPUT"
+      - name: Verify preview readiness
+        env:
+          BOPok_DEPLOY_URL: ${{ steps.preview.outputs.url }}
+        run: node scripts/probe-deployment.mjs
+      - name: Deploy production
+        if: inputs.production
+        run: |
+          npx --yes vercel@63.1.0 pull --yes --environment=production --token="$VERCEL_TOKEN"
+          npx --yes vercel@63.1.0 build --prod --token="$VERCEL_TOKEN"
+          deploy_url=$(npx --yes vercel@63.1.0 deploy --prebuilt --prod --token="$VERCEL_TOKEN")
+          BOPok_DEPLOY_URL="$deploy_url" node scripts/probe-deployment.mjs
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: deployment-test-evidence
+          path: test-results
+          retention-days: 7

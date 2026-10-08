@@ -1,6 +1,6 @@
 {
   "name": "bopok",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -9,16 +9,24 @@
     "start": "node scripts/start.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:postgres": "node scripts/test-postgres-backup.mjs",
+    "test:load": "node scripts/load-check.mjs",
+    "test:devices": "node scripts/test-physical-devices.mjs",
+    "probe:deployment": "node scripts/probe-deployment.mjs",
+    "probe:providers": "node scripts/probe-providers.mjs"
   },
   "dependencies": {
     "lucide-react": "1.52.0",
     "next": "16.4.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
+    "tz-lookup": "6.1.25",
+    "world-countries": "5.1.0",
     "zod": "4.6.5"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
     "@electric-sql/pglite": "^0.5.8",
     "@playwright/test": "1.64.0",
     "@types/node": "^24.0.0",

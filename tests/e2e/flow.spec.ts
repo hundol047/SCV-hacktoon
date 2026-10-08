@@ -24,7 +24,7 @@ async function improve(page: Page) {
   await page.getByRole("button", { name: "수정안 적용", exact: true }).click();
 }
 test("시연 전체 흐름: 문제 점검, 비교, 적용, 부모님 의견, 재수정, 인쇄", async ({
-  page,
+  page,browserName,
 }) => {
   await demo(page);
   await expect(
@@ -69,9 +69,10 @@ test("시연 전체 흐름: 문제 점검, 비교, 적용, 부모님 의견, 재
   await expect(page.locator(".site-header")).toBeHidden();
   await expect(page.locator(".parent-feedback")).toBeHidden();
   await expect(page.locator(".demo-banner")).toBeVisible();
-  const pdf = await page.pdf({ format: "A4", printBackground: true });
+  if(browserName==='chromium'){const pdf = await page.pdf({ format: "A4", printBackground: true });
   expect(pdf.subarray(0, 4).toString()).toBe("%PDF");
-  expect(pdf.byteLength).toBeGreaterThan(10000);
+  expect(pdf.byteLength).toBeGreaterThan(10000);}
+  else expect((await page.screenshot()).byteLength).toBeGreaterThan(10000);
 });
 test("새 여행: 단계 입력, 생성, 새로고침 복원, 데이터 삭제", async ({
   page,

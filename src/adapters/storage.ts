@@ -19,7 +19,7 @@ export const draftSchema = z.object({
   step: z.number().int().min(0).max(2),
   existing: z.boolean(),
   importText: z.string().max(10000),
-  importItems: z.array(itemSchema).max(100),
+  importItems: z.array(itemSchema).max(1000),
   catalog:catalogSchema.optional(),
 });
 export type FormDraft = z.infer<typeof draftSchema>;

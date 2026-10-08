@@ -1,6 +1,7 @@
 import { Basics,Conditions,Item } from './schema';
 import { Catalog,catalogFor,indexCatalog } from '../data/catalog';
 import { Place } from '../data/demo';
+import {destinationFor} from './world';
 import { validateSchedule } from './validate';
 
 type Task={place:Place;kind:'visit'|'meal'}|{fixed:Item};
@@ -71,15 +72,15 @@ export function optimize(c:Conditions,b:Basics,original:Item[]=[],feedback:strin
     const items:Item[]=[],used=new Set<string>(),covered=new Set<string>(),notes=new Set<string>();
     const fewer=feedback.includes('걷는 구간을 줄여 주세요'),restMin=(c.restMin??20)+(feedback.includes('쉬는 시간을 늘려 주세요')?10:0);
     for(let day=1;day<=b.days;day++){
-      let candidates=availableVisits.filter(p=>!used.has(p.id));
-      if(!candidates.length&&availableVisits.length){candidates=availableVisits;notes.add('추가 관광 후보가 없어 일부 장소를 반복했습니다. 다른 후보를 조회하거나 직접 선택해 주세요.');}
+      const dayRegion=destinationFor(b,day)?.region,cityVisits=availableVisits.filter(p=>!dayRegion||(p.region??catalog.region)===dayRegion);let candidates=cityVisits.filter(p=>!used.has(p.id));
+      if(!candidates.length&&cityVisits.length){candidates=cityVisits;notes.add('추가 관광 후보가 없어 일부 장소를 반복했습니다. 다른 후보를 조회하거나 직접 선택해 주세요.');}
       candidates.sort((a,b)=>c.requiredExperiences.filter(x=>!covered.has(x)&&b.experiences.includes(x)).length-c.requiredExperiences.filter(x=>!covered.has(x)&&a.experiences.includes(x)).length||requested.filter(x=>!covered.has(x)&&b.experiences.includes(x)).length-requested.filter(x=>!covered.has(x)&&a.experiences.includes(x)).length);
       const count=fewer?1:Math.min(2,Math.max(1,Math.ceil(candidates.length/(b.days-day+1))));
       const selected=candidates.slice(0,count);
       // Keep required experiences even when the request asks for fewer visits.
       if(day===b.days)for(const experience of c.requiredExperiences)if(!covered.has(experience)&&!selected.some(p=>p.experiences.includes(experience))){const p=candidates.find(p=>p.experiences.includes(experience));if(p&&!selected.includes(p))selected.push(p);}
-      let mealCandidates=availableMeals;
-      if(feedback.includes('식사를 바꾸고 싶어요')){const alternatives=availableMeals.filter(p=>!original.some(i=>i.kind==='meal'&&i.placeId===p.id));if(alternatives.length)mealCandidates=alternatives;else notes.add('다른 식당 후보가 없어 식사를 바꾸지 못했습니다. 메뉴·회피 음식 정보도 확인해 주세요.');}
+      let mealCandidates=availableMeals.filter(p=>!dayRegion||(p.region??catalog.region)===dayRegion);
+      if(feedback.includes('식사를 바꾸고 싶어요')){const alternatives=mealCandidates.filter(p=>!original.some(i=>i.kind==='meal'&&i.placeId===p.id));if(alternatives.length)mealCandidates=alternatives;else notes.add('다른 식당 후보가 없어 식사를 바꾸지 못했습니다. 메뉴·회피 음식 정보도 확인해 주세요.');}
       const meal=[...mealCandidates].sort((a,b)=>Number(used.has(a.id))-Number(used.has(b.id))+c.foodLikes.filter(x=>b.foods.value?.includes(x)).length-c.foodLikes.filter(x=>a.foods.value?.includes(x)).length)[0];
       if(meal){if(used.has(meal.id))notes.add('식당 후보가 부족해 식당을 반복했습니다. 다른 식당 후보를 추가해 주세요.');selected.splice(Math.min(1,selected.length),0,meal);}
       let cursor=570,last:string|null=null;
@@ -115,14 +116,14 @@ export function optimize(c:Conditions,b:Basics,original:Item[]=[],feedback:strin
     const fixedVisits=anchors.filter(a=>a.fixed.kind==='visit').length,hasMeal=anchors.some(a=>a.fixed.kind==='meal');
     const next:State[]=[];
     for(const state of beam){
-      let considered=0;const allowance=Math.floor(MAX_SEARCH/beam.length);
-      const sorted=[...visits].sort((a,b)=>requested.filter(e=>!state.covered.has(e)&&b.experiences.includes(e)).length-requested.filter(e=>!state.covered.has(e)&&a.experiences.includes(e)).length||(a.walkMin.value??0)-(b.walkMin.value??0));
+      let considered=0;const allowance=Math.max(1,Math.floor(MAX_SEARCH/b.days/beam.length));
+      const dayRegion=destinationFor(b,day)?.region;const sorted=[...visits].filter(p=>!dayRegion||(p.region??catalog.region)===dayRegion).sort((a,b)=>requested.filter(e=>!state.covered.has(e)&&b.experiences.includes(e)).length-requested.filter(e=>!state.covered.has(e)&&a.experiences.includes(e)).length||(a.walkMin.value??0)-(b.walkMin.value??0)).slice(0,12);
       const counts=[Math.max(0,2-fixedVisits),Math.max(0,1-fixedVisits),Math.max(0,3-fixedVisits)].filter((n,i,a)=>a.indexOf(n)===i);
       if(feedback.includes('걷는 구간을 줄여 주세요'))counts.sort((a,b)=>a-b);
       const variants:Place[][]=[];
       function combinations(prefix:Place[],count:number){if(!count){variants.push(prefix);return;}for(const p of sorted)if(!prefix.some(q=>q.id===p.id))combinations([...prefix,p],count-1);}
       for(const count of counts)combinations([],count);
-      outer:for(const variant of variants)for(const meal of hasMeal?[null]:meals){
+      outer:for(const variant of variants)for(const meal of hasMeal?[null]:meals.filter(p=>!dayRegion||(p.region??catalog.region)===dayRegion).slice(0,12)){
         const mealPositions=meal?Array.from({length:variant.length+1},(_,i)=>i):[-1];
         // Prefer lunch after the first visit while still exploring every placement.
         mealPositions.sort((a,b)=>Math.abs(a-1)-Math.abs(b-1));
@@ -131,7 +132,7 @@ export function optimize(c:Conditions,b:Basics,original:Item[]=[],feedback:strin
             if(++considered>allowance){limited=true;break outer;}searched++;
             const rows=buildDay(tasks,day,c,b,catalog,restMin);if(!rows)continue;
             const dayRows=rows.map(i=>({...i,day:1}));
-            const report=validateSchedule(dayRows,{...c,requiredExperiences:[]},{...b,days:1},catalog);
+            const report=validateSchedule(dayRows,{...c,requiredExperiences:[]},{...b,days:1,destinations:undefined,expenses:undefined,transfers:undefined},catalog);
             if(report.issues.some(i=>i.status==='violation'||i.status==='conflict'))continue;
             if(state.cost+report.cost>b.budget)continue;
             const items=[...state.items,...rows];

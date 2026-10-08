@@ -28,6 +28,9 @@ export type Place = {
   cost: Fact<number>;
   hours: Fact<[number, number]>;
   situations: Fact<string[]>;
+  review?: {reviewId:string;signature:string;checkedAt:string};
+  region?:string;
+  currency?:string;
   latitude?: number;
   longitude?: number;
 };
@@ -130,10 +133,11 @@ export const places: Place[] = names.map((name, i) => {
 });
 export const placeById = new Map(places.map((p) => [p.id, p]));
 export type Route = {
+  departureAt?:string;
   id: string;
   fromId: string;
   toId: string;
-  transport: "walk" | "taxi";
+  transport: "walk" | "taxi" | "driving" | "transit";
   duration: Fact<number>;
   walkMin: Fact<number>;
   walkM: Fact<number>;
@@ -193,7 +197,7 @@ export const routeById = new Map(routes.map((r) => [r.id, r]));
 export const getRoute = (
   from: string | null,
   to: string | null,
-  t: "walk" | "taxi" | null,
+  t: "walk" | "taxi" | "driving" | "transit" | null,
 ) => routeById.get(`r:${from}:${to}:${t}`);
 export const evidenceIds = new Set([
   ...places.flatMap((p) =>

@@ -1,5 +1,8 @@
 import { Conditions, Item, Basics, time } from "./schema";
 import { Catalog,catalogFor,indexCatalog } from '../data/catalog';
+import {destinationFor,convertMoney,localInstant,money} from './world';
+import {dayDate} from './schema';
+import {isReviewed} from './verification';
 export type Issue = {
   code: string;
   status: "violation" | "unknown" | "conflict";
@@ -57,6 +60,12 @@ export function validateSchedule(
       `피하고 싶은 상황(${c.avoidSituations.join(", ")})은 후보에 기록된 정보 범위만 확인할 수 있습니다.`,
     );
   let cost = 0;
+  const price=(amount:number|null,currency:string|undefined,id:string)=>{if(amount===null)return 0;const converted=convertMoney(amount,currency??'KRW',b.currency??'KRW',catalog);if(converted===null){add('exchange-rate','unknown',[id],'해당 통화의 최신 환율이 없어 전체 예산을 판정할 수 없습니다.');return 0;}return converted;};
+  for(const expense of b.expenses??[]){if(expense.amount===null)add('expense-unknown','unknown',[],'추가 비용 '+expense.label+' 금액을 확인해 주세요.');else cost+=price(expense.amount,expense.currency,expense.label);}
+  if(b.mode==='real'&&b.days>1&&!b.expenses?.some(e=>e.category==='lodging'))add('lodging-cost','unknown',[],'숙박 비용이 기록되지 않아 전체 여행 예산은 미확인입니다. 숙박 비용이 없으면 0으로 기록해 주세요.');
+  if((b.destinations?.length??0)>1&&!b.expenses?.some(e=>e.category==='intercity'))add('intercity-cost','unknown',[],'도시 간 교통 비용을 추가 비용에 기록해 주세요.');
+  const transfers=b.transfers??[];for(const transfer of transfers){if(Date.parse(transfer.arrival)<=Date.parse(transfer.departure))add('transfer-time','violation',[],'도시 간 도착 시각은 출발 시각보다 늦어야 합니다.');add('transfer-evidence','unknown',[],'도시 간 '+transfer.fromRegion+' → '+transfer.toRegion+' 이동은 사용자 시간표 기록입니다. 운행·예약 상태를 출발 전에 확인해 주세요.');}
+  for(let day=2;day<=b.days;day++){const before=destinationFor(b,day-1),after=destinationFor(b,day);if(before&&after&&before.region!==after.region){const transfer=transfers.find(t=>t.fromRegion===before.region&&t.toRegion===after.region);if(!transfer)add('intercity-transfer','unknown',[],day+'일차 도시를 바꾸는 이동 시간표가 없습니다.');else{const prior=items.filter(i=>i.day===day-1).sort((a,b)=>b.end-a.end)[0],next=items.filter(i=>i.day===day).sort((a,b)=>a.start-b.start)[0];try{if(prior&&Date.parse(localInstant(dayDate(b,day-1),prior.end,before.timezone))>Date.parse(transfer.departure)||next&&Date.parse(localInstant(dayDate(b,day),next.start,after.timezone))<Date.parse(transfer.arrival))add('intercity-overlap','violation',[],'도시 간 이동 시각과 현지 일정이 겹칩니다.');}catch{add('timezone-ambiguous','unknown',[],'일광절약시간 전환일의 현지 시각을 확인해 주세요.');}}}}
   const ids = new Set<string>();
   for (let day = 1; day <= b.days; day++) {
     const rows = items
@@ -103,7 +112,7 @@ export function validateSchedule(
         meters: number | null = 0,
         evidence: string[] = [];
       if (i.kind === "move") {
-        const r = getRoute(i.fromId, i.toId, i.transport);
+        let departure:string|undefined;try{if(i.transport==='transit')departure=localInstant(dayDate(b,day),i.start,destinationFor(b,day)?.timezone??b.timezone);}catch{add('timezone-ambiguous','unknown',[i.id],'대중교통 출발 시각의 시간대 오프셋을 확인해 주세요.');}const r = i.transport==='transit'&&!departure?undefined:getRoute(i.fromId, i.toId, i.transport,departure);
         if (c.avoidStairs && r) {
           if (r.stairs.value === true)
             add(
@@ -136,7 +145,7 @@ export function validateSchedule(
           wm = r.walkMin.value;
           meters = r.walkM.value;
           evidence = [r.walkMin.evidenceId, r.walkM.evidenceId];
-          cost += r.cost.value ?? 0;
+          cost += price(r.cost.value,placeById.get(r.fromId)?.currency,i.id);
           if(b.mode==='real'&&r.cost.value===null)add('cost-unknown','unknown',[i.id],'이동 비용은 미확인입니다. 예산 충족을 판정할 수 없습니다.',[r.cost.evidenceId]);
           if (i.end - i.start < r.duration.value)
             add(
@@ -160,6 +169,7 @@ export function validateSchedule(
         wm = null;
         meters = null;
       } else {
+        const destination=destinationFor(b,day);if(destination&&p.region&&p.region!==destination.region)add('wrong-city','violation',[i.id],'이 날짜에 지정한 도시 밖의 장소입니다.');
         if (p.kind !== i.kind && i.kind !== "rest")
           add(
             "place-kind",
@@ -179,7 +189,7 @@ export function validateSchedule(
           wm = p.walkMin.value;
           meters = p.walkM.value;
           evidence = [p.walkMin.evidenceId, p.walkM.evidenceId];
-          cost += p.cost.value ?? 0;
+          cost += price(p.cost.value,p.currency,i.id);
         }
         if (
           p.hours.value &&
@@ -210,7 +220,9 @@ export function validateSchedule(
           if(p.hours.value===null)add('hours-unknown','unknown',[i.id],'운영 시간·휴무일을 확인해 주세요.',[p.hours.evidenceId]);
           if(p.cost.value===null)add('cost-unknown','unknown',[i.id],'이 항목 비용은 미확인입니다. 예산 충족을 판정할 수 없습니다.',[p.cost.evidenceId]);
           const facts=[p.walkMin,p.walkM,p.stairs,p.seat,p.foods,p.cost,p.hours,p.situations];
-          if(facts.some(f=>f.checked==='user'))add('user-evidence','unknown',[i.id],'사용자가 기록한 시설·메뉴 정보입니다. 서비스가 독립적으로 검증하지 않았으니 출발 전에 다시 확인해 주세요.',facts.filter(f=>f.checked==='user').map(f=>f.evidenceId));
+          if(!isReviewed(p)&&facts.some(f=>f.value!==null&&f.checked==='source'))add('source-review','unknown',[i.id],'출처에 등록된 시설 정보는 독립 검토 전입니다. 현지 상태를 확인해 주세요.');
+          if(!isReviewed(p)&&facts.some(f=>f.checked==='user'))add('user-evidence','unknown',[i.id],'사용자가 기록한 시설·메뉴 정보입니다. 서비스가 독립적으로 검증하지 않았으니 출발 전에 다시 확인해 주세요.',facts.filter(f=>f.checked==='user').map(f=>f.evidenceId));
+          if(p.review&&!isReviewed(p))add('review-invalid','unknown',[i.id],'독립 검토 서명을 확인하지 못했습니다. 기록을 다시 조회해 주세요.');
           if(!catalog.collectedAt||Date.now()-Date.parse(catalog.collectedAt)>7*86400000||facts.some(f=>f.value!==null&&(!f.collectedAt||Date.now()-Date.parse(f.collectedAt)>7*86400000)))add('stale-data','unknown',[i.id],'자료 수집 후 7일 이상 지났거나 수집 시각이 없습니다. 최신 정보 확인이 필요합니다.');
         }
         if (c.avoidSituations.some((v) => p.situations.value?.includes(v)))
@@ -372,7 +384,7 @@ export function validateSchedule(
       "budget",
       "violation",
       [],
-      `예상 항목 비용 ${cost.toLocaleString()}원이 예산을 넘어요. (숙박·지역 도착 비용 제외)`,
+      `확인된 비용 ${money(cost,b.currency)}이 전체 예산을 넘어요.`,
     );
   return {
     status: issues.some((x) => x.status === "conflict")

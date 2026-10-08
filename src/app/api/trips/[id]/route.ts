@@ -1,3 +1,4 @@
+import {quotaLimit} from '../../../../server/config';
 import {z} from 'zod';
 import {TripStore,configuredRPC,StoreError} from '../../../../server/store';
 import {ownerOf,capabilityOf,sameOrigin,json,readJSON,token,hash} from '../../../../server/security';
@@ -13,7 +14,7 @@ async function handle(request:Request,context:Context,method:string){
     if(method==='GET')return json(await store.get(owner,id,cap));
     if(method==='DELETE')return json(await store.action('delete',owner,id,cap));
     const body=await readJSON(request);
-    if(method==='PUT'){const p=z.object({trip:tripSchema,storageVersion:z.number().int().nonnegative()}).parse(body);if(!(await store.reserve(hash('storage:'+(owner||cap)),{scope:'storage',minuteLimit:10,dailyRequests:1000})).allowed)return json({error:'저장 요청 한도에 도달했습니다. 잠시 후 다시 저장해 주세요.'},429);return json(await store.update(owner,id,cap,p.trip,p.storageVersion));}
+    if(method==='PUT'){const p=z.object({trip:tripSchema,storageVersion:z.number().int().nonnegative()}).parse(body);if(!(await store.reserve(hash('storage:'+(owner||cap)),{scope:'storage',minuteLimit:10,dailyRequests:quotaLimit('BOPok_STORAGE_DAILY_LIMIT',1000)})).allowed)return json({error:'저장 요청 한도에 도달했습니다. 잠시 후 다시 저장해 주세요.'},429);return json(await store.update(owner,id,cap,p.trip,p.storageVersion));}
     const action=z.object({action:z.enum(['feedback','invite','revoke']),text:feedbackSchema.shape.text.optional(),role:z.enum(['viewer','editor']).optional()}).parse(body);
     if(action.action==='feedback'){if(!action.text)return json({error:'의견을 선택해 주세요.'},400);const current=await store.get(owner,id,cap);const quota=await store.reserve(hash('feedback:'+cap+owner),{scope:'feedback',minuteLimit:10,dailyRequests:5000});if(!quota.allowed)return json({error:'잠시 후 의견을 다시 남겨 주세요.'},429);return json(await store.action('feedback',owner,current.id,cap,{text:action.text}));}
     if(action.action==='invite'){const raw=token();const result=await store.action('invite',owner,id,hash(raw),undefined,undefined,action.role??'viewer');return json({...result,fragment:`trip=${id}&token=${raw}`});}

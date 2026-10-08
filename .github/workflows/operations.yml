@@ -1,0 +1,68 @@
+name: Monitor and verify encrypted backups
+on:
+  workflow_dispatch:
+    inputs:
+      backup:
+        type: boolean
+        default: false
+        description: Create encrypted backup and restore into an isolated test database
+  schedule:
+    - cron: '17 * * * *'
+    - cron: '31 18 * * *'
+permissions:
+  contents: read
+jobs:
+  monitor:
+    if: vars.BOPok_OPERATIONS_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: node scripts/monitor.mjs
+        env:
+          BOPok_DEPLOY_URL: ${{ vars.BOPok_DEPLOY_URL }}
+          BOPok_OPS_SECRET: ${{ secrets.BOPok_OPS_SECRET }}
+  backup:
+    if: vars.BOPok_OPERATIONS_ENABLED == 'true' && (inputs.backup || github.event_name == 'schedule' && github.event.schedule == '31 18 * * *')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17-bookworm
+        env:
+          POSTGRES_PASSWORD: isolated-restore-test-password
+        ports: ['5432:5432']
+        options: --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Prepare isolated restore roles
+        run: docker exec '${{ job.services.postgres.id }}' psql -U postgres -X -v ON_ERROR_STOP=1 -c 'create role anon; create role authenticated; create role service_role;'
+        env:
+          PGHOST: localhost
+          PGUSER: postgres
+          PGPASSWORD: isolated-restore-test-password
+      - name: Back up, authenticate and restore
+        run: |
+          node scripts/backup.mjs backup database.enc
+          node scripts/backup.mjs restore database.enc
+        env:
+          BOPok_PG_CLIENT_CONTAINER: ${{ job.services.postgres.id }}
+          BOPok_DATABASE_URL: ${{ secrets.BOPok_DATABASE_URL }}
+          BOPok_BACKUP_KEY: ${{ secrets.BOPok_BACKUP_KEY }}
+          BOPok_RESTORE_DATABASE_URL: postgresql://postgres:isolated-restore-test-password@localhost:5432/postgres
+      - name: Record verified backup
+        run: node scripts/record-backup.mjs
+        env:
+          BOPok_DEPLOY_URL: ${{ vars.BOPok_DEPLOY_URL }}
+          BOPok_OPS_SECRET: ${{ secrets.BOPok_OPS_SECRET }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: encrypted-database-backup
+          path: database.enc
+          retention-days: 7

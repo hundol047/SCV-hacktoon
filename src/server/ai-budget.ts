@@ -1,3 +1,4 @@
+import {hasAccount,accountOf,authRequired} from './account';
 import {TripStore,configuredRPC} from './store';
 import {ownerOf,issueSession,verifySession,COOKIE,sameOrigin} from './security';
 export type AIGate={allowed:boolean;message:string;cookie?:string;usage?:{reservedTokens:number;reservedCostUsd:number}};
@@ -7,6 +8,7 @@ export async function reserveAI(request:Request):Promise<AIGate>{
   if(!rpc||!key||key.length<32)return {allowed:false,message:'AI 호출을 보내지 않았습니다. 서버 저장소·세션·분산 사용량 관리 설정이 필요합니다.'};
   const inputPrice=Number(process.env.BOPok_AI_INPUT_USD_PER_MILLION),outputPrice=Number(process.env.BOPok_AI_OUTPUT_USD_PER_MILLION);
   if(!Number.isFinite(inputPrice)||!Number.isFinite(outputPrice)||inputPrice<=0||outputPrice<=0)return {allowed:false,message:'AI 호출을 보내지 않았습니다. 선택한 모델의 토큰 단가 설정이 필요합니다.'};
+  if((hasAccount(request)||authRequired()||process.env.BOPok_REQUIRE_BOT==='true')&&!accountOf(request))return {allowed:false,message:'AI 호출에는 계정 로그인이 필요합니다.'};
   let subject=ownerOf(request),cookie:string|undefined;
   if(!subject){const signed=issueSession();subject=verifySession(signed)!;const secure=(process.env.BOPok_APP_URL??request.url).startsWith('https:');cookie=`${COOKIE}=${signed}; HttpOnly; SameSite=Strict; Path=/; Max-Age=2592000${secure?'; Secure':''}`;}
   const inputTokens=18000,outputTokens=1200,reservedTokens=inputTokens+outputTokens;

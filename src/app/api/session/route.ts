@@ -1,3 +1,5 @@
+import {quotaLimit} from '../../../server/config';
+import {accountOf,hasAccount,authRequired,AuthProvider,accountCookies,cookieValue,REFRESH_COOKIE} from '../../../server/account';
 import {z} from 'zod';
 import {configuredRPC,TripStore,StoreError} from '../../../server/store';
 import {ownerOf,sameOrigin,json,sessionResponse,hash,token,readJSON} from '../../../server/security';
@@ -6,6 +8,8 @@ export async function POST(request:Request){
  const rpc=configuredRPC();if(!rpc||(process.env.BOPok_SESSION_SECRET?.length??0)<32)return json({error:'서버 저장소와 세션 설정이 필요합니다.'},503);
  try{
   const body=z.object({action:z.enum(['renew','refresh','recovery-key','recover']).default('renew'),key:z.string().regex(/^[-\w]{43}$/).optional()}).parse(await readJSON(request,1000,true));
+  if(hasAccount(request)){const account=accountOf(request);if(body.action==='recover'||body.action==='recovery-key')return json({error:'계정 여행은 이메일 로그인으로 복구해 주세요.'},403);if(account&&account.exp>Date.now()/1000+600)return json({ready:true,authenticated:true});try{return accountCookies(request,json({ready:true,authenticated:true}),await new AuthProvider().refresh(cookieValue(request,REFRESH_COOKIE)??''));}catch{return json({error:'계정 로그인을 다시 완료해 주세요.'},401);}}
+  if(authRequired())return json({error:'계정 로그인이 필요합니다.'},401);
   const owner=ownerOf(request),store=new TripStore(rpc);
   if(body.action==='recover'){
    if(!body.key)return json({error:'보관한 복구 키를 입력해 주세요.'},400);
@@ -20,7 +24,7 @@ export async function POST(request:Request){
   }
   if(owner){await rpc.call('bopok_identity',{p_action:'touch',p_owner:owner});return sessionResponse(request,owner,{ready:true});}
   if(body.action==='refresh')return json({ready:false});
-  if(!(await store.reserve(hash('session-global'),{scope:'session',minuteLimit:60,dailyRequests:1000})).allowed)return json({error:'신규 세션 발급 한도에 도달했습니다. 잠시 후 다시 시도해 주세요.'},429);
+  if(!(await store.reserve(hash('session-global'),{scope:'session',minuteLimit:60,dailyRequests:quotaLimit('BOPok_SESSION_DAILY_LIMIT',1000)})).allowed)return json({error:'신규 세션 발급 한도에 도달했습니다. 잠시 후 다시 시도해 주세요.'},429);
   return sessionResponse(request,hash(token()),{ready:true});
  }catch(e){return json({error:'세션 요청 형식 또는 서버 연결을 확인해 주세요.'},e instanceof StoreError?503:400);}
 }

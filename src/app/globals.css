@@ -290,7 +290,7 @@ small {
   letter-spacing: 2px;
   position: relative;
   top: 11px;
-  color: #748270;
+  color: #45543f;
 }
 .art-caption {
   display: flex;
@@ -366,7 +366,7 @@ small {
 .step-number {
   font-size: 11px;
   letter-spacing: 1px;
-  color: #8a957f;
+  color: #596551;
   display: block;
   margin-bottom: 23px;
 }
@@ -1838,3 +1838,6 @@ summary {
 .library-row{display:block;width:100%;text-align:left;padding:14px;margin:8px 0;border:1px solid #ddd;border-radius:10px;background:white;color:#263b33}
 .cloud-panel input,.real-search input{display:block;width:100%;max-width:100%;padding:12px;margin:8px 0}
 .cloud-panel .schedule-actions{display:flex;gap:10px;flex-wrap:wrap}.cloud-panel button{max-width:100%}
+
+.day-tabs{max-width:100%;flex-wrap:wrap;min-width:0;}
+.world-plan,.cloud-panel{overflow-wrap:anywhere;}

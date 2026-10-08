@@ -39,11 +39,15 @@ import { DEMO_NOTICE } from "../data/demo";
 import {Catalog,catalogFor,demoCatalog,indexCatalog,emptyRealCatalog} from '../data/catalog';
 import {CatalogContext,useCatalog} from './CatalogContext';
 import RealSearch from './RealSearch';
+import WorldPlan from './WorldPlan';
+import {transportLabel,money,destinationFor,localInstant} from '../domain/world';
 import LibraryPanel from './LibraryPanel';
 import FamilySync from './FamilySync';
+import AccountPanel from './AccountPanel';
 import VenueFacts from './VenueFacts';
 import RouteLookup from './RouteLookup';
 import AIAdvice from './AIAdvice';
+import {verifyReviewed} from '../domain/verification';
 import type {CloudTrip} from '../server/store';
 import { validateSchedule, Report } from "../domain/validate";
 import {
@@ -122,6 +126,8 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
   const [selectedCatalog,setSelectedCatalog]=useState<Catalog>(demoCatalog),[library,setLibrary]=useState<Trip[]>([]);
   const currentCatalog=(screen==='conditions'||screen==='basics')?catalogFor(b.mode,selectedCatalog):catalogFor(trip?.basics.mode??'demo',trip?.catalog);
   const {placeById,getRoute}=indexCatalog(currentCatalog),places=currentCatalog.places;
+  const [,setVerificationTick]=useState(0);
+  useEffect(()=>{if(!trip?.catalog?.places.some(p=>p.review))return;let active=true;fetch('/api/verification?mode=key').then(r=>r.json()).then(async data=>{await Promise.all(trip.catalog!.places.filter(p=>p.review).map(p=>verifyReviewed(p,data.publicKey)));if(active)setVerificationTick(v=>v+1);}).catch(()=>{});return ()=>{active=false;};},[trip?.catalog]);
   const requestRevision = useRef(0);
   const activeRequest = useRef<AbortController | null>(null);
   useEffect(() => {
@@ -1002,7 +1008,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
                   <div className="field-grid">
                     <label>
                       여행 지역
-                      <select aria-label="데이터 모드" value={b.mode} onChange={e=>{const mode=e.target.value as Basics['mode'];setB({...b,mode,region:mode==='demo'?'가상 솔바다':'실제 지역'});setSelectedCatalog(mode==='demo'?demoCatalog:emptyRealCatalog);setImportItems([]);}}><option value="demo">가상 솔바다 · 시연</option><option value="real">전국·해외 실제 도시</option></select>
+                      <select aria-label="데이터 모드" value={b.mode} onChange={e=>{const mode=e.target.value as Basics['mode'];setB({...b,mode,region:mode==='demo'?'가상 솔바다':'실제 지역',days:Math.min(b.days,2),transport:'taxi',destinations:undefined,transfers:undefined,expenses:undefined,currency:'KRW'});setSelectedCatalog(mode==='demo'?demoCatalog:emptyRealCatalog);setImportItems([]);}}><option value="demo">가상 솔바다 · 시연</option><option value="real">전국·해외 실제 도시</option></select>
                     </label>
                     <label>
                       출발 날짜
@@ -1021,11 +1027,11 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
                         }
                       >
                         <option value={1}>당일 · 1일</option>
-                        <option value={2}>1박 2일</option>
+                        <option value={2}>1박 2일</option>{b.mode==='real'&&Array.from({length:28},(_,n)=><option key={n+3} value={n+3}>{n+3}일</option>)}
                       </select>
                     </label>
                     <label>
-                      일정 항목 예산 (원)
+                      전체 예산 ({b.currency??'KRW'})
                       <input
                         type="number"
                         min={0}
@@ -1036,7 +1042,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
                         }
                       />
                       <small>
-                        시연 항목 비용 합계 기준. 숙박·지역 도착 비용 제외.
+                        확인된 일정 비용과 추가 비용을 합산합니다. 미확인 금액은 별도로 표시합니다.
                       </small>
                     </label>
                     <label>
@@ -1051,7 +1057,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
                         }
                       >
                         <option value="taxi">택시</option>
-                        <option value="walk">도보</option>
+                        <option value="walk">도보</option>{b.mode==='real'&&<><option value="driving">자동차</option><option value="transit">대중교통</option></>}
                       </select>
                     </label>
                     <label>
@@ -1067,7 +1073,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
                       </select>
                     </label>
                   </div>
-                  {b.mode==='real'&&<><RealSearch onLoaded={catalog=>{setSelectedCatalog(catalog);setB({...b,region:catalog.region});setImportItems([]);}}/><label>현지 시간대 (IANA)<input value={b.timezone} onChange={e=>setB({...b,timezone:e.target.value})} placeholder="Asia/Seoul, Asia/Tokyo, Europe/Paris"/></label></>}
+                  {b.mode==='real'&&<><RealSearch onLoaded={catalog=>{setSelectedCatalog(catalog);const meta=catalog.cities?.[0];setB({...b,region:catalog.region,timezone:meta?.timezone??b.timezone,destinations:[{region:catalog.region,startDay:1,endDay:b.days,timezone:meta?.timezone??b.timezone,currency:meta?.currency??'KRW'}]});setImportItems([]);}}/><label>현지 시간대 (IANA)<input value={b.timezone} onChange={e=>setB({...b,timezone:e.target.value})} placeholder="Asia/Seoul, Asia/Tokyo, Europe/Paris"/></label>{selectedCatalog.places.length>0&&<WorldPlan basics={b} catalog={selectedCatalog} onChange={(basics,catalog)=>{setB(basics);setSelectedCatalog(catalog);}}/>}</>}
                   {existing && (
                     <section className="importer">
                       <h2>기존 일정 입력</h2>
@@ -1157,7 +1163,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
                 <h1 tabIndex={-1}>{trip.basics.title}</h1>
                 <p>
                   {trip.basics.region} · {trip.basics.date}부터{" "}
-                  {trip.basics.days}일 · {trip.basics.timezone}
+                  {trip.basics.days}일 · 도시별 현지 시간
                 </p>
               </div>
               <button className="secondary" onClick={() => navigate("parent")}>
@@ -1194,6 +1200,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
                     {edit ? "편집 마치기" : "직접 수정"}
                   </button>
                 </div>
+                <p className="helper">{destinationFor(trip.basics,day)?.region??trip.basics.region} · {destinationFor(trip.basics,day)?.timezone??trip.basics.timezone} 현지 시간</p>
                 {edit ? (
                   <Editor
                     items={trip.items}
@@ -1201,7 +1208,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
                     onChange={manualEdit}
                   />
                 ) : (
-                  <Timeline
+                  <Timeline basics={trip.basics}
                     items={trip.items.filter((i) => i.day === day)}
                     report={report}
                   />
@@ -1284,7 +1291,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
                     않습니다.
                   </p>
                   <p>
-                    예상 항목 비용 {report.cost.toLocaleString()}원<br />
+                    확인된 전체 비용 {money(report.cost,trip.basics.currency)}<br />
                     숙박·지역 도착 비용 제외
                   </p>
                 </div>
@@ -1323,13 +1330,13 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
                 <h2>
                   원래 일정 <span>BEFORE</span>
                 </h2>
-                <Timeline items={trip.items} report={report!} showDay />
+                <Timeline basics={trip.basics} items={trip.items} report={report!} showDay />
               </section>
               <section>
                 <h2>
                   제안 일정 <span>AFTER</span>
                 </h2>
-                <Timeline
+                <Timeline basics={trip.basics}
                   items={proposal.items}
                   report={validateSchedule(
                     proposal.items,
@@ -1412,7 +1419,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
                   {idx + 1}일차 <span>{dayDate(trip.basics, idx + 1)}</span>
                 </h2>
                 <p>
-                  오늘의 경험:{" "}
+                  {destinationFor(trip.basics,idx+1)?.region??trip.basics.region} · {destinationFor(trip.basics,idx+1)?.timezone??trip.basics.timezone} 현지 시간<br/>오늘의 경험:{" "}
                   {[
                     ...new Set(
                       trip.items
@@ -1429,9 +1436,9 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
                   .sort((a, b) => a.start - b.start)
                   .map((i) => {
                     const p = placeById.get(i.placeId ?? "");
-                    const r =
+                    let departure:string|undefined;try{if(i.transport==='transit')departure=localInstant(dayDate(trip.basics,i.day),i.start,destinationFor(trip.basics,i.day)?.timezone??trip.basics.timezone);}catch{}const r =
                       i.kind === "move"
-                        ? getRoute(i.fromId, i.toId, i.transport)
+                        ? getRoute(i.fromId, i.toId, i.transport,departure)
                         : null;
                     return (
                       <article className="parent-item" key={i.id}>
@@ -1445,7 +1452,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
                             {i.kind === "rest"
                               ? `${i.end - i.start}분 쉬어요. ${p?.seat.value === true ? "자료에 앉을 자리가 있다고 표시된 공간입니다." : "앉을 자리 확인이 필요해요."}`
                               : i.kind === "move"
-                                ? `${i.transport === "walk" ? "걸어서" : "택시로"} 이동해요. 예상 ${r?.duration.value ?? "확인 필요"}분.`
+                                ? `${i.transport?transportLabel[i.transport]:'이동 수단 미확인'}로 이동해요. 예상 ${r?.duration.value ?? "확인 필요"}분.`
                                 : (p?.description ?? "장소를 확인해 주세요.")}
                           </p>
                           {i.kind !== "rest" && (
@@ -1521,7 +1528,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
               </button>
             </section>
           )}
-        <FamilySync trip={trip} onTrip={t=>{setTrip(t);if(proposal){setProposal(null);if(screen==='compare'){navigate('result');setNotice('공유 일정이 갱신되어 수정안을 다시 만들어 주세요.');}}}} onOpen={()=>{setDay(1);navigate('result');}} initialCloud={initialCloud} accessToken={accessToken} hidden={screen!=='home'&&screen!=='result'}/>
+        <AccountPanel/><FamilySync trip={trip} onTrip={t=>{setTrip(t);if(proposal){setProposal(null);if(screen==='compare'){navigate('result');setNotice('공유 일정이 갱신되어 수정안을 다시 만들어 주세요.');}}}} onOpen={()=>{setDay(1);navigate('result');}} initialCloud={initialCloud} accessToken={accessToken} hidden={screen!=='home'&&screen!=='result'}/>
       </main>
       <footer className="site-footer no-print">
         <div className="footer-brand">
@@ -1701,11 +1708,11 @@ function itemName(i: Item,catalog:Catalog=demoCatalog) {
   return placeById.get(i.placeId ?? "")?.name ?? "장소 미확인";
 }
 function Timeline({
-  items,
+  basics,items,
   report,
   showDay = false,
 }: {
-  items: Item[];
+  basics:Basics;items: Item[];
   report: Report;
   showDay?: boolean;
 }) {
@@ -1721,7 +1728,7 @@ function Timeline({
         .sort((a, b) => a.day - b.day || a.start - b.start)
         .map((i) => {
           const p = placeById.get(i.placeId ?? "");
-          const r = getRoute(i.fromId, i.toId, i.transport);
+          let departure:string|undefined;try{if(i.transport==='transit')departure=localInstant(dayDate(basics,i.day),i.start,destinationFor(basics,i.day)?.timezone??basics.timezone);}catch{}const r = getRoute(i.fromId, i.toId, i.transport,departure);
           const problems = report.issues.filter((x) =>
             x.itemIds.includes(i.id),
           );
@@ -1759,9 +1766,7 @@ function Timeline({
                 ) : (
                   <p>
                     {i.kind === "move"
-                      ? i.transport === "taxi"
-                        ? "택시 이동"
-                        : "도보 이동"
+                      ? (i.transport?transportLabel[i.transport]:'미확인')+' 이동'
                       : "장소 내부 보행"}{" "}
                     ·{" "}
                     {i.kind === "move"
@@ -1954,7 +1959,7 @@ function Editor({
                     }
                   >
                     <option value="taxi">택시</option>
-                    <option value="walk">도보</option>
+                    <option value="walk">도보</option>{catalog.mode==='real'&&<><option value="driving">자동차</option><option value="transit">대중교통</option></>}
                   </select>
                 </label>
               </>
@@ -1988,7 +1993,7 @@ function Editor({
       ))}
       <button
         className="secondary"
-        disabled={items.length >= 100}
+        disabled={items.length >= 1000}
         onClick={() =>
           onChange([
             ...items,
