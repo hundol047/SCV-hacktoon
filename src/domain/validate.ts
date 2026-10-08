@@ -1,6 +1,6 @@
 import { Conditions, Item, Basics, time } from "./schema";
 import { Catalog,catalogFor,indexCatalog } from '../data/catalog';
-import {destinationFor,convertMoney,localInstant,money,isTravelOnlyDay,transferForTransition} from './world';
+import {destinationFor,convertMoney,localInstant,money,isTravelOnlyDay,transferForTransition,freshAt} from './world';
 import {dayDate} from './schema';
 import {isReviewed} from './verification';
 export type Issue = {
@@ -116,6 +116,8 @@ export function validateSchedule(
         evidence: string[] = [];
       if (i.kind === "move") {
         let departure:string|undefined;try{if(i.transport==='transit')departure=localInstant(dayDate(b,day),i.start,destinationFor(b,day)?.timezone??b.timezone);}catch{add('timezone-ambiguous','unknown',[i.id],'대중교통 출발 시각의 시간대 오프셋을 확인해 주세요.');}const r = i.transport==='transit'&&!departure?undefined:getRoute(i.fromId, i.toId, i.transport,departure);
+        if(lastPlace&&i.fromId!==lastPlace)add('route-origin','violation',[i.id],'이동 출발지가 직전 장소와 다릅니다.');
+        const destination=destinationFor(b,day);if(destination&&[i.fromId,i.toId].some(id=>{const place=placeById.get(id??'');return place?.region&&place.region!==destination.region;}))add('wrong-city','violation',[i.id],'이 날짜에 지정한 도시 밖으로 이동합니다. 도시 간 이동 기록을 확인해 주세요.');
         if (c.avoidStairs && r) {
           if (r.stairs.value === true)
             add(
@@ -144,7 +146,7 @@ export function validateSchedule(
           wm = null;
           meters = null;
         } else {
-          if(b.mode==='real'&&(!r.duration.collectedAt||Date.now()-Date.parse(r.duration.collectedAt)>86400000))add('stale-route','unknown',[i.id],'경로 수집 후 하루 이상 지났거나 수집 시각이 없습니다. 출발 전에 다시 조회해 주세요.',[r.duration.evidenceId]);
+          if(b.mode==='real'&&!freshAt(r.duration.collectedAt,86400000))add('stale-route','unknown',[i.id],'경로 수집 시각이 없거나 오래되었거나 미래입니다. 출발 전에 다시 조회해 주세요.',[r.duration.evidenceId]);
           wm = r.walkMin.value;
           meters = r.walkM.value;
           evidence = [r.walkMin.evidenceId, r.walkM.evidenceId];
@@ -158,15 +160,8 @@ export function validateSchedule(
               `이동에 ${r.duration.value}분이 필요한데 ${i.end - i.start}분만 배정했어요.`,
               [r.duration.evidenceId],
             );
-          if (lastPlace && i.fromId !== lastPlace)
-            add(
-              "route-origin",
-              "violation",
-              [i.id],
-              "이동 출발지가 직전 장소와 다릅니다.",
-            );
-          lastPlace = i.toId;
         }
+        lastPlace=placeById.has(i.toId??'')?i.toId:null;
       } else if (!p) {
         add("place", "unknown", [i.id], "장소가 확인되지 않았습니다.");
         wm = null;
@@ -226,7 +221,7 @@ export function validateSchedule(
           if(!isReviewed(p)&&facts.some(f=>f.value!==null&&f.checked==='source'))add('source-review','unknown',[i.id],'출처에 등록된 시설 정보는 독립 검토 전입니다. 현지 상태를 확인해 주세요.');
           if(!isReviewed(p)&&facts.some(f=>f.checked==='user'))add('user-evidence','unknown',[i.id],'사용자가 기록한 시설·메뉴 정보입니다. 서비스가 독립적으로 검증하지 않았으니 출발 전에 다시 확인해 주세요.',facts.filter(f=>f.checked==='user').map(f=>f.evidenceId));
           if(p.review&&!isReviewed(p))add('review-invalid','unknown',[i.id],'독립 검토 서명을 확인하지 못했습니다. 기록을 다시 조회해 주세요.');
-          if(!catalog.collectedAt||Date.now()-Date.parse(catalog.collectedAt)>7*86400000||facts.some(f=>f.value!==null&&(!f.collectedAt||Date.now()-Date.parse(f.collectedAt)>7*86400000)))add('stale-data','unknown',[i.id],'자료 수집 후 7일 이상 지났거나 수집 시각이 없습니다. 최신 정보 확인이 필요합니다.');
+          if(!freshAt(catalog.collectedAt,7*86400000)||facts.some(f=>f.value!==null&&!freshAt(f.collectedAt,7*86400000)))add('stale-data','unknown',[i.id],'자료 수집 시각이 없거나 오래되었거나 미래입니다. 최신 정보 확인이 필요합니다.');
         }
         if (c.avoidSituations.some((v) => p.situations.value?.includes(v)))
           add(
@@ -325,9 +320,9 @@ export function validateSchedule(
       if (i.kind === "rest" && p?.seat.value !== true)
         add(
           "seat",
-          "unknown",
+          p?.seat.value===false?"violation":"unknown",
           [i.id],
-          "실제로 앉아 쉴 수 있는지 확인이 필요해요.",
+          p?.seat.value===false?"앉을 자리가 없는 것으로 기록된 장소에 휴식을 배치했어요. 다른 휴식 장소를 선택해 주세요.":"실제로 앉아 쉴 수 있는지 확인이 필요해요.",
           p ? [p.seat.evidenceId] : [],
         );
       if (

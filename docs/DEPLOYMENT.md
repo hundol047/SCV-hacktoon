@@ -16,10 +16,10 @@
 ## Vercel과 배포 검사
 
 1. `feat/bopok-mvp` 브랜치를 Vercel 프로젝트에 연결합니다. Node 24, Next.js, 빌드 `npm run build`를 선택합니다. 미리보기와 운영 계정·DB·키를 분리합니다.
-2. `.env.example`의 변수와 아래 연결을 배포 설정에 입력합니다. `BOPok_APP_URL`에는 정확한 HTTPS origin을 사용합니다. Vercel 미리보기에서는 신뢰할 수 있는 `VERCEL_URL`을 사용합니다.
+2. `.env.example`의 변수와 아래 연결을 배포 설정에 입력합니다. `BOPok_APP_URL`에는 자격 증명·경로·query·fragment가 없는 정확한 HTTPS origin을 사용합니다. 잘못된 주소는 미구성으로 처리합니다. Vercel 미리보기에서는 신뢰할 수 있는 `VERCEL_URL`을 사용합니다.
 3. GitHub의 preview/production 환경에 `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`를 등록합니다. 저장소 변수 `BOPok_APP_URL`에는 고정 운영 HTTPS origin을 설정합니다. `.github/workflows/deploy.yml`은 타입·단위·4개 브라우저 검사 후 미리보기를 배포합니다. 보호된 미리보기는 점검 가능한 접근 정책이 필요합니다.
 4. 운영 배포는 `scripts/deploy-production.mjs`로 진행합니다. 현재 운영 배포 ID를 확인하고 `--prod --skip-domain`으로 후보를 생성한 뒤 준비 상태·규칙·커밋 ID를 확인합니다. 성공한 후보만 도메인에 연결하고 같은 검사를 운영 주소에서 반복합니다. 도메인 전환 또는 검사 실패 시 이전 배포로 돌리고 복구된 주소를 검사합니다. 최초 배포에는 이전 버전이 없으며, 복구 실패는 명시적으로 오류를 반환합니다. DB 마이그레이션을 되돌리는 기능은 아니므로 호환되는 DB 변경을 먼저 적용합니다.
-5. 운영 기본 `BOPok_REQUIRED_FEATURES=storage,auth,routing,transit,ai,bot,catalog,fx,maintenance,reviews,alerts,backup`을 유지합니다. `/api/health`는 누락 시 503, `?level=live`는 프로세스 생존만 200을 반환합니다. 공급자별 성공 기록은 24시간 동안 유효하고 관련 키·모델 설정이 바뀌면 무효입니다. 키 존재만으로 통과하지 않습니다.
+5. 운영 기본 `BOPok_REQUIRED_FEATURES=storage,auth,routing,transit,ai,bot,catalog,fx,maintenance,reviews,alerts,backup`을 유지합니다. 알 수 없는 기능 이름·빈 목록은 오류로 처리합니다. 검토자 목록은 유효한 UUID여야 하고 알림에는 HTTPS webhook과 32자 이상 operations secret이 필요합니다. `/api/health`는 누락 시 503, `?level=live`는 프로세스 생존만 200을 반환합니다. 공급자별 성공 기록은 24시간 동안 유효하고 관련 키·모델 설정이 바뀌면 무효입니다. 키 존재만으로 통과하지 않습니다.
 
 ```sh
 BOPok_DEPLOY_URL=https://your-app.example node scripts/probe-deployment.mjs

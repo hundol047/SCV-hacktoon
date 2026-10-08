@@ -56,7 +56,7 @@ export const itemSchema = z.object({
 });
 export type Item = z.infer<typeof itemSchema>;
 export const feedbackSchema = z.object({
-  id: z.string(),
+  id: z.string().min(1).max(100),
   text: z.enum([
     "좋아요",
     "걷는 구간을 줄여 주세요",
@@ -67,7 +67,7 @@ export const feedbackSchema = z.object({
 });
 export const tripSchema = z.object({
   version: z.literal(1),
-  id: z.string(),
+  id: z.string().min(1).max(100),
   revision: z.number().int().nonnegative(),
   conditions: conditionsSchema,
   basics: basicsSchema,

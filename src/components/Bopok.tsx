@@ -125,6 +125,8 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
     [customExperience, setCustomExperience] = useState("");
   const [savedDraft, setSavedDraft] = useState<FormDraft | null>(null);
   const [selectedCatalog,setSelectedCatalog]=useState<Catalog>(demoCatalog),[library,setLibrary]=useState<Trip[]>([]);
+  const [identityRevision,setIdentityRevision]=useState(0);
+  useEffect(()=>{const changed=()=>setIdentityRevision(n=>n+1);window.addEventListener('bopok:identity',changed);return ()=>window.removeEventListener('bopok:identity',changed);},[]);
   const currentCatalog=(screen==='conditions'||screen==='basics')?catalogFor(b.mode,selectedCatalog):catalogFor(trip?.basics.mode??'demo',trip?.catalog);
   const {placeById,getRoute}=indexCatalog(currentCatalog),places=currentCatalog.places;
   const [,setVerificationTick]=useState(0);
@@ -1530,7 +1532,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
               </button>
             </section>
           )}
-        <AccountPanel/><FamilySync trip={trip} onTrip={t=>{setTrip(t);if(proposal){setProposal(null);if(screen==='compare'){navigate('result');setNotice('공유 일정이 갱신되어 수정안을 다시 만들어 주세요.');}}}} onOpen={()=>{setDay(1);navigate('result');}} initialCloud={initialCloud} accessToken={accessToken} hidden={screen!=='home'&&screen!=='result'}/>
+        <AccountPanel/><FamilySync key={identityRevision} trip={trip} onTrip={t=>{setTrip(t);if(proposal){setProposal(null);if(screen==='compare'){navigate('result');setNotice('공유 일정이 갱신되어 수정안을 다시 만들어 주세요.');}}}} onOpen={()=>{setDay(1);navigate('result');}} initialCloud={initialCloud} accessToken={accessToken} hidden={screen!=='home'&&screen!=='result'}/>
       </main>
       <footer className="site-footer no-print">
         <div className="footer-brand">
