@@ -41,6 +41,7 @@ import {CatalogContext,useCatalog} from './CatalogContext';
 import RealSearch from './RealSearch';
 import LibraryPanel from './LibraryPanel';
 import FamilySync from './FamilySync';
+import VenueFacts from './VenueFacts';
 import RouteLookup from './RouteLookup';
 import AIAdvice from './AIAdvice';
 import type {CloudTrip} from '../server/store';
@@ -229,7 +230,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
     try {
       localStorage.removeItem(STORAGE_KEY);
       localStorage.removeItem(FORM_KEY);
-      localStorage.removeItem(LIBRARY_KEY);setLibrary([]);
+      localStorage.removeItem('bopok:cloud:v1');localStorage.removeItem(LIBRARY_KEY);setLibrary([]);
       setSavedDraft(null);
       setTrip(null);
       setProposal(null);
@@ -601,7 +602,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
                 </button>
               </section>
             )}
-            <LibraryPanel trips={library} current={trip} onSelect={t=>{setTrip(t);setDay(1);navigate('result');}}/><FamilySync trip={trip} onTrip={t=>{setTrip(t);navigate('result');}}/>
+            <LibraryPanel trips={library} current={trip} onSelect={t=>{setTrip(t);setDay(1);navigate('result');}}/>
             <section className="intro-section">
               <div className="section-heading">
                 <span className="eyebrow">HOW WE TRAVEL</span>
@@ -1164,7 +1165,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
               </button>
             </div>
             <DemoBanner />
-            <AIAdvice key={`${trip.id}:${trip.revision}`} trip={trip}/><RouteLookup trip={trip} onTrip={setTrip}/><FamilySync trip={trip} onTrip={setTrip} initialCloud={initialCloud} accessToken={accessToken}/>
+            <VenueFacts trip={trip} onTrip={t=>{setTrip(t);setProposal(null);}}/><AIAdvice key={`${trip.id}:${trip.revision}`} trip={trip}/><RouteLookup trip={trip} onTrip={t=>{setTrip(t);setProposal(null);}} cloudId={initialCloud?.id} accessToken={accessToken}/>
             <LibraryPanel trips={library} current={trip} onSelect={t=>{setTrip(t);setDay(1);setProposal(null);}}/>
             <div className="result-layout">
               <div className="schedule">
@@ -1334,6 +1335,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
                     proposal.items,
                     trip.conditions,
                     trip.basics,
+                    trip.catalog,
                   )}
                   showDay
                 />
@@ -1519,6 +1521,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
               </button>
             </section>
           )}
+        <FamilySync trip={trip} onTrip={t=>{setTrip(t);if(proposal){setProposal(null);if(screen==='compare'){navigate('result');setNotice('공유 일정이 갱신되어 수정안을 다시 만들어 주세요.');}}}} onOpen={()=>{setDay(1);navigate('result');}} initialCloud={initialCloud} accessToken={accessToken} hidden={screen!=='home'&&screen!=='result'}/>
       </main>
       <footer className="site-footer no-print">
         <div className="footer-brand">

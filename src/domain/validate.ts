@@ -67,7 +67,8 @@ export function validateSchedule(
       walkIds: string[] = [],
       walkEvidence: string[] = [],
       activeStart: number | null = null,
-      lastPlace: string | null = null;
+      lastPlace: string | null = null,
+      unconfirmedRest = false;
     if (!rows.length)
       add("empty-day", "conflict", [], `${day}일차 일정이 없습니다.`);
     for (let n = 0; n < rows.length; n++) {
@@ -131,6 +132,7 @@ export function validateSchedule(
           wm = null;
           meters = null;
         } else {
+          if(b.mode==='real'&&(!r.duration.collectedAt||Date.now()-Date.parse(r.duration.collectedAt)>86400000))add('stale-route','unknown',[i.id],'경로 수집 후 하루 이상 지났거나 수집 시각이 없습니다. 출발 전에 다시 조회해 주세요.',[r.duration.evidenceId]);
           wm = r.walkMin.value;
           meters = r.walkM.value;
           evidence = [r.walkMin.evidenceId, r.walkM.evidenceId];
@@ -207,7 +209,9 @@ export function validateSchedule(
         if(b.mode==='real'){
           if(p.hours.value===null)add('hours-unknown','unknown',[i.id],'운영 시간·휴무일을 확인해 주세요.',[p.hours.evidenceId]);
           if(p.cost.value===null)add('cost-unknown','unknown',[i.id],'이 항목 비용은 미확인입니다. 예산 충족을 판정할 수 없습니다.',[p.cost.evidenceId]);
-          if(!catalog.collectedAt||Date.now()-Date.parse(catalog.collectedAt)>7*86400000)add('stale-data','unknown',[i.id],'자료 수집 후 7일 이상 지났거나 수집 시각이 없습니다. 최신 정보 확인이 필요합니다.');
+          const facts=[p.walkMin,p.walkM,p.stairs,p.seat,p.foods,p.cost,p.hours,p.situations];
+          if(facts.some(f=>f.checked==='user'))add('user-evidence','unknown',[i.id],'사용자가 기록한 시설·메뉴 정보입니다. 서비스가 독립적으로 검증하지 않았으니 출발 전에 다시 확인해 주세요.',facts.filter(f=>f.checked==='user').map(f=>f.evidenceId));
+          if(!catalog.collectedAt||Date.now()-Date.parse(catalog.collectedAt)>7*86400000||facts.some(f=>f.value!==null&&(!f.collectedAt||Date.now()-Date.parse(f.collectedAt)>7*86400000)))add('stale-data','unknown',[i.id],'자료 수집 후 7일 이상 지났거나 수집 시각이 없습니다. 최신 정보 확인이 필요합니다.');
         }
         if (c.avoidSituations.some((v) => p.situations.value?.includes(v)))
           add(
@@ -218,6 +222,7 @@ export function validateSchedule(
             [p.situations.evidenceId],
           );
         if (i.kind === "meal") {
+          if(c.foodLikes.length&&!c.foodLikes.some(f=>p.foods.value?.includes(f)))add('food-preference','unknown',[i.id],`선호 음식(${c.foodLikes.join(', ')})의 메뉴 제공 여부를 확인해 주세요.`,[p.foods.evidenceId]);
           if (p.foods.value === null)
             add(
               "food",
@@ -301,6 +306,7 @@ export function validateSchedule(
         p?.seat.value === true &&
         c.restMin !== null &&
         i.end - i.start >= c.restMin;
+      if (i.kind === "rest" && p?.seat.value === null) unconfirmedRest = true;
       if (i.kind === "rest" && p?.seat.value !== true)
         add(
           "seat",
@@ -327,11 +333,12 @@ export function validateSchedule(
       )
         add(
           "rest-interval",
-          "violation",
+          unconfirmedRest ? "unknown" : "violation",
           [i.id],
-          `${c.restInterval}분 안에 충분히 쉬고 싶다는 조건을 넘었어요.`,
+          unconfirmedRest ? `앉을 자리가 미확인이라 ${c.restInterval}분 안에 충분히 쉬는지 확인이 필요합니다.` : `${c.restInterval}분 안에 충분히 쉬고 싶다는 조건을 넘었어요.`,
         );
       if (validRest) {
+        unconfirmedRest = false;
         walkMin = 0;
         walkM = 0;
         walkIds = [];

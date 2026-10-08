@@ -1,5 +1,7 @@
+import {defaultBasics,defaultConditions} from '../../src/domain/schema';
+import {generate} from '../../src/domain/engine';
 import {test,expect} from '@playwright/test';
-import {osmCatalog} from '../../src/adapters/real-data';
+import {OpenRouteProvider,osmCatalog} from '../../src/adapters/real-data';
 test('worldwide city lookup yields actual-place draft with unknown evidence and JSON backup',async({page})=>{
  const catalog=osmCatalog('프랑스 파리',{elements:[{type:'node',id:1,lat:48.86,lon:2.34,tags:{name:'자료의 박물관',tourism:'museum'}},{type:'node',id:2,lat:48.85,lon:2.35,tags:{name:'자료의 식당',amenity:'restaurant'}}]},new Date().toISOString());
  await page.route('**/api/catalog?*',route=>route.fulfill({json:catalog}));
@@ -8,5 +10,16 @@ test('worldwide city lookup yields actual-place draft with unknown evidence and 
  await page.getByRole('button',{name:'우리 가족 일정 만들기'}).click();await expect(page.getByRole('heading',{name:'정보 부족',exact:true})).toBeVisible();await expect(page.locator('.timeline')).toContainText('자료의 박물관');await expect(page.locator('.timeline')).toContainText('미확인');await expect(page.locator('.timeline')).not.toContainText('가상 솔바다');
  const downloadPromise=page.waitForEvent('download');await page.getByRole('button',{name:'여행 JSON 내보내기'}).click();const download=await downloadPromise;expect(download.suggestedFilename()).toMatch(/^bopok-.*\.json$/);
  const payload=await page.evaluate(()=>localStorage.getItem('bopok:trip:v1')!);await page.getByLabel('여행 JSON 파일').setInputFiles({name:'backup.json',mimeType:'application/json',buffer:Buffer.from(payload)});await expect(page.locator('.timeline')).toContainText('자료의 박물관');
- await page.getByRole('button',{name:'부모님 모드',exact:true}).click();await expect(page.locator('.parent-sheet')).toContainText('출발 전 미확인 시설');
+ await page.getByText('출발 전 시설·메뉴 확인 기록',{exact:true}).click();await page.getByLabel('확인 자료 HTTPS 주소').fill('https://example.org/venue-access');await page.getByLabel('확인한 내부 보행 시간 (분)').fill('10');await page.getByLabel('확인한 내부 보행 거리 (m)').fill('100');await page.getByLabel('계단 정보',{exact:true}).selectOption('no');await page.getByLabel('앉을 자리',{exact:true}).selectOption('yes');await page.getByRole('button',{name:'시설·메뉴 확인 기록 저장'}).click();await expect(page.locator('.timeline')).toContainText('사용자가 기록한');
+ await page.getByRole('button',{name:'부모님 모드',exact:true}).click();await expect(page.locator('.parent-sheet')).toContainText('출발 전 미확인 시설');await page.getByRole('button',{name:'쉬는 시간을 늘려 주세요',exact:true}).click();await page.getByRole('button',{name:'자녀용 상세 화면',exact:true}).click();await page.getByRole('button',{name:'의견을 반영한 수정안 보기'}).click();await expect(page.locator('.comparison')).not.toContainText('장소가 확인되지 않았습니다.');await expect(page.locator('.comparison')).toContainText('자료의 박물관');
+});
+test('stale routes are refreshed, repeated legs deduplicate, and fixed times survive refresh',async({page})=>{
+ const catalog=osmCatalog('프랑스 파리',{elements:[{type:'node',id:101,lat:48.86,lon:2.34,tags:{name:'새 경로 박물관',tourism:'museum'}},{type:'node',id:102,lat:48.85,lon:2.35,tags:{name:'새 경로 식당',amenity:'restaurant'}}]},new Date().toISOString()),basics={...defaultBasics,mode:'real' as const,region:catalog.region};
+ const generated=generate(defaultConditions,basics,[],[],catalog),from=catalog.places[0],to=catalog.places[1];
+ const fresh=await new OpenRouteProvider('synthetic-key',async()=>Response.json({routes:[{summary:{distance:1300,duration:300}}]})).route(from,to,'taxi');const stale=structuredClone(fresh);stale.duration.collectedAt=new Date(Date.now()-2*86400000).toISOString();catalog.routes=[stale];
+ const trip={version:1,id:'route-refresh-browser',revision:0,basics,conditions:defaultConditions,items:generated.items.map((i,n)=>({...i,locked:n===0})),history:[],feedback:[],catalog};await page.addInitScript(value=>{localStorage.setItem('bopok:trip:v1',JSON.stringify(value));},trip);
+ let calls=0;await page.route('**/api/catalog',route=>{calls++;return route.fulfill({json:fresh});});await page.goto('/');await page.getByRole('button',{name:'이어서 보기',exact:true}).click();
+ await page.getByRole('button',{name:'미확인·하루 지난 경로 조회',exact:true}).click();await expect(page.locator('section.cloud-panel').filter({has:page.getByRole('heading',{name:'실제 이동 경로 확인',exact:true})})).toContainText('1개 경로를 조회했습니다.');expect(calls).toBe(1);
+ const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('bopok:trip:v1')!));expect(saved.items).toEqual(trip.items);expect(saved.catalog.routes).toHaveLength(1);expect(saved.catalog.routes[0].duration.collectedAt).toBe(fresh.duration.collectedAt);
+ await page.getByRole('button',{name:'모든 이동 경로 다시 조회',exact:true}).click();await expect.poll(()=>calls).toBe(2);await expect(page.getByRole('button',{name:'모든 이동 경로 다시 조회',exact:true})).toBeEnabled();
 });

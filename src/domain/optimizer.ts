@@ -9,8 +9,10 @@ const MAX_SEARCH=12000;
 function buildDay(tasks:Task[],day:number,c:Conditions,b:Basics,catalog:Catalog,restMin:number):Item[]|null{
   const {placeById,getRoute}=indexCatalog(catalog);
   const rows:Item[]=[];let cursor=570,serial=0,last:string|null=null;
+  const reserved=new Set(tasks.flatMap(t=>'fixed'in t?[t.fixed.id]:[]));
   const add=(kind:Item['kind'],p:string|null,start:number,end:number,extra:Partial<Item>={})=>{
     if(start<0||end>1440||end<=start)return false;
+    while(reserved.has(`plan:${day}:${serial}`))serial++;
     rows.push({id:`plan:${day}:${serial++}`,day,start,end,kind,placeId:p,fromId:null,toId:null,transport:null,locked:false,mode:b.mode,...extra});cursor=end;return true;
   };
   const rest=(p:Place,length=restMin)=>p.seat.value===true&&add('rest',p.id,cursor,cursor+length);
@@ -65,12 +67,43 @@ export function optimize(c:Conditions,b:Basics,original:Item[]=[],feedback:strin
   const locked=original.filter(i=>i.locked);
   if(catalog.mode==='real'&&(!visits.length||!meals.length)&&!locked.length){
     const safe=catalog.places.filter(p=>(!c.avoidStairs||p.stairs.value!==true)&&!c.avoidSituations.some(x=>p.situations.value?.includes(x))&&!c.foodAvoids.some(x=>p.foods.value?.includes(x)));
-    const selected=[...safe.filter(p=>p.kind==='visit')].sort((a,b)=>requested.filter(x=>b.experiences.includes(x)).length-requested.filter(x=>a.experiences.includes(x)).length).slice(0,2);
-    const meal=safe.find(p=>p.kind==='meal');if(meal)selected.push(meal);
-    const items:Item[]=[];
-    for(let day=1;day<=b.days;day++){let cursor=570,last:string|null=null;for(const p of selected){if(last){items.push({id:`draft:${day}:${items.length}`,day,start:cursor,end:cursor+20,kind:'move',placeId:null,fromId:last,toId:p.id,transport:b.transport,locked:false,mode:'real'});cursor+=20;}if(p.kind==='meal')cursor=Math.max(660,cursor);items.push({id:`draft:${day}:${items.length}`,day,start:cursor,end:cursor+40,kind:p.kind,placeId:p.id,fromId:null,toId:null,transport:null,locked:false,mode:'real'});cursor+=40;last=p.id;}}
+    const availableVisits=safe.filter(p=>p.kind==='visit'),availableMeals=safe.filter(p=>p.kind==='meal');
+    const items:Item[]=[],used=new Set<string>(),covered=new Set<string>(),notes=new Set<string>();
+    const fewer=feedback.includes('걷는 구간을 줄여 주세요'),restMin=(c.restMin??20)+(feedback.includes('쉬는 시간을 늘려 주세요')?10:0);
+    for(let day=1;day<=b.days;day++){
+      let candidates=availableVisits.filter(p=>!used.has(p.id));
+      if(!candidates.length&&availableVisits.length){candidates=availableVisits;notes.add('추가 관광 후보가 없어 일부 장소를 반복했습니다. 다른 후보를 조회하거나 직접 선택해 주세요.');}
+      candidates.sort((a,b)=>c.requiredExperiences.filter(x=>!covered.has(x)&&b.experiences.includes(x)).length-c.requiredExperiences.filter(x=>!covered.has(x)&&a.experiences.includes(x)).length||requested.filter(x=>!covered.has(x)&&b.experiences.includes(x)).length-requested.filter(x=>!covered.has(x)&&a.experiences.includes(x)).length);
+      const count=fewer?1:Math.min(2,Math.max(1,Math.ceil(candidates.length/(b.days-day+1))));
+      const selected=candidates.slice(0,count);
+      // Keep required experiences even when the request asks for fewer visits.
+      if(day===b.days)for(const experience of c.requiredExperiences)if(!covered.has(experience)&&!selected.some(p=>p.experiences.includes(experience))){const p=candidates.find(p=>p.experiences.includes(experience));if(p&&!selected.includes(p))selected.push(p);}
+      let mealCandidates=availableMeals;
+      if(feedback.includes('식사를 바꾸고 싶어요')){const alternatives=availableMeals.filter(p=>!original.some(i=>i.kind==='meal'&&i.placeId===p.id));if(alternatives.length)mealCandidates=alternatives;else notes.add('다른 식당 후보가 없어 식사를 바꾸지 못했습니다. 메뉴·회피 음식 정보도 확인해 주세요.');}
+      const meal=[...mealCandidates].sort((a,b)=>Number(used.has(a.id))-Number(used.has(b.id))+c.foodLikes.filter(x=>b.foods.value?.includes(x)).length-c.foodLikes.filter(x=>a.foods.value?.includes(x)).length)[0];
+      if(meal){if(used.has(meal.id))notes.add('식당 후보가 부족해 식당을 반복했습니다. 다른 식당 후보를 추가해 주세요.');selected.splice(Math.min(1,selected.length),0,meal);}
+      let cursor=570,last:string|null=null;
+      const add=(kind:Item['kind'],p:Place,start:number,end:number)=>items.push({id:`draft:${day}:${items.length}`,day,start,end,kind,placeId:p.id,fromId:null,toId:null,transport:null,locked:false,mode:'real'});
+      for(const p of selected){
+        if(last){const route=indexCatalog(catalog).getRoute(last,p.id,b.transport),length=route?.duration.value??20;items.push({id:`draft:${day}:${items.length}`,day,start:cursor,end:cursor+length,kind:'move',placeId:null,fromId:last,toId:p.id,transport:b.transport,locked:false,mode:'real'});cursor+=length;}
+        if(p.kind==='meal'&&cursor<660){add('rest',p,cursor,660);cursor=660;}
+        const length=Math.max(p.walkMin.value??0,p.kind==='meal'?40:Math.min(40,c.restInterval??40));
+        add(p.kind,p,cursor,cursor+length);cursor+=length;
+        const seat=p.seat.value===true?p:undefined;
+        // Reserve a rest slot without inventing a seat or resetting unknown walking facts.
+        if(p.seat.value!==false){add('rest',seat??p,cursor,cursor+restMin);cursor+=restMin;if(!seat)notes.add('휴식 시간을 배정했지만 앉을 자리는 미확인입니다. 현장에 확인하기 전 휴식 조건 충족으로 계산하지 않습니다.');}
+        else notes.add('앉을 자리가 없는 것으로 기록된 장소에서는 휴식을 배치하지 못했습니다. 다른 휴식 장소를 선택해 주세요.');
+        last=p.id;used.add(p.id);for(const x of p.experiences)covered.add(x);
+      }
+    }
     const report=validateSchedule(items,c,b,catalog);
-    return {items,blocked:report.issues.some(x=>x.status==='violation'||x.status==='conflict'),searched:0,searchLimited:false,preserved:requested.filter(x=>selected.some(p=>p.experiences.includes(x))),reasons:['실제 장소를 배치한 확인 전 초안입니다. 방문 40분·이동 20분은 편집용 배정 시간이며 실제 소요 시간이나 적합성 확인값이 아닙니다.','시설·메뉴·내부 보행·경로의 미확인 항목은 충족으로 판단하지 않았습니다. 경로 조회와 출발 전 확인을 거쳐 수정해 주세요.']};
+    return {items,blocked:report.issues.some(x=>x.status==='violation'||x.status==='conflict'),searched:0,searchLimited:false,preserved:requested.filter(x=>covered.has(x)),reasons:[
+      '실제 장소를 배치한 확인 전 초안입니다. 방문 최대 40분·미확인 이동 20분은 편집용 배정 시간이며 실제 소요 시간이나 적합성 확인값이 아닙니다.',
+      ...(fewer?['필수 경험을 유지하면서 방문 수와 이동 구간을 줄였습니다. 실제 보행 감소량은 자료 부족으로 확인하지 못했습니다.']:[]),
+      ...(feedback.includes('쉬는 시간을 늘려 주세요')?[`의견에 따라 최소 휴식 배정을 ${restMin}분으로 늘렸습니다. 좌석 확인이 필요합니다.`]:[]),
+      ...(feedback.includes('식사를 바꾸고 싶어요')&&!notes.has('다른 식당 후보가 없어 식사를 바꾸지 못했습니다. 메뉴·회피 음식 정보도 확인해 주세요.')?['기존 일정에 없는 식당 후보로 바꿨습니다. 메뉴 적합성은 별도로 확인해 주세요.']:[]),
+      ...notes,'시설·메뉴·내부 보행·경로의 미확인 항목은 충족으로 판단하지 않았습니다. 경로 조회와 출발 전 확인을 거쳐 수정해 주세요.'
+    ]};
   }
 
   if(locked.some(i=>validateSchedule([{...i,day:1}],{...c,requiredExperiences:[]},{...b,days:1},catalog).issues.some(x=>x.status==='violation'&&['time','stairs','route-stairs','food','internal-time','travel-time','place-kind','walk-time','walk-distance'].includes(x.code))))return {items:structuredClone(original),blocked:true,searched:0,searchLimited:false,preserved:[],reasons:['고정 구간 자체가 필수 조건과 맞지 않습니다. 고정 구간을 보존했고 조건을 낮추지 않았어요. 직접 고정을 해제하거나 해당 조건을 명시적으로 조정해 주세요.']};
@@ -107,7 +140,8 @@ export function optimize(c:Conditions,b:Basics,original:Item[]=[],feedback:strin
             const required=c.requiredExperiences.filter(e=>covered.has(e)).length;
             const walking=rows.filter(i=>i.kind==='visit').reduce((sum,i)=>sum+(placeById.get(i.placeId??'')?.walkMin.value??0),0);
             const count=rows.filter(i=>i.kind==='visit').length;
-            const score=required*100000+coverage*10000+(feedback.includes('걷는 구간을 줄여 주세요')?-walking*100:Math.min(count,2)*500-walking)-report.cost/100;
+            const foodPreference=meal?c.foodLikes.filter(f=>meal.foods.value?.includes(f)).length:0;
+            const score=required*100000+coverage*10000+foodPreference*1000+(feedback.includes('걷는 구간을 줄여 주세요')?-walking*100:Math.min(count,2)*500-walking)-report.cost/100;
             next.push({items,covered,score:state.score+score,cost:state.cost+report.cost});
           }
         }

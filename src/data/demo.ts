@@ -4,7 +4,7 @@ export type Fact<T> = {
   evidenceId: string;
   source: string;
   nature: "demo" | "real";
-  checked: "simulated" | "source" | "unknown";
+  checked: "simulated" | "source" | "user" | "unknown";
   collectedAt?: string | null;
 };
 const fact = <T>(id: string, field: string, value: T | null): Fact<T> => ({
