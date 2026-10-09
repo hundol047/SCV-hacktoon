@@ -3,6 +3,7 @@ import { Catalog,catalogFor,indexCatalog } from '../data/catalog';
 import { Place } from '../data/demo';
 import {destinationFor,isTravelOnlyDay} from './world';
 import { validateSchedule } from './validate';
+import { taxiPlanSummary } from './taxi-plan';
 
 type Task={place:Place;kind:'visit'|'meal'}|{fixed:Item};
 export type SearchResult={items:Item[];reasons:string[];preserved:string[];blocked:boolean;searched:number;searchLimited:boolean};
@@ -59,6 +60,43 @@ function* interleave(flexible:Task[],anchors:Task[],prefix:Task[]=[]):Generator<
 export function optimize(c:Conditions,b:Basics,original:Item[]=[],feedback:string[]=[],supplied?:Catalog):SearchResult{
   const catalog=catalogFor(b.mode,supplied),{placeById}=indexCatalog(catalog);
   const requested=[...new Set([...c.requiredExperiences,...c.experiences])];
+  if (b.taxiPlan && b.mode === 'real' && b.transport === 'taxi' && catalog.mode === 'real') {
+    const selected = b.taxiPlan.orderedPlaceIds.map(id => placeById.get(id));
+    if (selected.some(place => !place)) return { items: [], blocked: true, searched: 0, searchLimited: false, preserved: [], reasons: ['저장한 택시 순서의 장소가 현재 자료에 없습니다. 장소를 다시 선택해 주세요.'] };
+    const items: Item[] = [];
+    let cursor = 540;
+    let missingRoutes = 0;
+    for (let i = 0; i < selected.length; i++) {
+      const place = selected[i]!;
+      if (i > 0) {
+        const previous = selected[i - 1]!;
+        const route = indexCatalog(catalog).getRoute(previous.id, place.id, 'taxi');
+        const duration = route?.duration.value ?? 20;
+        if (!route || route.duration.value === null) missingRoutes++;
+        items.push({ id: `taxi-plan:move:${i}`, day: 1, start: cursor, end: cursor + duration, kind: 'move', placeId: null, fromId: previous.id, toId: place.id, transport: 'taxi', locked: false, mode: 'real' });
+        cursor += duration;
+      }
+      const duration = place.kind === 'meal' ? 45 : place.kind === 'rest' ? 20 : 45;
+      if (cursor + duration > 1440) break;
+      items.push({ id: `taxi-plan:stop:${i}`, day: 1, start: cursor, end: cursor + duration, kind: place.kind, placeId: place.id, fromId: null, toId: null, transport: null, locked: false, mode: 'real' });
+      cursor += duration;
+    }
+    const report = validateSchedule(items, c, b, catalog);
+    return {
+      items,
+      blocked: report.issues.some(issue => issue.status === 'violation' || issue.status === 'conflict'),
+      searched: 0,
+      searchLimited: false,
+      preserved: requested.filter(experience => selected.some(place => place!.experiences.includes(experience))),
+      reasons: [
+        `선택한 장소를 좌표 직선거리 기준으로 ${selected.map(place => place!.name).join(' → ')} 순서로 배치했습니다.`,
+        `여행 인원 ${b.taxiPlan.travelers}명 · 택시 ${b.taxiPlan.vehicles}대(대당 ${b.taxiPlan.taxiCapacity}명)`,
+        taxiPlanSummary(b.taxiPlan),
+        ...(missingRoutes ? [`실제 도로 경로가 ${missingRoutes}개 확인되지 않아 해당 이동 시간·요금은 출발 전 조회가 필요합니다.`] : []),
+        '돌아오는 경로는 자동으로 추가하지 않았습니다. 귀가 장소를 선택 목록에 넣어 주세요.',
+      ],
+    };
+  }
   const eligible=(p:Place)=>p.walkMin.value!==null&&p.walkM.value!==null&&p.seat.value===true&&
     (c.maxWalkMin===null||p.walkMin.value<=c.maxWalkMin)&&(c.maxWalkM===null||p.walkM.value<=c.maxWalkM)&&
     (!c.avoidStairs||p.stairs.value===false)&&!c.avoidSituations.some(s=>p.situations.value?.includes(s));

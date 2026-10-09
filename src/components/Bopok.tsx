@@ -31,6 +31,7 @@ import {
   defaultBasics,
   conditionsSchema,
   basicsSchema,
+  basicsWithTaxiRule,
   time,
   minutes,
   dayDate,
@@ -40,6 +41,7 @@ import {Catalog,catalogFor,demoCatalog,indexCatalog,emptyRealCatalog} from '../d
 import {CatalogContext,useCatalog} from './CatalogContext';
 import RealSearch from './RealSearch';
 import WorldPlan from './WorldPlan';
+import StudentTaxiPlanner from './StudentTaxiPlanner';
 import TravelSummary from './TravelSummary';
 import {transportLabel,money,destinationFor,localInstant} from '../domain/world';
 import LibraryPanel from './LibraryPanel';
@@ -312,7 +314,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
   }
   function createTrip() {
     const pc = conditionsSchema.safeParse(c),
-      pb = basicsSchema.safeParse(b);
+      pb = basicsWithTaxiRule.safeParse(b);
     if (!pc.success || !pb.success) {
       setError("숫자 범위와 여행 날짜, 제목을 확인해 주세요.");
       return;
@@ -1011,7 +1013,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
                   <div className="field-grid">
                     <label>
                       여행 지역
-                      <select aria-label="데이터 모드" value={b.mode} onChange={e=>{const mode=e.target.value as Basics['mode'];setB({...b,mode,region:mode==='demo'?'가상 솔바다':'실제 지역',days:Math.min(b.days,2),transport:'taxi',destinations:undefined,transfers:undefined,expenses:undefined,currency:'KRW'});setSelectedCatalog(mode==='demo'?demoCatalog:emptyRealCatalog);setImportItems([]);}}><option value="demo">가상 솔바다 · 시연</option><option value="real">전국·해외 실제 도시</option></select>
+                      <select aria-label="데이터 모드" value={b.mode} onChange={e=>{const mode=e.target.value as Basics['mode'];setB({...b,mode,region:mode==='demo'?'가상 솔바다':'실제 지역',days:Math.min(b.days,2),transport:'taxi',destinations:undefined,transfers:undefined,expenses:undefined,currency:'KRW',taxiPlan:undefined});setSelectedCatalog(mode==='demo'?demoCatalog:emptyRealCatalog);setImportItems([]);}}><option value="demo">가상 솔바다 · 시연</option><option value="real">전국·해외 실제 도시</option></select>
                     </label>
                     <label>
                       출발 날짜
@@ -1056,6 +1058,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
                           setB({
                             ...b,
                             transport: e.target.value as Basics["transport"],
+                            taxiPlan: e.target.value === 'taxi' ? b.taxiPlan : undefined,
                           })
                         }
                       >
@@ -1076,7 +1079,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
                       </select>
                     </label>
                   </div>
-                  {b.mode==='real'&&<><RealSearch onLoaded={catalog=>{setSelectedCatalog(catalog);const meta=catalog.cities?.[0];setB({...b,region:catalog.region,timezone:meta?.timezone??b.timezone,destinations:[{region:catalog.region,startDay:1,endDay:b.days,timezone:meta?.timezone??b.timezone,currency:meta?.currency??'KRW'}]});setImportItems([]);}}/><label>현지 시간대 (IANA)<input value={b.timezone} onChange={e=>setB({...b,timezone:e.target.value})} placeholder="Asia/Seoul, Asia/Tokyo, Europe/Paris"/></label>{selectedCatalog.places.length>0&&<WorldPlan basics={b} catalog={selectedCatalog} onChange={(basics,catalog)=>{setB(basics);setSelectedCatalog(catalog);}}/>}</>}
+                  {b.mode==='real'&&<><RealSearch onLoaded={catalog=>{setSelectedCatalog(catalog);const meta=catalog.cities?.[0];setB({...b,region:catalog.region,timezone:meta?.timezone??b.timezone,destinations:[{region:catalog.region,startDay:1,endDay:b.days,timezone:meta?.timezone??b.timezone,currency:meta?.currency??'KRW'}],taxiPlan:undefined});setImportItems([]);}}/><label>현지 시간대 (IANA)<input value={b.timezone} onChange={e=>setB({...b,timezone:e.target.value})} placeholder="Asia/Seoul, Asia/Tokyo, Europe/Paris"/></label>{b.transport==='taxi'&&selectedCatalog.places.length>0&&<StudentTaxiPlanner basics={b} catalog={selectedCatalog} onChange={setB}/>} {selectedCatalog.places.length>0&&<WorldPlan basics={b} catalog={selectedCatalog} onChange={(basics,catalog)=>{setB(basics);setSelectedCatalog(catalog);}}/>}</>}
                   {existing && (
                     <section className="importer">
                       <h2>기존 일정 입력</h2>
