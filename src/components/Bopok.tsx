@@ -326,6 +326,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
     if(pb.data.mode==='real'&&currentCatalog.places.length===0){setError('먼저 실제 장소를 조회해 주세요. 가상 자료로 자동 대체하지 않습니다.');return;}
     if(existing&&importItems.some(i=>i.mode!==pb.data.mode)){setError('실제/가상 일정의 모드가 맞지 않습니다.');return;}
     const p = generate(pc.data, pb.data,[],[],currentCatalog);
+    if (!existing && pb.data.taxiPlan && p.blocked && !p.items.length) {setError(p.reasons.join(' '));return;}
     const items = existing ? importItems : p.items;
     setTrip({
       version: 1,

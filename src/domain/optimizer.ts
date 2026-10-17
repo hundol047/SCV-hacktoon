@@ -61,8 +61,15 @@ export function optimize(c:Conditions,b:Basics,original:Item[]=[],feedback:strin
   const catalog=catalogFor(b.mode,supplied),{placeById}=indexCatalog(catalog);
   const requested=[...new Set([...c.requiredExperiences,...c.experiences])];
   if (b.taxiPlan && b.mode === 'real' && b.transport === 'taxi' && catalog.mode === 'real') {
+    const day = b.taxiPlan.day ?? 1;
+    const fail = (message: string): SearchResult => ({items:structuredClone(original),blocked:true,searched:0,searchLimited:false,preserved:[],reasons:[message]});
+    if (day > b.days || isTravelOnlyDay(b,day)) return fail('택시 여행일과 이동일 설정을 확인해 주세요.');
+    if (original.some(item => item.day === day && item.locked)) return fail('선택 여행일에 고정 일정이 있어 택시 순서를 다시 배치하지 않았습니다. 기존 일정을 보존했습니다.');
+    if (feedback.length) return fail('선택 장소의 택시 순서를 유지했습니다. 휴식·식사 의견은 시간표에서 직접 반영한 뒤 다시 점검해 주세요.');
     const selected = b.taxiPlan.orderedPlaceIds.map(id => placeById.get(id));
-    if (selected.some(place => !place)) return { items: [], blocked: true, searched: 0, searchLimited: false, preserved: [], reasons: ['저장한 택시 순서의 장소가 현재 자료에 없습니다. 장소를 다시 선택해 주세요.'] };
+    if (selected.some(place => !place)) return fail('저장한 택시 순서의 장소가 현재 자료에 없습니다. 장소를 다시 선택해 주세요.');
+    const region = destinationFor(b,day)?.region;
+    if (region && selected.some(place => (place!.region ?? catalog.region) !== region)) return fail('선택 여행일의 도시 밖 장소가 있습니다. 같은 도시의 장소를 선택해 주세요.');
     const items: Item[] = [];
     let cursor = 540;
     let missingRoutes = 0;
@@ -72,15 +79,27 @@ export function optimize(c:Conditions,b:Basics,original:Item[]=[],feedback:strin
         const previous = selected[i - 1]!;
         const route = indexCatalog(catalog).getRoute(previous.id, place.id, 'taxi');
         const duration = route?.duration.value ?? 20;
+        if (!Number.isFinite(duration) || duration < 0 || cursor + Math.max(1,Math.ceil(duration)) > 1440) return fail('하루 안에 모든 이동을 배치할 수 없습니다. 장소 수를 줄여 주세요.');
         if (!route || route.duration.value === null) missingRoutes++;
-        items.push({ id: `taxi-plan:move:${i}`, day: 1, start: cursor, end: cursor + duration, kind: 'move', placeId: null, fromId: previous.id, toId: place.id, transport: 'taxi', locked: false, mode: 'real' });
-        cursor += duration;
+        const minutes = Math.max(1,Math.ceil(duration));
+        items.push({ id: `taxi-plan:move:${i}`, day, start: cursor, end: cursor + minutes, kind: 'move', placeId: null, fromId: previous.id, toId: place.id, transport: 'taxi', locked: false, mode: 'real' });
+        cursor += minutes;
       }
       const duration = place.kind === 'meal' ? 45 : place.kind === 'rest' ? 20 : 45;
-      if (cursor + duration > 1440) break;
-      items.push({ id: `taxi-plan:stop:${i}`, day: 1, start: cursor, end: cursor + duration, kind: place.kind, placeId: place.id, fromId: null, toId: null, transport: null, locked: false, mode: 'real' });
+      if (cursor + duration > 1440) return fail('하루 안에 모든 장소를 배치할 수 없습니다. 장소 수를 줄여 주세요. 일부 장소를 생략하지 않았습니다.');
+      items.push({ id: `taxi-plan:stop:${i}`, day, start: cursor, end: cursor + duration, kind: place.kind, placeId: place.id, fromId: null, toId: null, transport: null, locked: false, mode: 'real' });
       cursor += duration;
     }
+    if (b.taxiPlan.returnToStart) {
+      const from = selected.at(-1)!, to = selected[0]!;
+      const route = indexCatalog(catalog).getRoute(from.id,to.id,'taxi');
+      const duration = Math.max(1,Math.ceil(route?.duration.value ?? 20));
+      if (!Number.isFinite(duration) || cursor + duration > 1440) return fail('복귀 이동까지 하루 안에 배치할 수 없습니다. 장소 수를 줄여 주세요.');
+      if (!route || route.duration.value === null) missingRoutes++;
+      items.push({id:'taxi-plan:return',day,start:cursor,end:cursor+duration,kind:'move',placeId:null,fromId:from.id,toId:to.id,transport:'taxi',locked:false,mode:'real'});
+    }
+    const otherItems = original.length ? original.filter(item => item.day !== day) : b.days > 1 ? optimize(c,{...b,taxiPlan:undefined},[],[],catalog).items.filter(item => item.day !== day) : [];
+    items.push(...otherItems);
     const report = validateSchedule(items, c, b, catalog);
     return {
       items,
@@ -93,7 +112,8 @@ export function optimize(c:Conditions,b:Basics,original:Item[]=[],feedback:strin
         `여행 인원 ${b.taxiPlan.travelers}명 · 택시 ${b.taxiPlan.vehicles}대(대당 ${b.taxiPlan.taxiCapacity}명)`,
         taxiPlanSummary(b.taxiPlan),
         ...(missingRoutes ? [`실제 도로 경로가 ${missingRoutes}개 확인되지 않아 해당 이동 시간·요금은 출발 전 조회가 필요합니다.`] : []),
-        '돌아오는 경로는 자동으로 추가하지 않았습니다. 귀가 장소를 선택 목록에 넣어 주세요.',
+        '직선거리 순서이며 최저요금을 보장하지 않습니다. 방문 45분·휴식 20분·미확인 이동 20분은 편집용 배정 시간입니다.',
+        b.taxiPlan.returnToStart ? '마지막 장소에서 출발지로 복귀하는 이동을 포함했습니다.' : '편도 경로입니다. 복귀 이동은 포함하지 않습니다.',
       ],
     };
   }

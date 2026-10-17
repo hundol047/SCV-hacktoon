@@ -1841,3 +1841,5 @@ summary {
 
 .day-tabs{max-width:100%;flex-wrap:wrap;min-width:0;}
 .world-plan,.cloud-panel{overflow-wrap:anywhere;}
+.taxi-planner input[type="checkbox"]{display:inline-block;width:auto;flex:0 0 auto;}
+.taxi-planner .candidate-list{max-height:320px;overflow:auto;}
