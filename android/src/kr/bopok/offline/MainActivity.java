@@ -15,6 +15,7 @@ import java.util.HashMap;
 public class MainActivity extends Activity {
   private static final String ORIGIN="https://appassets.androidplatform.net";
   private WebView web;
+  private PersonalAI ai;
   private ValueCallback<Uri[]> chooser;
   private byte[] pendingJson;
   private boolean pendingDataset=false;
@@ -31,6 +32,7 @@ public class MainActivity extends Activity {
     settings.setAllowFileAccess(false);settings.setAllowContentAccess(true);settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
     settings.setJavaScriptCanOpenWindowsAutomatically(false);settings.setSupportMultipleWindows(false);
     WebView.setWebContentsDebuggingEnabled(false);
+    ai=new PersonalAI(this,web);
     web.addJavascriptInterface(new Bridge(),"BopokAndroid");
     web.setWebViewClient(new WebViewClient(){
       @Override public WebResourceResponse shouldInterceptRequest(WebView view,WebResourceRequest request){
@@ -73,6 +75,9 @@ public class MainActivity extends Activity {
     });
   }
   public class Bridge {
+    @JavascriptInterface public String aiStatus(){return ai.status();}
+    @JavascriptInterface public void configureAI(String key,String model){try{ai.configure(key,model);}catch(Exception e){throw new IllegalArgumentException("AI configuration failed");}}
+    @JavascriptInterface public void requestAI(String id,String input){ai.request(id,input);}
     @JavascriptInterface public void saveJson(String name,String data){
       if(data==null||data.length()>8*1024*1024){notice("파일이 너무 큽니다.");return;}
       byte[] bytes=data.getBytes(StandardCharsets.UTF_8);if(bytes.length>8*1024*1024){notice("8 MiB 이하 파일만 저장할 수 있습니다.");return;}

@@ -9,7 +9,7 @@ const root=resolve('android'),out=root+'/build',tools=sdk+'/build-tools/35.0.0',
 await mkdir(out+'/classes',{recursive:true});await mkdir(out+'/dex',{recursive:true});
 run(tools+'/aapt2',['compile','--dir',root+'/res','-o',out+'/resources.zip']);
 run(tools+'/aapt2',['link','-o',out+'/unsigned.apk','-I',jar,'--manifest',root+'/AndroidManifest.xml','-A',out+'/assets',out+'/resources.zip']);
-const compileArgs=['-encoding','UTF-8','-source','8','-target','8','-bootclasspath',jar+':'+tools+'/core-lambda-stubs.jar','-d',out+'/classes',root+'/src/kr/bopok/offline/MainActivity.java'];
+const compileArgs=['-encoding','UTF-8','-source','8','-target','8','-bootclasspath',jar+':'+tools+'/core-lambda-stubs.jar','-d',out+'/classes',root+'/src/kr/bopok/offline/MainActivity.java',root+'/src/kr/bopok/offline/PersonalAI.java'];
 if(process.env.ANDROID_ECJ_JAR)run('java',['-jar',process.env.ANDROID_ECJ_JAR,...compileArgs]);else run('javac',compileArgs);
 const classes=(await readdir(out+'/classes/kr/bopok/offline')).filter(f=>f.endsWith('.class')).map(f=>out+'/classes/kr/bopok/offline/'+f);
 run(tools+'/d8',['--lib',jar,'--min-api','26','--output',out+'/dex',...classes]);

@@ -30,7 +30,7 @@ try{
   await page.getByRole('button',{name:'이 지역 후보를 일정에 사용'}).click();
   const planner=page.locator('.taxi-planner');await planner.locator('summary').click();
   const boxes=planner.getByRole('group',{name:'택시 방문 장소 선택'}).getByRole('checkbox');
-  await boxes.nth(0).check();await boxes.nth(1).check();
+  await boxes.nth(0).check();await planner.getByRole('checkbox',{name:/관광 · 좌표 확인/}).first().check();
   await planner.getByRole('button',{name:'택시 이동 순서 계산'}).click();
   await planner.locator('.notice').waitFor();
   await page.getByRole('button',{name:'우리 가족 일정 만들기'}).click();
@@ -41,5 +41,24 @@ try{
   const download=await downloadEvent;assert(download.suggestedFilename().endsWith('.json'));
   await page.screenshot({path:'android/build/android-preview.png',fullPage:true});
   await page.reload();await page.getByRole('button',{name:'이어서 보기',exact:true}).click();await page.locator('.timeline').waitFor();
+  // Exercise the Android bridge contract with a synthetic provider reply; no real API call.
+  await page.addInitScript(()=>{
+    window.BopokAndroid={aiStatus:()=>JSON.stringify({configured:true,model:'test-model'}),configureAI:()=>{},saveJson:()=>{},saveTourism:()=>{},printPage:()=>{},requestAI:(id,payload)=>{
+      const request=JSON.parse(payload);
+      setTimeout(()=>window.dispatchEvent(new CustomEvent('bopok:ai',{detail:{id,output:{candidateIds:[request.candidateIds[0]]}}})),20);
+    }};
+  });
+  await page.reload();await page.getByRole('button',{name:'이어서 보기',exact:true}).click();
+  await page.getByText('AI 대체 관광지 추천',{exact:true}).click();
+  const selector=page.getByLabel('교체할 관광 일정');
+  const selectedId=await selector.locator('option').nth(1).getAttribute('value');
+  await selector.selectOption(selectedId);
+  await page.getByRole('checkbox',{name:'여행 조건·후보의 외부 전송과 API 사용료에 동의합니다.'}).check();
+  await page.getByRole('button',{name:'대체 관광지 AI 추천',exact:true}).click();
+  await page.getByRole('button',{name:'이 관광지로 교체',exact:true}).click();
+  const after=await page.evaluate(()=>JSON.parse(localStorage.getItem('bopok:trip:v1')));
+  assert.notEqual(after.items.find(i=>i.id===selectedId).placeId,trip.items.find(i=>i.id===selectedId).placeId);
+  assert.equal(after.revision,trip.revision+1);assert(!after.basics.taxiPlan);
   assert.deepEqual(errors,[]);console.log('PASS: offline national search, taxi planning, local save/reload, JSON export; no page errors.');
+  console.log('PASS: AI bridge contract with synthetic response, candidate validation and explicit replacement. Live AI and native keystore unverified.');
 }finally{await browser.close();server.close();}

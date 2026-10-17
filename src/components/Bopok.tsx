@@ -50,6 +50,7 @@ import AccountPanel from './AccountPanel';
 import VenueFacts from './VenueFacts';
 import RouteLookup from './RouteLookup';
 import AIAdvice from './AIAdvice';
+import AIReplacement from './AIReplacement';
 import {verifyReviewed} from '../domain/verification';
 import type {CloudTrip} from '../server/store';
 import { validateSchedule, Report } from "../domain/validate";
@@ -1178,6 +1179,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
               </button>
             </div>
             <DemoBanner />
+            <AIReplacement key={`replacement:${trip.id}:${trip.revision}`} trip={trip} onTrip={t=>{setTrip(t);setProposal(null);}}/>
             <VenueFacts trip={trip} onTrip={t=>{setTrip(t);setProposal(null);}}/><AIAdvice key={`${trip.id}:${trip.revision}`} trip={trip}/><RouteLookup trip={trip} onTrip={t=>{setTrip(t);setProposal(null);}} cloudId={initialCloud?.id} accessToken={accessToken}/>
             <LibraryPanel trips={library} current={trip} onSelect={t=>{setTrip(t);setDay(1);setProposal(null);}}/>
             <div className="result-layout">

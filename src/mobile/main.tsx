@@ -6,7 +6,7 @@ import type {KoreaSnapshot} from '../data/korea-tourism';
 import '../app/globals.css';
 import './mobile.css';
 
-declare global {interface Window {BopokAndroid?:{saveJson:(name:string,data:string)=>void;saveTourism:()=>void;printPage:()=>void};}}
+declare global {interface Window {BopokAndroid?:{saveJson:(name:string,data:string)=>void;saveTourism:()=>void;printPage:()=>void;aiStatus:()=>string;configureAI:(key:string,model:string)=>void;requestAI:(id:string,input:string)=>void};}}
 const nativeFetch=window.fetch.bind(window);
 let snapshot:Promise<KoreaSnapshot>|undefined;
 async function readSnapshot(){
@@ -41,4 +41,4 @@ if(window.BopokAndroid){
     if(anchor?.getAttribute('href')==='/api/tourism/download'){event.preventDefault();window.BopokAndroid!.saveTourism();}
   });
 }
-createRoot(document.getElementById('root')!).render(<><aside className="mobile-notice">보폭 안드로이드 · 오프라인 버전<br/>국내 자료·일정·택시 순서·파일 저장 지원 / 로그인·서버 공유·실시간 조회 미연결</aside><Bopok/></>);
+createRoot(document.getElementById('root')!).render(<><aside className="mobile-notice">보폭 안드로이드 · 개인 AI 연결 지원<br/>국내 자료·일정은 오프라인 / 대체 관광지 AI는 개인 API 키·인터넷 필요</aside><Bopok/></>);
