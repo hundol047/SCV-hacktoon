@@ -1,0 +1,14 @@
+import {build} from 'esbuild';
+import {mkdir,copyFile,readFile} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
+import {resolve} from 'node:path';
+const out=resolve('android/build/assets');
+await mkdir(out,{recursive:true});
+const data=await readFile('data/korea-tourism/snapshot.json.gz');
+const manifest=JSON.parse(await readFile('data/korea-tourism/manifest.json','utf8'));
+if(createHash('sha256').update(data).digest('hex')!==manifest.sha256)throw Error('Snapshot digest mismatch');
+await build({entryPoints:['src/mobile/main.tsx'],outfile:out+'/app.js',bundle:true,minify:true,platform:'browser',target:'chrome109',jsx:'automatic',define:{'process.env.NODE_ENV':'"production"'},alias:{'next/script':resolve('src/mobile/disabled-script.tsx')}});
+await copyFile('src/mobile/index.html',out+'/index.html');
+await copyFile('data/korea-tourism/snapshot.json.gz',out+'/snapshot.json.gz');
+await copyFile('data/korea-tourism/LICENSE.md',out+'/DATA-LICENSE.txt');
+console.log('Offline Android assets built with '+manifest.total+' tourism records.');

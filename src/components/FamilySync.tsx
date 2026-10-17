@@ -1,7 +1,7 @@
 'use client';
 import {useEffect,useRef,useState} from 'react';
 import {Trip} from '../domain/schema';
-import {cloudSchema,type CloudTrip} from '../server/store';
+import {cloudSchema,type CloudTrip} from '../domain/cloud-schema';
 const fingerprint=(trip:Trip)=>JSON.stringify({...trip,feedback:[],revision:0});
 const metadataKey='bopok:cloud:v1';
 type Metadata={id:string;storageVersion:number;tripId:string;saved:string};

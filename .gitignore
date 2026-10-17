@@ -14,3 +14,5 @@ next-env.d.ts
 
 .cache/
 data/korea-tourism/*.tmp
+android/build/
+.android-signing/

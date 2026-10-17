@@ -1,5 +1,7 @@
 # 보폭 · Bopok
 
+[안드로이드 APK 다운로드](downloads/bopok-android.apk?raw=true) · [설치 및 오프라인 지원 범위](docs/ANDROID.md)
+
 부모님의 속도로 함께 떠나는 여행. 걷기·휴식·음식·경험 조건을 확인하고 일정을 점검한 뒤, 수정 전후를 비교해 적용합니다. 큰 글씨 부모님 화면, 가족 의견, 인쇄/PDF, 여행 보관함을 제공합니다.
 
 Next.js + TypeScript + Zod, Vitest, Playwright. Node 24, npm, `package-lock.json`을 사용합니다. 현재 버전은 0.6.0입니다. [개선 결과와 남은 운영 연결](docs/RELEASE_READINESS.md)을 먼저 확인하세요.

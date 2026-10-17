@@ -4,6 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "build:mobile": "node scripts/build-mobile.mjs",
+    "build:android": "node scripts/build-android.mjs",
     "dev": "next dev --hostname 0.0.0.0",
     "build": "next build",
     "start": "node scripts/start.mjs",
@@ -35,6 +37,7 @@
     "@types/node": "^24.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "esbuild": "0.28.2",
     "typescript": "5.9.3",
     "vitest": "5.0.3"
   },

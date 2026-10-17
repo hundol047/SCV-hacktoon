@@ -20,8 +20,8 @@ export class SupabaseRPC implements RPC{
   }
 }
 export function configuredRPC():RPC|null{const url=process.env.BOPok_SUPABASE_URL,key=process.env.BOPok_SUPABASE_KEY;try{return url&&key?new SupabaseRPC(url,key):null;}catch{return null;}}
-export const cloudSchema=z.object({id:z.string().uuid(),storageVersion:z.number().int().nonnegative(),role:z.enum(['owner','editor','viewer']),trip:tripSchema,expiresAt:z.string().optional()});
-export type CloudTrip=z.infer<typeof cloudSchema>;
+export {cloudSchema,type CloudTrip} from '../domain/cloud-schema';
+import {cloudSchema,type CloudTrip} from '../domain/cloud-schema';
 export class TripStore{
   constructor(private rpc:RPC){}
   async action(action:string,owner:string,id?:string,token='',payload?:unknown,expected?:number,role?:string){const data=await this.rpc.call('bopok_trip',{p_action:action,p_owner:owner,p_id:id??null,p_token:token,p_payload:payload??null,p_expected:expected??null,p_role:role??'viewer'});if(data?.error)throw new StoreError(data.error);return data;}

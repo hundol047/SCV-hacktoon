@@ -1,7 +1,7 @@
 'use client';
 import {useEffect,useRef,useState} from 'react';
 import Link from 'next/link';
-import {cloudSchema,type CloudTrip} from '../server/store';
+import {cloudSchema,type CloudTrip} from '../domain/cloud-schema';
 import {time,dayDate} from '../domain/schema';
 import {catalogFor,indexCatalog} from '../data/catalog';
 import {validateSchedule} from '../domain/validate';
