@@ -27,7 +27,7 @@ function routeDistance(ids: string[], byId: Map<string, Place>): number | null {
 export function optimizeTaxiOrder(
   places: Place[], selectedPlaceIds: string[], startPlaceId: string, travelers: number,
   baseFare: number | null, perKmFare: number | null, createdAt = new Date().toISOString(),
-  options: {endPlaceId?: string; returnToStart?: boolean; day?: number; taxiCapacity?: number} = {},
+  options: {endPlaceId?: string; returnToStart?: boolean; day?: number; taxiCapacity?: number;transport?:'taxi'|'driving';drivingCosts?:TaxiPlan['drivingCosts']} = {},
 ): TaxiOrderResult | { error: string } {
   const ids = [...new Set(selectedPlaceIds)];
   if (ids.length < 2 || ids.length > 20) return { error: '장소를 2~20곳 선택해 주세요.' };
@@ -71,14 +71,16 @@ export function optimizeTaxiOrder(
   const taxiCapacity = options.taxiCapacity ?? 4;
   const vehicles = Math.ceil(travelers / taxiCapacity);
   const legs = ordered.length - 1 + Number(!!options.returnToStart);
-  const estimatedFare = baseFare === null || perKmFare === null ? null : Math.ceil((legs * baseFare + distanceKm * perKmFare) * vehicles);
-  const parsed = taxiPlanSchema.safeParse({ ...options, fareModel:'per-leg-v1', selectedPlaceIds: ids, orderedPlaceIds: ordered, startPlaceId, travelers, taxiCapacity, baseFare, perKmFare, vehicles, distanceKm, estimatedFare, createdAt });
+  const driving=options.transport==='driving',cost=options.drivingCosts;
+  const estimatedFare = driving ? cost?Math.ceil((distanceKm/cost.kmPerLiter*cost.fuelPrice+cost.parking+cost.tolls)*vehicles):null : baseFare === null || perKmFare === null ? null : Math.ceil((legs * baseFare + distanceKm * perKmFare) * vehicles);
+  const parsed = taxiPlanSchema.safeParse({ ...options, fareModel:driving?undefined:'per-leg-v1', selectedPlaceIds: ids, orderedPlaceIds: ordered, startPlaceId, travelers, taxiCapacity, baseFare, perKmFare, vehicles, distanceKm, estimatedFare, createdAt });
   if (!parsed.success) return {error:'여행일·차량 정원·거리·날짜 입력을 확인해 주세요.'};
   return { plan: parsed.data, places: ordered.map(id => byId.get(id)!) };
 }
 
 export function taxiPlanSummary(plan: TaxiPlan): string {
   const distance = `${plan.distanceKm.toFixed(1)}km(좌표 직선거리)`;
+  if(plan.transport==='driving')return plan.estimatedFare===null?`${distance} · 자가용 연료비·주차비·통행료 미입력`:`${distance} · 입력 가정 기준 차량 비용 ${plan.estimatedFare.toLocaleString()}원 · 1인 약 ${Math.ceil(plan.estimatedFare/plan.travelers).toLocaleString()}원 (실제 도로 견적 아님)`;
   if (!plan.fareModel) return `${distance} · 이전 계산입니다. 구간별 요금을 다시 계산해 주세요.`;
   if (plan.estimatedFare === null) return `${distance} · 실제 도로 거리·택시요금은 출발 전 확인 필요`;
   return `${distance} · 입력 가정 기준 예상 총액 ${plan.estimatedFare.toLocaleString()}원 · 1인 약 ${Math.ceil(plan.estimatedFare / plan.travelers).toLocaleString()}원 (실제 견적 아님)`;

@@ -218,9 +218,9 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
     setProposal(null);
     navigate("conditions");
   };
-  const startTaxi = () => {
+  const startTaxi = (transport:'taxi'|'driving'='taxi') => {
     start(false);
-    setB({...defaultBasics,title:'친구들과 가볍게 떠나는 여행',date:new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Seoul'}).format(new Date()),days:1,mode:'real',region:'실제 지역',transport:'taxi'});
+    setB({...defaultBasics,title:'친구들과 가볍게 떠나는 여행',date:new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Seoul'}).format(new Date()),days:1,mode:'real',region:'실제 지역',transport,travelPriority:transport==='driving'?'comfort':'budget'});
     setSelectedCatalog(emptyRealCatalog);
     navigate('basics');
   };
@@ -435,7 +435,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
           <>
             <section className="quick-start" aria-label="여행 시작 방법">
               <div><span className="eyebrow">어떤 여행을 준비하나요?</span><h2>원하는 방식으로 바로 시작하세요</h2><p>부모님 여행은 걷기·휴식 조건부터, 친구 여행은 장소 선택부터 준비합니다.</p></div>
-              <button className="primary" onClick={startTaxi}>택시 여행 빠르게 만들기 <ArrowRight size={18}/></button>
+              <button className="primary" onClick={()=>startTaxi('taxi')}>택시 여행 빠르게 만들기 <ArrowRight size={18}/></button><button className="secondary" onClick={()=>startTaxi('driving')}>자가용 여행 빠르게 만들기 <ArrowRight size={18}/></button>
               <button className="secondary" onClick={()=>start(false)}>부모님 맞춤 여행 시작</button>
             </section>
             <section className="hero">
@@ -1072,12 +1072,12 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
                           setB({
                             ...b,
                             transport: e.target.value as Basics["transport"],
-                            taxiPlan: e.target.value === 'taxi' ? b.taxiPlan : undefined,
+                            taxiPlan: undefined,
                           })
                         }
                       >
                         <option value="taxi">택시</option>
-                        <option value="walk">도보</option>{b.mode==='real'&&<><option value="driving">자동차</option><option value="transit">대중교통</option></>}
+                        <option value="walk">도보</option>{b.mode==='real'&&<><option value="driving">자가용</option><option value="transit">대중교통</option></>}
                       </select>
                     </label>
                     <label>
@@ -1093,7 +1093,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
                       </select>
                     </label>
                   </div>
-                  {b.mode==='real'&&<><RealSearch onLoaded={catalog=>{setSelectedCatalog(catalog);const meta=catalog.cities?.[0];setB({...b,region:catalog.region,timezone:meta?.timezone??b.timezone,destinations:[{region:catalog.region,startDay:1,endDay:b.days,timezone:meta?.timezone??b.timezone,currency:meta?.currency??'KRW'}],taxiPlan:undefined});setImportItems([]);}}/><details className="advanced-settings"><summary>시간대 설정</summary><label>현지 시간대 (IANA)<input value={b.timezone} onChange={e=>setB({...b,timezone:e.target.value})} placeholder="Asia/Seoul, Asia/Tokyo, Europe/Paris"/></label></details>{b.transport==='taxi'&&selectedCatalog.places.length>0&&<StudentTaxiPlanner basics={b} catalog={selectedCatalog} onChange={setB}/>} {selectedCatalog.places.length>0&&<details className="advanced-settings"><summary>다도시·숙박·교통비 설정</summary><WorldPlan basics={b} catalog={selectedCatalog} onChange={(basics,catalog)=>{setB(basics);setSelectedCatalog(catalog);}}/></details>}</>}
+                  {b.mode==='real'&&<><RealSearch onLoaded={catalog=>{setSelectedCatalog(catalog);const meta=catalog.cities?.[0];setB({...b,region:catalog.region,timezone:meta?.timezone??b.timezone,destinations:[{region:catalog.region,startDay:1,endDay:b.days,timezone:meta?.timezone??b.timezone,currency:meta?.currency??'KRW'}],taxiPlan:undefined});setImportItems([]);}}/><details className="advanced-settings"><summary>시간대 설정</summary><label>현지 시간대 (IANA)<input value={b.timezone} onChange={e=>setB({...b,timezone:e.target.value})} placeholder="Asia/Seoul, Asia/Tokyo, Europe/Paris"/></label></details>{(b.transport==='taxi'||b.transport==='driving')&&selectedCatalog.places.length>0&&<><label>추천 기준<select value={b.travelPriority??(b.transport==='driving'?'comfort':'budget')} onChange={e=>setB({...b,travelPriority:e.target.value as Basics['travelPriority']})}><option value="budget">이동 거리 우선</option><option value="comfort">좌석·적은 보행 우선</option><option value="balanced">관심 경험·거리 균형</option></select></label><StudentTaxiPlanner conditions={c} basics={b} catalog={selectedCatalog} onChange={setB}/></>} {selectedCatalog.places.length>0&&<details className="advanced-settings"><summary>다도시·숙박·교통비 설정</summary><WorldPlan basics={b} catalog={selectedCatalog} onChange={(basics,catalog)=>{setB(basics);setSelectedCatalog(catalog);}}/></details>}</>}
                   {existing && (
                     <section className="importer">
                       <h2>기존 일정 입력</h2>

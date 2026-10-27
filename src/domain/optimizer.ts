@@ -1,7 +1,7 @@
 import { Basics,Conditions,Item } from './schema';
 import { Catalog,catalogFor,indexCatalog } from '../data/catalog';
 import { Place } from '../data/demo';
-import {destinationFor,isTravelOnlyDay} from './world';
+import {destinationFor,isTravelOnlyDay,transportLabel} from './world';
 import { validateSchedule } from './validate';
 import { taxiPlanSummary } from './taxi-plan';
 
@@ -60,14 +60,15 @@ function* interleave(flexible:Task[],anchors:Task[],prefix:Task[]=[]):Generator<
 export function optimize(c:Conditions,b:Basics,original:Item[]=[],feedback:string[]=[],supplied?:Catalog):SearchResult{
   const catalog=catalogFor(b.mode,supplied),{placeById}=indexCatalog(catalog);
   const requested=[...new Set([...c.requiredExperiences,...c.experiences])];
-  if (b.taxiPlan && b.mode === 'real' && b.transport === 'taxi' && catalog.mode === 'real') {
+  if (b.taxiPlan && b.mode === 'real' && (b.transport === 'taxi' || b.transport === 'driving') && catalog.mode === 'real') {
+    if((b.taxiPlan.transport??'taxi')!==b.transport)return {items:structuredClone(original),blocked:true,searched:0,searchLimited:false,preserved:[],reasons:['이동 수단을 바꿨습니다. 방문 순서를 다시 계산해 주세요.']};
     const day = b.taxiPlan.day ?? 1;
     const fail = (message: string): SearchResult => ({items:structuredClone(original),blocked:true,searched:0,searchLimited:false,preserved:[],reasons:[message]});
-    if (day > b.days || isTravelOnlyDay(b,day)) return fail('택시 여행일과 이동일 설정을 확인해 주세요.');
-    if (original.some(item => item.day === day && item.locked)) return fail('선택 여행일에 고정 일정이 있어 택시 순서를 다시 배치하지 않았습니다. 기존 일정을 보존했습니다.');
-    if (feedback.length) return fail('선택 장소의 택시 순서를 유지했습니다. 휴식·식사 의견은 시간표에서 직접 반영한 뒤 다시 점검해 주세요.');
+    if (day > b.days || isTravelOnlyDay(b,day)) return fail('차량 여행일과 이동일 설정을 확인해 주세요.');
+    if (original.some(item => item.day === day && item.locked)) return fail('선택 여행일에 고정 일정이 있어 방문 순서를 다시 배치하지 않았습니다. 기존 일정을 보존했습니다.');
+    if (feedback.length) return fail('선택 장소의 방문 순서를 유지했습니다. 휴식·식사 의견은 시간표에서 직접 반영한 뒤 다시 점검해 주세요.');
     const selected = b.taxiPlan.orderedPlaceIds.map(id => placeById.get(id));
-    if (selected.some(place => !place)) return fail('저장한 택시 순서의 장소가 현재 자료에 없습니다. 장소를 다시 선택해 주세요.');
+    if (selected.some(place => !place)) return fail('저장한 방문 순서의 장소가 현재 자료에 없습니다. 장소를 다시 선택해 주세요.');
     const region = destinationFor(b,day)?.region;
     if (region && selected.some(place => (place!.region ?? catalog.region) !== region)) return fail('선택 여행일의 도시 밖 장소가 있습니다. 같은 도시의 장소를 선택해 주세요.');
     const items: Item[] = [];
@@ -77,12 +78,12 @@ export function optimize(c:Conditions,b:Basics,original:Item[]=[],feedback:strin
       const place = selected[i]!;
       if (i > 0) {
         const previous = selected[i - 1]!;
-        const route = indexCatalog(catalog).getRoute(previous.id, place.id, 'taxi');
+        const route = indexCatalog(catalog).getRoute(previous.id, place.id, b.transport);
         const duration = route?.duration.value ?? 20;
         if (!Number.isFinite(duration) || duration < 0 || cursor + Math.max(1,Math.ceil(duration)) > 1440) return fail('하루 안에 모든 이동을 배치할 수 없습니다. 장소 수를 줄여 주세요.');
         if (!route || route.duration.value === null) missingRoutes++;
         const minutes = Math.max(1,Math.ceil(duration));
-        items.push({ id: `taxi-plan:move:${i}`, day, start: cursor, end: cursor + minutes, kind: 'move', placeId: null, fromId: previous.id, toId: place.id, transport: 'taxi', locked: false, mode: 'real' });
+        items.push({ id: `taxi-plan:move:${i}`, day, start: cursor, end: cursor + minutes, kind: 'move', placeId: null, fromId: previous.id, toId: place.id, transport: b.transport, locked: false, mode: 'real' });
         cursor += minutes;
       }
       const duration = place.kind === 'meal' ? 45 : place.kind === 'rest' ? 20 : 45;
@@ -92,11 +93,11 @@ export function optimize(c:Conditions,b:Basics,original:Item[]=[],feedback:strin
     }
     if (b.taxiPlan.returnToStart) {
       const from = selected.at(-1)!, to = selected[0]!;
-      const route = indexCatalog(catalog).getRoute(from.id,to.id,'taxi');
+      const route = indexCatalog(catalog).getRoute(from.id,to.id,b.transport);
       const duration = Math.max(1,Math.ceil(route?.duration.value ?? 20));
       if (!Number.isFinite(duration) || cursor + duration > 1440) return fail('복귀 이동까지 하루 안에 배치할 수 없습니다. 장소 수를 줄여 주세요.');
       if (!route || route.duration.value === null) missingRoutes++;
-      items.push({id:'taxi-plan:return',day,start:cursor,end:cursor+duration,kind:'move',placeId:null,fromId:from.id,toId:to.id,transport:'taxi',locked:false,mode:'real'});
+      items.push({id:'taxi-plan:return',day,start:cursor,end:cursor+duration,kind:'move',placeId:null,fromId:from.id,toId:to.id,transport:b.transport,locked:false,mode:'real'});
     }
     const otherItems = original.length ? original.filter(item => item.day !== day) : b.days > 1 ? optimize(c,{...b,taxiPlan:undefined},[],[],catalog).items.filter(item => item.day !== day) : [];
     items.push(...otherItems);
@@ -109,8 +110,9 @@ export function optimize(c:Conditions,b:Basics,original:Item[]=[],feedback:strin
       preserved: requested.filter(experience => selected.some(place => place!.experiences.includes(experience))),
       reasons: [
         `선택한 장소를 좌표 직선거리 기준으로 ${selected.map(place => place!.name).join(' → ')} 순서로 배치했습니다.`,
-        `여행 인원 ${b.taxiPlan.travelers}명 · 택시 ${b.taxiPlan.vehicles}대(대당 ${b.taxiPlan.taxiCapacity}명)`,
+        `여행 인원 ${b.taxiPlan.travelers}명 · ${transportLabel[b.transport]} ${b.taxiPlan.vehicles}대(대당 ${b.taxiPlan.taxiCapacity}명)`,
         taxiPlanSummary(b.taxiPlan),
+        b.transport==='driving'?'자가용 일정입니다. 주차 가능 여부·주차장부터 입구까지의 보행·보호자 하차 위치는 별도로 확인하세요.':'택시 일정입니다. 승하차 위치·호출 가능 여부·대기 및 할증 요금은 별도로 확인하세요.',
         ...(missingRoutes ? [`실제 도로 경로가 ${missingRoutes}개 확인되지 않아 해당 이동 시간·요금은 출발 전 조회가 필요합니다.`] : []),
         '직선거리 순서이며 최저요금을 보장하지 않습니다. 방문 45분·휴식 20분·미확인 이동 20분은 편집용 배정 시간입니다.',
         b.taxiPlan.returnToStart ? '마지막 장소에서 출발지로 복귀하는 이동을 포함했습니다.' : '편도 경로입니다. 복귀 이동은 포함하지 않습니다.',
@@ -220,7 +222,7 @@ export function optimize(c:Conditions,b:Basics,original:Item[]=[],feedback:strin
   return {items,blocked:!found,searched,searchLimited:limited,preserved:requested.filter(e=>items.some(i=>placeById.get(i.placeId??'')?.experiences.includes(e))),reasons:[
     found?'후보 장소·방문 순서·점심 위치를 비교하고 같은 조건으로 다시 점검했어요.':limited?'탐색 한도 안에서 모든 필수 조건을 맞추는 수정안을 찾지 못했어요. 조건을 낮추지 않았습니다.':'현재 자료에서 필수 조건을 충족하는 수정안을 찾지 못했어요. 미확인 자료와 고정 시간을 확인해 주세요.',
     ...(original.some(i=>i.locked)?['고정 구간의 ID·장소·시작·종료는 그대로 보존하고, 주변 구간을 다시 배치했어요.']:[]),
-    `이동 수단은 ${b.transport==='taxi'?'택시':'도보'}를 유지하고, 좌석 정보가 있는 장소에서 최소 ${restMin}분 쉬도록 배치했어요.`,
+    `이동 수단은 ${transportLabel[b.transport]}를 유지하고, 좌석 정보가 있는 장소에서 최소 ${restMin}분 쉬도록 배치했어요.`,
     ...(feedback.includes('쉬는 시간을 늘려 주세요')?['부모님 의견에 따라 최소 휴식 시간을 10분 늘린 제안입니다. 입력 조건 자체는 바꾸지 않았어요.']:[]),
     ...(feedback.includes('걷는 구간을 줄여 주세요')?['원하는 경험을 유지하면서 방문 수와 내부 보행을 줄이는 후보를 우선했어요.']:[]),
     '확인되지 않은 정보는 충족으로 계산하지 않았어요.',

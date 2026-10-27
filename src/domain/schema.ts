@@ -2,6 +2,8 @@ import { z } from "zod";
 import { catalogSchema } from '../data/catalog';
 
 export const taxiPlanSchema = z.object({
+  transport:z.enum(['taxi','driving']).optional(),
+  drivingCosts:z.object({kmPerLiter:z.number().min(1).max(50),fuelPrice:z.number().int().min(0).max(10000),parking:z.number().int().min(0).max(1000000),tolls:z.number().int().min(0).max(1000000)}).optional(),
   selectedPlaceIds: z.array(z.string().min(1).max(100)).min(2).max(20),
   orderedPlaceIds: z.array(z.string().min(1).max(100)).min(2).max(20),
   startPlaceId: z.string().min(1).max(100),
@@ -26,7 +28,14 @@ export const taxiPlanSchema = z.object({
   if (plan.orderedPlaceIds[0] !== plan.startPlaceId) ctx.addIssue({ code: 'custom', message: '첫 장소와 출발 장소가 일치해야 합니다.' });
   if (plan.endPlaceId && (plan.returnToStart || plan.endPlaceId === plan.startPlaceId || plan.orderedPlaceIds.at(-1) !== plan.endPlaceId)) ctx.addIssue({ code: 'custom', message: '도착 장소와 복귀 설정을 확인해 주세요.' });
   if (plan.vehicles !== Math.ceil(plan.travelers / plan.taxiCapacity)) ctx.addIssue({ code: 'custom', message: '택시 대수와 여행자 수가 맞지 않습니다.' });
-  if ((plan.baseFare === null) !== (plan.perKmFare === null) || (plan.estimatedFare !== null && plan.baseFare === null)) ctx.addIssue({ code: 'custom', message: '택시 요금 가정은 기본요금과 km당 요금을 함께 입력해야 합니다.' });
+  if(plan.transport==='driving'){
+    const cost=plan.drivingCosts;
+    const expected=cost?Math.ceil((plan.distanceKm/cost.kmPerLiter*cost.fuelPrice+cost.parking+cost.tolls)*plan.vehicles):null;
+    if(plan.baseFare!==null||plan.perKmFare!==null||plan.fareModel||plan.estimatedFare!==expected)ctx.addIssue({code:'custom',message:'자가용 비용 가정을 확인해 주세요.'});
+  }else{
+    if(plan.drivingCosts)ctx.addIssue({code:'custom',message:'택시에 자가용 비용을 적용할 수 없습니다.'});
+    if ((plan.baseFare === null) !== (plan.perKmFare === null) || (plan.estimatedFare !== null && plan.baseFare === null)) ctx.addIssue({ code: 'custom', message: '택시 요금 가정은 기본요금과 km당 요금을 함께 입력해야 합니다.' });
+  }
   if (plan.fareModel && plan.baseFare !== null && plan.perKmFare !== null && plan.estimatedFare !== Math.ceil(((plan.orderedPlaceIds.length - 1 + Number(!!plan.returnToStart)) * plan.baseFare + plan.distanceKm * plan.perKmFare) * plan.vehicles)) ctx.addIssue({code:'custom',message:'구간별 요금 계산이 일치하지 않습니다.'});
 });
 export type TaxiPlan = z.infer<typeof taxiPlanSchema>;
@@ -62,6 +71,7 @@ const basicsBaseSchema = z.object({
   days: z.number().int().min(1).max(30),
   budget: z.number().int().min(0).max(10000000),
   transport: z.enum(["taxi", "walk", "driving", "transit"]),
+  travelPriority:z.enum(['balanced','budget','comfort']).optional(),
   mode: z.enum(['demo','real']),
   currency:z.string().regex(/^[A-Z]{3}$/).optional(),
   destinations:z.array(z.object({region:z.string().min(1).max(120),startDay:z.number().int().min(1).max(30),endDay:z.number().int().min(1).max(30),localStartDate:date.optional(),timezone:z.string().max(80).refine(v=>{try{new Intl.DateTimeFormat('en',{timeZone:v});return true;}catch{return false;}}),currency:z.string().regex(/^[A-Z]{3}$/)})).max(30).optional(),
@@ -73,7 +83,7 @@ const basicsBaseSchema = z.object({
 }).refine(b=>b.mode!=='demo'||b.days<=2,'시연은 1~2일을 지원합니다.').superRefine((b,ctx)=>{if(b.destinations?.length){for(let day=1;day<=b.days;day++)if(b.destinations.filter(d=>d.startDay<=day&&d.endDay>=day).length!==1)ctx.addIssue({code:'custom',message:day+'일차 도시를 하나씩 지정해 주세요.'});for(const d of b.destinations)if(d.startDay>d.endDay||d.endDay>b.days)ctx.addIssue({code:'custom',message:'도시 날짜 범위를 확인해 주세요.'});}if(b.mode==='demo'&&(b.transport==='driving'||b.transport==='transit'))ctx.addIssue({code:'custom',message:'시연은 택시·도보 경로만 지원합니다.'});}).refine(b=>(b.mode==='demo')===(b.region==='가상 솔바다'),'지역과 데이터 모드가 일치하지 않습니다.').superRefine((b,ctx)=>{if(new Set(b.destinations?.map(d=>d.region)).size>10)ctx.addIssue({code:'custom',message:'도시는 10개까지 지원합니다.'});if(b.travelDays?.some(day=>day>b.days)||b.transfers?.some(t=>(t.departureDay??1)>b.days||(t.arrivalDay??1)>b.days||t.departureDay&&t.arrivalDay&&t.departureDay>t.arrivalDay))ctx.addIssue({code:'custom',message:'이동 기록의 여행일 범위를 확인해 주세요.'});});
 // A saved plan is only meaningful for a real taxi itinerary.
 export const basicsSchema = basicsBaseSchema.superRefine((b, ctx) => {
-  if (b.taxiPlan && (b.mode !== 'real' || b.transport !== 'taxi')) ctx.addIssue({ code: 'custom', message: '택시 절약 순서는 실제 택시 여행에서만 사용할 수 있습니다.' });
+  if (b.taxiPlan && (b.mode !== 'real' || b.transport !== (b.taxiPlan.transport??'taxi'))) ctx.addIssue({ code: 'custom', message: '저장된 방문 순서의 이동 수단과 여행 설정이 다릅니다. 순서를 다시 계산해 주세요.' });
   if (b.taxiPlan && (b.taxiPlan.day ?? 1) > b.days) ctx.addIssue({code:'custom',message:'택시 여행일이 여행 기간 밖입니다.'});
 });
 export const basicsWithTaxiRule = basicsSchema;

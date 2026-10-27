@@ -3,6 +3,7 @@ import type { Place } from '../src/data/demo';
 import { basicsSchema, taxiPlanSchema, itemSchema, defaultBasics, defaultConditions } from '../src/domain/schema';
 import { haversineKm, optimizeTaxiOrder, taxiPlanSummary } from '../src/domain/taxi-plan';
 import { optimize } from '../src/domain/optimizer';
+import {rankVehiclePlaces} from '../src/domain/vehicle-recommendations';
 
 const place = (id: string, latitude: number, longitude: number): Place => ({
   id, name: id, kind: 'visit', experiences: [], description: '', latitude, longitude,
@@ -24,6 +25,28 @@ describe('학생 택시 순서 계산', () => {
     return result.plan;
   };
   const catalog={mode:'real' as const,region:'서울',places:points,routes:[],sourceNotice:'test',collectedAt:new Date().toISOString()};
+  it('자가용 비용·왕복 이동을 계산하고 택시 계획의 혼용을 거부한다',()=>{
+    const result=optimizeTaxiOrder(points,['a','b','c'],'a',5,null,null,undefined,{transport:'driving',returnToStart:true,drivingCosts:{kmPerLiter:10,fuelPrice:1700,parking:5000,tolls:2000}});
+    if('error' in result)throw Error(result.error);
+    expect(result.plan.estimatedFare).toBe(Math.ceil((result.plan.distanceKm/10*1700+7000)*2));
+    const basics={...defaultBasics,mode:'real' as const,region:'서울',transport:'driving' as const,taxiPlan:result.plan};
+    expect(basicsSchema.safeParse(basics).success).toBe(true);
+    expect(basicsSchema.safeParse({...basics,transport:'taxi'}).success).toBe(false);
+    expect(taxiPlanSchema.safeParse({...result.plan,estimatedFare:1}).success).toBe(false);
+    const planned=optimize(defaultConditions,basics,[],[],catalog);
+    expect(planned.items.filter(i=>i.kind==='move').length).toBe(3);
+    expect(planned.items.filter(i=>i.kind==='move').every(i=>i.transport==='driving')).toBe(true);
+    expect(taxiPlanSummary(result.plan)).toContain('차량 비용');
+    expect(optimizeTaxiOrder(points,['a','b'],'a',1,null,null,undefined,{transport:'driving'})).toMatchObject({plan:{estimatedFare:null}});
+    expect(optimizeTaxiOrder(points,['a','b'],'a',1,null,null,undefined,{transport:'driving',drivingCosts:{kmPerLiter:0,fuelPrice:1000,parking:0,tolls:0}})).toHaveProperty('error');
+  });
+  it('거리·편안함 선택에 따라 추천을 바꾸고 금지 조건을 걸러낸다',()=>{
+    const nearby={...points[1],seat:{...points[1].seat,value:null},stairs:{...points[1].stairs,value:null}};
+    const list=[nearby,points[2]];
+    expect(rankVehiclePlaces(list,{...defaultBasics,travelPriority:'budget'},defaultConditions,points[0])[0].place.id).toBe('b');
+    expect(rankVehiclePlaces(list,{...defaultBasics,travelPriority:'comfort'},defaultConditions,points[0])[0].place.id).toBe('c');
+    expect(rankVehiclePlaces([{...points[2],stairs:{...points[2].stairs,value:true}}],defaultBasics,{...defaultConditions,avoidStairs:true},points[0])).toEqual([]);
+  });
   it('기본요금을 구간과 차량 수만큼 계산하고 복귀 이동도 포함한다',()=>{
     expect(planFor().estimatedFare).toBe(4800*2*2);
     expect(planFor({returnToStart:true}).estimatedFare).toBe(4800*3*2);
