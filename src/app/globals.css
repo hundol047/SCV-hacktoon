@@ -1843,3 +1843,12 @@ summary {
 .world-plan,.cloud-panel{overflow-wrap:anywhere;}
 .taxi-planner input[type="checkbox"]{display:inline-block;width:auto;flex:0 0 auto;}
 .taxi-planner .candidate-list{max-height:320px;overflow:auto;}
+.quick-start{max-width:1100px;margin:24px auto;padding:24px;border-radius:20px;background:#edf4ef;display:flex;align-items:center;flex-wrap:wrap;gap:16px}
+.quick-start>div{flex:1 1 360px}.quick-start h2{font-size:24px;margin:8px 0}.quick-start p{line-height:1.6}
+.journey-steps{display:flex;list-style:none;padding:0;gap:8px;flex-wrap:wrap;margin:16px 0}.journey-steps li{border-radius:12px;padding:10px 14px;background:#edf4ef;color:#174f41;font-weight:600}
+.advanced-settings{border:1px solid #d4ddd6;border-radius:12px;padding:14px;margin:14px 0}.advanced-settings summary{cursor:pointer;min-height:30px;font-weight:600}.advanced-settings[open] summary{margin-bottom:12px}
+.place-filters,.selected-places{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.place-filters button,.selected-places button{padding:10px 14px;min-height:44px;border:1px solid #b7c8bc;border-radius:20px;background:white;color:#174f41}
+.place-filters button[aria-pressed=true]{background:#174f41;color:white}.selected-places button{background:#edf4ef}
+.place-choice{padding:12px;border:1px solid #d4ddd6;border-radius:12px;margin:8px 0}.place-choice .check-row{margin:0;display:flex;flex-wrap:wrap;align-items:center;gap:10px}.place-choice details{padding-left:4px}.place-choice summary{padding:12px 0;cursor:pointer}.place-choice dl{display:grid;grid-template-columns:1fr 1fr;gap:8px}.place-choice dd{margin:0}
+.route-preview li{padding:10px 0}.route-preview small{display:block;margin-top:6px}.ai-comparison{width:100%;border-collapse:collapse;margin:12px 0}.ai-comparison th,.ai-comparison td{text-align:left;padding:10px;border:1px solid #d4ddd6;overflow-wrap:anywhere}
+@media(max-width:640px){.quick-start{margin:12px;padding:18px}.quick-start button{width:100%;justify-content:center}.journey-steps{font-size:13px}.journey-steps li{padding:8px}.taxi-planner .candidate-list{max-height:420px}.ai-comparison{font-size:14px}}
