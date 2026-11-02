@@ -62,7 +62,7 @@ export function parseKoreaRegion(data:unknown,code:typeof koreaRegions[number]['
  if(elements.length!==Number(count.tags.total)||new Set(elements.map(e=>`${e.type}:${e.id}`)).size!==elements.length)throw Error('공급자 응답이 잘렸거나 중복되었습니다.');
  const records=elements.map(e=>{
   const category=koreaCategory(e.tags),id=`osm:${e.type}:${e.id}`;
-  const tags=Object.fromEntries(Object.entries(e.tags).filter(([k])=>/^(name(:ko|:en)?|addr:.*|tourism|historic|natural|leisure|amenity|boundary|shop|cuisine|wheelchair|bench|seats|step_count|highway|opening_hours|website|contact:website)$/.test(k)).map(([k,v])=>[k.slice(0,100),v.slice(0,3000)]));
+  const tags=Object.fromEntries(Object.entries(e.tags).filter(([k])=>/^(name(:ko|:en)?|addr:.*|tourism|historic|natural|leisure|amenity|boundary|shop|cuisine|wheelchair|bench|seats|step_count|highway|indoor|outdoor|opening_hours|website|contact:website)$/.test(k)).map(([k,v])=>[k.slice(0,100),v.slice(0,3000)]));
   const name=e.tags['name:ko']?.trim()||e.tags.name?.trim()||e.tags['name:en']?.trim();
   const latitude=e.lat??e.center?.lat??null,longitude=e.lon??e.center?.lon??null;
   return koreaRecordSchema.parse({id,name:(name||`이름 미등록 ${koreaCategories[category]} (${id})`).slice(0,300),nameKnown:!!name,category,provinces:[code],latitude,longitude,

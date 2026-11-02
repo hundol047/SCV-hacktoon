@@ -7,7 +7,7 @@ test('two independent browsers share parent feedback and enforce viewer permissi
  await parent.getByRole('button',{name:'쉬는 시간을 늘려 주세요',exact:true}).click();await expect(parent.getByRole('status')).toContainText('의견을 기록');
  await expect(page.getByRole('button',{name:'의견을 반영한 수정안 보기'})).toBeVisible({timeout:12000});
  const fragment=new URLSearchParams(new URL(link).hash.slice(1));const denied=await second.request.put('http://127.0.0.1:3000/api/trips/'+fragment.get('trip'),{headers:{Origin:'http://127.0.0.1:3000',Authorization:'Bearer '+fragment.get('token')},data:{trip:JSON.parse(await page.evaluate(()=>localStorage.getItem('bopok:trip:v1')!)),storageVersion:1}});expect(denied.status()).toBe(403);
- await page.getByRole('button',{name:'공유 링크 모두 폐기',exact:true}).click();await expect(parent.getByRole('alert')).toBeVisible({timeout:12000});await expect(parent.getByRole('heading',{name:'솔바다에서, 천천히 함께',exact:true})).toHaveCount(0);await expect(parent.getByRole('button',{name:'쉬는 시간을 늘려 주세요',exact:true})).toHaveCount(0);
+ await page.getByRole('button',{name:'공유 링크 모두 폐기',exact:true}).click();await expect(parent.locator('main').getByRole('alert')).toContainText('권한이 없습니다',{timeout:12000});await expect(parent.getByRole('heading',{name:'솔바다에서, 천천히 함께',exact:true})).toHaveCount(0);await expect(parent.getByRole('button',{name:'쉬는 시간을 늘려 주세요',exact:true})).toHaveCount(0);
  }finally{await second.close();}
 });
 test('cloud connection survives parent/compare screens and reload; concurrent changes stay protected',async({page,context})=>{

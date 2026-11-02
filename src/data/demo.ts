@@ -20,6 +20,7 @@ export type Place = {
   kind: "visit" | "meal" | "rest";
   experiences: string[];
   description: string;
+  setting?: Fact<'indoor'|'outdoor'|'unknown'>;
   walkMin: Fact<number>;
   walkM: Fact<number>;
   stairs: Fact<boolean>;

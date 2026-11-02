@@ -3,6 +3,7 @@ import { Catalog,catalogFor,indexCatalog } from '../data/catalog';
 import { Place } from '../data/demo';
 import {destinationFor,isTravelOnlyDay,transportLabel} from './world';
 import { validateSchedule } from './validate';
+import {savedPlans} from './course-plans';
 import { taxiPlanSummary } from './taxi-plan';
 
 type Task={place:Place;kind:'visit'|'meal'}|{fixed:Item};
@@ -59,6 +60,15 @@ function* interleave(flexible:Task[],anchors:Task[],prefix:Task[]=[]):Generator<
 }
 export function optimize(c:Conditions,b:Basics,original:Item[]=[],feedback:string[]=[],supplied?:Catalog):SearchResult{
   const catalog=catalogFor(b.mode,supplied),{placeById}=indexCatalog(catalog);
+  if(b.coursePlans?.length){
+    const plans=savedPlans(b),plannedDays=new Set(plans.map(p=>p.day??1));
+    const results=plans.map(plan=>optimize(c,{...b,coursePlans:undefined,taxiPlan:plan},original.filter(i=>i.day===(plan.day??1)),feedback,catalog));
+    if(results.some(r=>r.blocked))return {items:structuredClone(original),blocked:true,searched:0,searchLimited:false,preserved:[],reasons:results.flatMap(r=>r.reasons)};
+    const other=original.length?original:optimize(c,{...b,coursePlans:undefined,taxiPlan:undefined},[],[],catalog).items;
+    const items=[...other.filter(i=>!plannedDays.has(i.day)),...results.flatMap((r,n)=>r.items.filter(i=>i.day===(plans[n].day??1)).map(i=>({...i,id:plans.length>1?'course:d'+i.day+':'+i.id:i.id})))];
+    const report=validateSchedule(items,c,b,catalog);
+    return {items,blocked:report.issues.some(i=>i.status==='violation'||i.status==='conflict'),searched:0,searchLimited:false,preserved:[...new Set(results.flatMap(r=>r.preserved))],reasons:results.flatMap((r,n)=>[(plans[n].day??1)+'일차 코스',...r.reasons])};
+  }
   const requested=[...new Set([...c.requiredExperiences,...c.experiences])];
   if (b.taxiPlan && b.mode === 'real' && (b.transport === 'taxi' || b.transport === 'driving') && catalog.mode === 'real') {
     if((b.taxiPlan.transport??'taxi')!==b.transport)return {items:structuredClone(original),blocked:true,searched:0,searchLimited:false,preserved:[],reasons:['이동 수단을 바꿨습니다. 방문 순서를 다시 계산해 주세요.']};
@@ -86,10 +96,12 @@ export function optimize(c:Conditions,b:Basics,original:Item[]=[],feedback:strin
         items.push({ id: `taxi-plan:move:${i}`, day, start: cursor, end: cursor + minutes, kind: 'move', placeId: null, fromId: previous.id, toId: place.id, transport: b.transport, locked: false, mode: 'real' });
         cursor += minutes;
       }
-      const duration = place.kind === 'meal' ? 45 : place.kind === 'rest' ? 20 : 45;
+      if(b.taxiPlan.courseOptions&&place.kind==='meal')cursor=Math.max(cursor,Math.min(720,c.latestLunch??720));
+      const duration = place.kind === 'meal' ? 45 : place.kind === 'rest' ? (b.taxiPlan.courseOptions?.restMinutes??20) : (b.taxiPlan.courseOptions?.visitMinutes??45);
       if (cursor + duration > 1440) return fail('하루 안에 모든 장소를 배치할 수 없습니다. 장소 수를 줄여 주세요. 일부 장소를 생략하지 않았습니다.');
       items.push({ id: `taxi-plan:stop:${i}`, day, start: cursor, end: cursor + duration, kind: place.kind, placeId: place.id, fromId: null, toId: null, transport: null, locked: false, mode: 'real' });
       cursor += duration;
+      if(b.taxiPlan.courseOptions&&place.kind==='visit'){const minutes=b.taxiPlan.courseOptions.restMinutes;if(cursor+minutes>1440)return fail('휴식까지 하루 안에 배치할 수 없습니다.');items.push({id:`taxi-plan:rest:${i}`,day,start:cursor,end:cursor+minutes,kind:'rest',placeId:place.id,fromId:null,toId:null,transport:null,locked:false,mode:'real'});cursor+=minutes;}
     }
     if (b.taxiPlan.returnToStart) {
       const from = selected.at(-1)!, to = selected[0]!;
@@ -114,7 +126,7 @@ export function optimize(c:Conditions,b:Basics,original:Item[]=[],feedback:strin
         taxiPlanSummary(b.taxiPlan),
         b.transport==='driving'?'자가용 일정입니다. 주차 가능 여부·주차장부터 입구까지의 보행·보호자 하차 위치는 별도로 확인하세요.':'택시 일정입니다. 승하차 위치·호출 가능 여부·대기 및 할증 요금은 별도로 확인하세요.',
         ...(missingRoutes ? [`실제 도로 경로가 ${missingRoutes}개 확인되지 않아 해당 이동 시간·요금은 출발 전 조회가 필요합니다.`] : []),
-        '직선거리 순서이며 최저요금을 보장하지 않습니다. 방문 45분·휴식 20분·미확인 이동 20분은 편집용 배정 시간입니다.',
+        b.taxiPlan.courseOptions?`방문 ${b.taxiPlan.courseOptions.visitMinutes}분·방문 후 휴식 ${b.taxiPlan.courseOptions.restMinutes}분을 배정했습니다. 미확인 이동 20분은 편집용 시간이며 실제 이동 시간이 아닙니다.`:'직선거리 순서이며 최저요금을 보장하지 않습니다. 방문 45분·휴식 20분·미확인 이동 20분은 편집용 배정 시간입니다.',
         b.taxiPlan.returnToStart ? '마지막 장소에서 출발지로 복귀하는 이동을 포함했습니다.' : '편도 경로입니다. 복귀 이동은 포함하지 않습니다.',
       ],
     };

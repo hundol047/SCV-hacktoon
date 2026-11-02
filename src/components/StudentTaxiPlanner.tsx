@@ -4,6 +4,7 @@ import { defaultConditions, type Conditions, type Basics } from '../domain/schem
 import { haversineKm, optimizeTaxiOrder, taxiPlanSummary } from '../domain/taxi-plan';
 import type { Catalog } from '../data/catalog';
 
+import {savePlan,removePlan,savedPlans} from '../domain/course-plans';
 import {rankVehiclePlaces} from '../domain/vehicle-recommendations';
 
 type Props = { conditions?: Conditions; basics: Basics; catalog: Catalog; onChange: (basics: Basics) => void };
@@ -31,7 +32,7 @@ function Planner({ basics, catalog, onChange, conditions=defaultConditions }: Pr
   const [onlySelected,setOnlySelected] = useState(false);
   const [message, setMessage] = useState('');
   useEffect(()=>{if(saved){setSelected(saved.selectedPlaceIds);setStart(saved.startPlaceId);setEnd(saved.endPlaceId??'');setReturning(saved.returnToStart??false);setDay(saved.day??1);setTravelers(String(saved.travelers));setCapacity(String(saved.taxiCapacity));setBaseFare(saved.baseFare===null?'':String(saved.baseFare));setPerKmFare(saved.perKmFare===null?'':String(saved.perKmFare));setCosts({kmPerLiter:saved.drivingCosts?.kmPerLiter.toString()??'',fuelPrice:saved.drivingCosts?.fuelPrice.toString()??'',parking:saved.drivingCosts?.parking.toString()??'',tolls:saved.drivingCosts?.tolls.toString()??''});}},[saved]);
-  const edit = () => { if(saved) onChange({...basics,taxiPlan:undefined}); setMessage('입력이 바뀌었습니다. 순서를 다시 계산해 주세요.'); };
+  const edit = () => { if(saved) onChange(removePlan(basics,saved?.day??day)); setMessage('입력이 바뀌었습니다. 순서를 다시 계산해 주세요.'); };
   const region = basics.destinations?.find(d=>d.startDay<=day&&d.endDay>=day)?.region;
   const filtered = candidates.filter(p=>(!region||(p.region??catalog.region)===region)&&(kind==='all'||p.kind===kind)&&(!onlySelected||selected.includes(p.id))&&(!query.trim()||(p.name+' '+p.description).toLowerCase().includes(query.trim().toLowerCase())));
   const recommendations=rankVehiclePlaces(candidates.filter(p=>p.kind==='visit'&&!selected.includes(p.id)&&(!region||(p.region??catalog.region)===region)),basics,conditions,candidates.find(p=>p.id===(start||selected[0]))).slice(0,5);
@@ -46,7 +47,7 @@ function Planner({ basics, catalog, onChange, conditions=defaultConditions }: Pr
     if(driving&&Object.values(costs).some(v=>v!=='')&&Object.values(costs).some(v=>v==='')){setMessage('차량 비용은 네 항목을 모두 입력하거나 모두 비워 주세요. 없는 비용은 0으로 입력하세요.');return;}
     const result = optimizeTaxiOrder(candidates, selected, start || selected[0] || '', Number(travelers), driving || baseFare === '' ? null : Number(baseFare), driving || perKmFare === '' ? null : Number(perKmFare),new Date().toISOString(),{transport:driving?'driving':'taxi',drivingCosts:driving&&costs.kmPerLiter!==''?{kmPerLiter:Number(costs.kmPerLiter),fuelPrice:Number(costs.fuelPrice),parking:Number(costs.parking),tolls:Number(costs.tolls)}:undefined,day,taxiCapacity:Number(capacity),endPlaceId:end||undefined,returnToStart:returning});
     if ('error' in result) { setMessage(result.error); return; }
-    onChange({ ...basics, taxiPlan: result.plan });
+    onChange(savePlan(basics,result.plan));
     setStart(result.plan.startPlaceId);
     setMessage(`${day}일차 순서를 저장했습니다. 다른 날짜의 일정은 유지합니다.`);
   };
@@ -59,7 +60,7 @@ function Planner({ basics, catalog, onChange, conditions=defaultConditions }: Pr
       <label>장소 검색<input value={query} onChange={event => setQuery(event.target.value)} placeholder="장소 이름" /></label>
       <div className="place-filters" role="group" aria-label="장소 종류">{[['all','전체'],['visit','관광'],['meal','식사'],['rest','휴식']].map(([value,label])=><button type="button" key={value} aria-pressed={kind===value} onClick={()=>{setKind(value);setLimit(60);}}>{label}</button>)}</div>
       <label className="check-row"><input type="checkbox" checked={onlySelected} onChange={e=>setOnlySelected(e.target.checked)}/>선택한 장소만 보기</label>
-      <label>{vehicle} 여행일<select value={day} onChange={e=>{edit();setDay(Number(e.target.value));setSelected([]);setStart('');setEnd('');}}>{Array.from({length:basics.days},(_,i)=><option key={i+1} value={i+1}>{i+1}일차</option>)}</select></label>
+      <label>{vehicle} 여행일<select value={day} onChange={e=>{const nextDay=Number(e.target.value);setDay(nextDay);setSelected([]);setStart('');setEnd('');setReturning(false);onChange({...basics,taxiPlan:savedPlans(basics).find(p=>(p.day??1)===nextDay)});}}>{Array.from({length:basics.days},(_,i)=><option key={i+1} value={i+1}>{i+1}일차</option>)}</select></label>
       <p>선택 {selected.length}/20곳 · 검색 결과 {filtered.length}곳</p>
       {!!selected.length&&<div className="selected-places" aria-label="선택한 장소">{selected.map(id=><button type="button" key={id} onClick={()=>toggle(id)} aria-label={`${candidates.find(p=>p.id===id)?.name??id} 선택 해제`}>{candidates.find(p=>p.id===id)?.name??id} ×</button>)}</div>}
       <div className="candidate-list" role="group" aria-label={`${vehicle} 방문 장소 선택`}>
@@ -83,8 +84,8 @@ function Planner({ basics, catalog, onChange, conditions=defaultConditions }: Pr
       <p>{driving?'직선거리 ÷ 연비 × 유류 단가에 주차비·통행료를 더하고 차량 수를 곱합니다. 실제 도로 거리와 연료 소모량은 다르며 보험·대여료는 별도입니다.':'각 구간에서 새로 탑승한다고 가정해 기본요금을 더합니다. 원화 단순 계산이며 기본거리 공제·시간요금·야간 할증·통행료는 반영하지 않습니다. 실제 견적이나 최저요금을 보장하지 않습니다.'}</p>
       <button type="button" className="primary" disabled={selected.length<2} onClick={calculate}>{vehicle} 이동 순서 계산</button>
       {selected.length<2&&<p>순서 계산까지 {2-selected.length}곳을 더 선택하세요.</p>}
-      <button type="button" className="secondary" onClick={()=>{setSelected([]);setStart('');setEnd('');onChange({...basics,taxiPlan:undefined});setMessage('차량 순서를 해제했습니다. 일반 일정 생성으로 돌아갑니다.');}}>{vehicle} 순서 해제</button>
-      {saved && <div className="notice"><strong>{taxiPlanSummary(saved)}</strong><p>{vehicle} {saved.vehicles}대 · {saved.day??1}일차 · {saved.travelers}명 · {saved.orderedPlaceIds.length}곳</p><ol className="route-preview">{[...saved.orderedPlaceIds,...(saved.returnToStart?[saved.startPlaceId]:[])].map((id,i,ids)=>{const p=candidates.find(p=>p.id===id),prev=candidates.find(p=>p.id===ids[i-1]);const km=p&&prev?haversineKm(prev,p):null;return <li key={`${id}:${i}`}><strong>{p?.name??id}{i===saved.orderedPlaceIds.length?' (복귀)':''}</strong>{km!==null&&<small>이전 장소에서 직선 {km.toFixed(2)}km · 도로 이동 시간 미확인</small>}</li>;})}</ol><p>순서를 저장했습니다. 아래 ‘우리 가족 일정 만들기’를 누르면 시간표에 반영됩니다.</p></div>}
+      <button type="button" className="secondary" onClick={()=>{setSelected([]);setStart('');setEnd('');onChange(removePlan(basics,saved?.day??day));setMessage('차량 순서를 해제했습니다. 일반 일정 생성으로 돌아갑니다.');}}>{vehicle} 순서 해제</button>
+      {saved && <div className="notice"><strong>{taxiPlanSummary(saved)}</strong><p>{vehicle} {saved.vehicles}대 · {saved.day??1}일차 · {saved.travelers}명 · {saved.orderedPlaceIds.length}곳</p><ol className="route-preview">{[...saved.orderedPlaceIds,...(saved.returnToStart?[saved.startPlaceId]:[])].map((id,i,ids)=>{const p=candidates.find(p=>p.id===id),prev=candidates.find(p=>p.id===ids[i-1]);const km=p&&prev?haversineKm(prev,p):null;return <li key={`${id}:${i}`}><strong>{p?.name??id}{i===saved.orderedPlaceIds.length?' (복귀)':''}</strong>{km!==null&&<small>이전 장소에서 직선 {km.toFixed(2)}km · 도로 이동 시간 미확인</small>}</li>;})}</ol><p>순서를 저장했습니다. 아래 ‘맞춤 코스 일정 만들기’를 누르면 시간표에 반영됩니다.</p></div>}
       {message && <p className="helper" role="status">{message}</p>}
     </div>
   </details>;

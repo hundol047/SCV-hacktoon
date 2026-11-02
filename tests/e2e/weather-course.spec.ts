@@ -1,0 +1,41 @@
+import {test,expect} from '@playwright/test';
+import {osmCatalog} from '../../src/adapters/real-data';
+test('weather, origin and daily course choices survive generation and reload',async({page})=>{
+  const catalog=osmCatalog('서울',{elements:[...Array.from({length:7},(_,i)=>({type:'node',id:i+1,lat:37.5,lon:127+i/100,tags:{name:`관광지 ${i+1}`,tourism:'museum',indoor:i===0?'no':'yes'}})),{type:'node',id:10,lat:37.5,lon:127.02,tags:{name:'지역 식당',amenity:'restaurant',indoor:'yes'}}]},new Date().toISOString());
+  await page.route('**/api/catalog?*',r=>r.fulfill({json:catalog}));
+  await page.goto('/');await page.getByRole('button',{name:'자가용 여행 빠르게 만들기',exact:true}).click();
+  await page.getByLabel('여행 기간').selectOption('2');
+  await page.getByLabel('도시와 국가').fill('서울');await page.getByRole('button',{name:'실제 장소 조회',exact:true}).click();
+  const course=page.locator('.regional-course');await course.waitFor();
+  await course.getByLabel('기준 출발 장소').selectOption(catalog.places[6].id);
+  await course.getByLabel('여행일 날씨 가정').selectOption('rain');
+  await course.getByLabel('관광지당 체류 시간').selectOption('45');
+  await course.getByRole('button',{name:'API 키 없이 기본 코스 보기',exact:true}).click();
+  await expect(course.locator('.course-preview')).not.toContainText('관광지 1 · 관광');
+  await expect(course.locator('.course-preview')).toContainText('지역 식당');
+  await expect(course.locator('.course-preview')).toContainText('휴식');
+  await course.getByRole('button',{name:'이 코스를 일정에 적용',exact:true}).click();
+  await expect(course.getByRole('button',{name:'1일차 코스 삭제',exact:true})).toBeVisible();
+  await course.getByLabel('추천할 여행일').selectOption('2');
+  await course.getByLabel('여행일 날씨 가정').selectOption('storm');
+  await expect(course.getByRole('button',{name:'API 키 없이 기본 코스 보기',exact:true})).toBeDisabled();
+  await expect(course).toContainText('추천을 중단');
+  await course.getByLabel('여행일 날씨 가정').selectOption('snow');
+  await page.route('**/api/courses',async r=>{
+    const body=r.request().postDataJSON();expect(body.basics.coursePreferences.find((p:{day:number})=>p.day===2).weather).toBe('snow');
+    const used=body.basics.coursePlans[0].selectedPlaceIds;
+    await r.fulfill({json:{candidateIds:catalog.places.filter(p=>p.kind==='visit'&&p.setting?.value==='indoor'&&!used.includes(p.id)).slice(0,3).map(p=>p.id)}});
+  });
+  await course.getByRole('checkbox').check();await course.getByRole('button',{name:'AI로 지역 코스 추천',exact:true}).click();
+  await expect(course.locator('.course-preview')).toContainText('AI 추천');
+  await course.getByRole('button',{name:'이 코스를 일정에 적용',exact:true}).click();
+  await expect(course.getByRole('button',{name:'1일차 코스 삭제',exact:true})).toBeVisible();
+  await expect(course.getByRole('button',{name:'2일차 코스 삭제',exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'맞춤 코스 일정 만들기',exact:true}).click();await page.locator('.timeline').waitFor();
+  const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('bopok:trip:v1')!));
+  expect(saved.basics.coursePlans).toHaveLength(2);
+  for(const day of [1,2]){expect(saved.items.some((i:{day:number;kind:string})=>i.day===day&&i.kind==='meal')).toBe(true);expect(saved.items.some((i:{day:number;kind:string})=>i.day===day&&i.kind==='rest')).toBe(true);}
+  expect(new Set(saved.items.map((i:{id:string})=>i.id)).size).toBe(saved.items.length);
+  await page.reload();await page.getByRole('button',{name:'이어서 보기',exact:true}).click();await page.locator('.timeline').waitFor();
+  expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('bopok:trip:v1')!).basics.coursePlans.length)).toBe(2);
+});

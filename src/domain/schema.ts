@@ -1,8 +1,10 @@
 import { z } from "zod";
+import {weatherSchema} from './weather';
 import { catalogSchema } from '../data/catalog';
 
 export const taxiPlanSchema = z.object({
   transport:z.enum(['taxi','driving']).optional(),
+  courseOptions:z.object({weather:weatherSchema,visitMinutes:z.number().int().min(15).max(180),restMinutes:z.number().int().min(5).max(120)}).optional(),
   drivingCosts:z.object({kmPerLiter:z.number().min(1).max(50),fuelPrice:z.number().int().min(0).max(10000),parking:z.number().int().min(0).max(1000000),tolls:z.number().int().min(0).max(1000000)}).optional(),
   selectedPlaceIds: z.array(z.string().min(1).max(100)).min(2).max(20),
   orderedPlaceIds: z.array(z.string().min(1).max(100)).min(2).max(20),
@@ -80,9 +82,14 @@ const basicsBaseSchema = z.object({
   transfers:z.array(z.object({fromRegion:z.string().min(1).max(120),toRegion:z.string().min(1).max(120),departureDay:z.number().int().min(1).max(30).optional(),arrivalDay:z.number().int().min(1).max(30).optional(),departure:z.iso.datetime({offset:true}),arrival:z.iso.datetime({offset:true}),source:z.string().url().max(1000).refine(v=>new URL(v).protocol==='https:'),mode:z.enum(['flight','rail','bus','ferry','driving'])})).max(30).optional(),
   timezone:z.string().max(80).default('Asia/Seoul').refine(v=>{try{new Intl.DateTimeFormat('ko-KR',{timeZone:v});return true;}catch{return false;}},'IANA 시간대 이름을 확인해 주세요.'),
   taxiPlan: taxiPlanSchema.optional(),
+  coursePlans:z.array(taxiPlanSchema).max(30).optional(),
+  coursePreferences:z.array(z.object({day:z.number().int().min(1).max(30),weather:weatherSchema,originId:z.string().max(100).optional(),visitMinutes:z.number().int().min(15).max(180).default(60)})).max(30).optional(),
 }).refine(b=>b.mode!=='demo'||b.days<=2,'시연은 1~2일을 지원합니다.').superRefine((b,ctx)=>{if(b.destinations?.length){for(let day=1;day<=b.days;day++)if(b.destinations.filter(d=>d.startDay<=day&&d.endDay>=day).length!==1)ctx.addIssue({code:'custom',message:day+'일차 도시를 하나씩 지정해 주세요.'});for(const d of b.destinations)if(d.startDay>d.endDay||d.endDay>b.days)ctx.addIssue({code:'custom',message:'도시 날짜 범위를 확인해 주세요.'});}if(b.mode==='demo'&&(b.transport==='driving'||b.transport==='transit'))ctx.addIssue({code:'custom',message:'시연은 택시·도보 경로만 지원합니다.'});}).refine(b=>(b.mode==='demo')===(b.region==='가상 솔바다'),'지역과 데이터 모드가 일치하지 않습니다.').superRefine((b,ctx)=>{if(new Set(b.destinations?.map(d=>d.region)).size>10)ctx.addIssue({code:'custom',message:'도시는 10개까지 지원합니다.'});if(b.travelDays?.some(day=>day>b.days)||b.transfers?.some(t=>(t.departureDay??1)>b.days||(t.arrivalDay??1)>b.days||t.departureDay&&t.arrivalDay&&t.departureDay>t.arrivalDay))ctx.addIssue({code:'custom',message:'이동 기록의 여행일 범위를 확인해 주세요.'});});
 // A saved plan is only meaningful for a real taxi itinerary.
 export const basicsSchema = basicsBaseSchema.superRefine((b, ctx) => {
+  const days=new Set<number>();
+  for(const plan of b.coursePlans??[]){const day=plan.day??1;if(days.has(day)||day>b.days||b.mode!=='real'||b.transport!==(plan.transport??'taxi'))ctx.addIssue({code:'custom',message:'날짜별 코스의 날짜·이동 수단을 확인하세요.'});days.add(day);}
+  if(new Set(b.coursePreferences?.map(p=>p.day)).size!==(b.coursePreferences?.length??0)||b.coursePreferences?.some(p=>p.day>b.days))ctx.addIssue({code:'custom',message:'날짜별 추천 조건을 확인하세요.'});
   if (b.taxiPlan && (b.mode !== 'real' || b.transport !== (b.taxiPlan.transport??'taxi'))) ctx.addIssue({ code: 'custom', message: '저장된 방문 순서의 이동 수단과 여행 설정이 다릅니다. 순서를 다시 계산해 주세요.' });
   if (b.taxiPlan && (b.taxiPlan.day ?? 1) > b.days) ctx.addIssue({code:'custom',message:'택시 여행일이 여행 기간 밖입니다.'});
 });

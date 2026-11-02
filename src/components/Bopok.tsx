@@ -334,7 +334,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
     if(pb.data.mode==='real'&&currentCatalog.places.length===0){setError('먼저 실제 장소를 조회해 주세요. 가상 자료로 자동 대체하지 않습니다.');return;}
     if(existing&&importItems.some(i=>i.mode!==pb.data.mode)){setError('실제/가상 일정의 모드가 맞지 않습니다.');return;}
     const p = generate(pc.data, pb.data,[],[],currentCatalog);
-    if (!existing && pb.data.taxiPlan && p.blocked && !p.items.length) {setError(p.reasons.join(' '));return;}
+    if (!existing && (pb.data.taxiPlan||pb.data.coursePlans?.length) && p.blocked && !p.items.length) {setError(p.reasons.join(' '));return;}
     const items = existing ? importItems : p.items;
     setTrip({
       version: 1,
@@ -1028,7 +1028,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
                   <div className="field-grid">
                     <label>
                       여행 지역
-                      <select aria-label="데이터 모드" value={b.mode} onChange={e=>{const mode=e.target.value as Basics['mode'];setB({...b,mode,region:mode==='demo'?'가상 솔바다':'실제 지역',days:Math.min(b.days,2),transport:'taxi',destinations:undefined,transfers:undefined,expenses:undefined,currency:'KRW',taxiPlan:undefined});setSelectedCatalog(mode==='demo'?demoCatalog:emptyRealCatalog);setImportItems([]);}}><option value="demo">가상 솔바다 · 시연</option><option value="real">전국·해외 실제 도시</option></select>
+                      <select aria-label="데이터 모드" value={b.mode} onChange={e=>{const mode=e.target.value as Basics['mode'];setB({...b,mode,region:mode==='demo'?'가상 솔바다':'실제 지역',days:Math.min(b.days,2),transport:'taxi',destinations:undefined,transfers:undefined,expenses:undefined,currency:'KRW',taxiPlan:undefined,coursePlans:undefined,coursePreferences:undefined});setSelectedCatalog(mode==='demo'?demoCatalog:emptyRealCatalog);setImportItems([]);}}><option value="demo">가상 솔바다 · 시연</option><option value="real">전국·해외 실제 도시</option></select>
                     </label>
                     <label>
                       출발 날짜
@@ -1043,7 +1043,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
                       <select
                         value={b.days}
                         onChange={(e) =>
-                          setB({ ...b, days: Number(e.target.value),taxiPlan:undefined,destinations:b.destinations?.length===1?[{...b.destinations[0],endDay:Number(e.target.value)}]:b.destinations })
+                          setB({ ...b, days: Number(e.target.value),taxiPlan:undefined,coursePlans:undefined,coursePreferences:undefined,destinations:b.destinations?.length===1?[{...b.destinations[0],endDay:Number(e.target.value)}]:b.destinations })
                         }
                       >
                         <option value={1}>당일 · 1일</option>
@@ -1073,7 +1073,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
                           setB({
                             ...b,
                             transport: e.target.value as Basics["transport"],
-                            taxiPlan: undefined,
+                            taxiPlan: undefined,coursePlans:undefined,coursePreferences:undefined,
                           })
                         }
                       >
@@ -1094,7 +1094,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
                       </select>
                     </label>
                   </div>
-                  {b.mode==='real'&&<><RealSearch onLoaded={catalog=>{setSelectedCatalog(catalog);const meta=catalog.cities?.[0];setB({...b,region:catalog.region,timezone:meta?.timezone??b.timezone,destinations:[{region:catalog.region,startDay:1,endDay:b.days,timezone:meta?.timezone??b.timezone,currency:meta?.currency??'KRW'}],taxiPlan:undefined});setImportItems([]);}}/><details className="advanced-settings"><summary>시간대 설정</summary><label>현지 시간대 (IANA)<input value={b.timezone} onChange={e=>setB({...b,timezone:e.target.value})} placeholder="Asia/Seoul, Asia/Tokyo, Europe/Paris"/></label></details>{(b.transport==='taxi'||b.transport==='driving')&&selectedCatalog.places.length>0&&<><label>추천 기준<select value={b.travelPriority??(b.transport==='driving'?'comfort':'budget')} onChange={e=>setB({...b,travelPriority:e.target.value as Basics['travelPriority']})}><option value="budget">이동 거리 우선</option><option value="comfort">좌석·적은 보행 우선</option><option value="balanced">관심 경험·거리 균형</option></select></label><fieldset><legend>이번 여행에서 원하는 경험</legend><div className="place-filters">{['자연 풍경','문화·전시'].map(theme=><button type="button" key={theme} aria-pressed={c.experiences.includes(theme)} onClick={()=>setC({...c,experiences:c.experiences.includes(theme)?c.experiences.filter(e=>e!==theme):[...c.experiences,theme].slice(0,12)})}>{theme}</button>)}</div></fieldset><RegionalCourse basics={b} conditions={c} catalog={selectedCatalog} onChange={setB}/><StudentTaxiPlanner conditions={c} basics={b} catalog={selectedCatalog} onChange={setB}/></>} {selectedCatalog.places.length>0&&<details className="advanced-settings"><summary>다도시·숙박·교통비 설정</summary><WorldPlan basics={b} catalog={selectedCatalog} onChange={(basics,catalog)=>{setB(basics);setSelectedCatalog(catalog);}}/></details>}</>}
+                  {b.mode==='real'&&<><RealSearch onLoaded={catalog=>{setSelectedCatalog(catalog);const meta=catalog.cities?.[0];setB({...b,region:catalog.region,timezone:meta?.timezone??b.timezone,destinations:[{region:catalog.region,startDay:1,endDay:b.days,timezone:meta?.timezone??b.timezone,currency:meta?.currency??'KRW'}],taxiPlan:undefined,coursePlans:undefined,coursePreferences:undefined});setImportItems([]);}}/><details className="advanced-settings"><summary>시간대 설정</summary><label>현지 시간대 (IANA)<input value={b.timezone} onChange={e=>setB({...b,timezone:e.target.value})} placeholder="Asia/Seoul, Asia/Tokyo, Europe/Paris"/></label></details>{(b.transport==='taxi'||b.transport==='driving')&&selectedCatalog.places.length>0&&<><label>추천 기준<select value={b.travelPriority??(b.transport==='driving'?'comfort':'budget')} onChange={e=>setB({...b,travelPriority:e.target.value as Basics['travelPriority']})}><option value="budget">이동 거리 우선</option><option value="comfort">좌석·적은 보행 우선</option><option value="balanced">관심 경험·거리 균형</option></select></label><fieldset><legend>이번 여행에서 원하는 경험</legend><div className="place-filters">{['자연 풍경','문화·전시'].map(theme=><button type="button" key={theme} aria-pressed={c.experiences.includes(theme)} onClick={()=>setC({...c,experiences:c.experiences.includes(theme)?c.experiences.filter(e=>e!==theme):[...c.experiences,theme].slice(0,12)})}>{theme}</button>)}</div></fieldset><RegionalCourse basics={b} conditions={c} catalog={selectedCatalog} onChange={setB}/><StudentTaxiPlanner conditions={c} basics={b} catalog={selectedCatalog} onChange={setB}/></>} {selectedCatalog.places.length>0&&<details className="advanced-settings"><summary>다도시·숙박·교통비 설정</summary><WorldPlan basics={b} catalog={selectedCatalog} onChange={(basics,catalog)=>{setB(basics);setSelectedCatalog(catalog);}}/></details>}</>}
                   {existing && (
                     <section className="importer">
                       <h2>기존 일정 입력</h2>

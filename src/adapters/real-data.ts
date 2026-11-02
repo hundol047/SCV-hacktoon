@@ -1,3 +1,4 @@
+import {settingFromTags} from '../domain/weather';
 import {z} from 'zod';
 import {Catalog,catalogSchema} from '../data/catalog';
 import {Fact,Place,Route} from '../data/demo';
@@ -13,7 +14,7 @@ export function osmCatalog(query:string,data:unknown,collectedAt:string,limit=30
     const fact=<T>(field:string,value:T|null):Fact<T>=>({value,evidenceId:`${id}:${field}`,source,nature:'real',checked:value===null?'unknown':'source',collectedAt});
     const lat=e.lat??e.center?.lat,lon=e.lon??e.center?.lon;
     // Wheelchair=yes, a restaurant category or map coordinates do not prove zero stairs/walking or seating.
-    groups[kind].push({id,name:name.slice(0,120),kind,experiences:tags.tourism==='museum'?['문화·전시']:tags.leisure==='park'||tags.natural==='beach'?['자연 풍경']:[],description:'OpenStreetMap 기여자가 등록한 실제 장소입니다. 현지 운영·접근성 정보는 별도로 확인해 주세요.',
+    groups[kind].push({setting:fact('setting',settingFromTags(tags)),id,name:name.slice(0,120),kind,experiences:tags.tourism==='museum'?['문화·전시']:tags.leisure==='park'||tags.natural==='beach'?['자연 풍경']:[],description:'OpenStreetMap 기여자가 등록한 실제 장소입니다. 현지 운영·접근성 정보는 별도로 확인해 주세요.',
       walkMin:fact<number>('walkMin',null),walkM:fact<number>('walkM',null),stairs:fact('stairs',tags.highway==='steps'?true:tags.step_count==='0'?false:null),
       seat:fact('seat',/^\d+$/.test(tags.seats??'')&&Number(tags.seats)>0?true:tags.bench==='yes'?true:null),
       foods:fact<string[]>('foods',null),cost:fact<number>('cost',null),hours:fact<[number,number]>('hours',null),situations:fact<string[]>('situations',null),latitude:lat,longitude:lon});
