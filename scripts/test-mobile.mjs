@@ -13,6 +13,21 @@ const server=createServer(async(req,res)=>{try{
 await new Promise(r=>server.listen(0,'127.0.0.1',r));
 const browser=await chromium.launch({executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH||'/usr/bin/chromium',headless:true});
 try{
+  const services=await browser.newPage({viewport:{width:393,height:852},isMobile:true,hasTouch:true});
+  await services.addInitScript(()=>{window.BopokAndroid={aiStatus:()=>JSON.stringify({configured:true,model:'test-model'}),configureAI:()=>{},saveJson:()=>{},saveTourism:()=>{},printPage:()=>{},requestAI:(id,payload)=>{const p=JSON.parse(payload);if(p.task!=='promotion')throw Error('Wrong AI task');setTimeout(()=>window.dispatchEvent(new CustomEvent('bopok:ai',{detail:{id,output:{headline:'검증 카페',body:'커피를 판매합니다.',hashtags:['#카페']}}})),20);}};});
+  await services.goto('http://127.0.0.1:'+server.address().port);
+  await services.getByText('소상공인 홍보 콘텐츠 만들기',{exact:true}).click();
+  const promotion=services.locator('.promotion-studio');
+  for(const [label,value] of [['상호명','검증 카페'],['가게 지역','서울'],['업종·대표 상품','커피'],['확인된 상품·서비스 사실','커피를 판매합니다.']])await promotion.getByLabel(label,{exact:true}).fill(value);
+  await promotion.getByRole('checkbox',{name:'사업 정보의 OpenAI 전송과 API 사용료에 동의합니다.'}).check();
+  await promotion.getByRole('button',{name:'AI 홍보 초안 만들기',exact:true}).click();
+  await promotion.getByRole('heading',{name:'AI 생성 초안',exact:true}).waitFor();
+  assert((await promotion.getByLabel('홍보 초안 편집').inputValue()).includes('커피를 판매합니다.'));
+  await promotion.screenshot({path:'android/build/promotion-preview.png'});
+  await services.getByText('지역 축제·문화행사 찾아보기',{exact:true}).click();
+  await services.getByText('행사 자료 불러오기·보관',{exact:true}).click();
+  assert((await services.locator('.local-events').innerText()).includes('공식 행사 서버가 연결되지 않았습니다'));
+  await services.close();console.log('PASS: APK promotion native bridge contract with synthetic text response; event offline availability is explicit.');
   const car=await browser.newPage({viewport:{width:393,height:852},isMobile:true,hasTouch:true});
   await car.addInitScript(()=>{window.BopokAndroid={aiStatus:()=>JSON.stringify({configured:true,model:'test-model'}),configureAI:()=>{},saveJson:()=>{},saveTourism:()=>{},printPage:()=>{},requestAI:(id,payload)=>{const request=JSON.parse(payload);setTimeout(()=>window.dispatchEvent(new CustomEvent('bopok:ai',{detail:{id,output:{candidateIds:request.candidateIds.slice(0,3)}}})),20);}};});
   await car.goto('http://127.0.0.1:'+server.address().port);

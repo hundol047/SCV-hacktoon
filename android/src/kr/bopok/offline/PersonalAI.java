@@ -66,10 +66,14 @@ final class PersonalAI {
     new Thread(()->{
       HttpsURLConnection connection=null;
       try{
-        JSONObject input=new JSONObject(payload);JSONArray ids=input.getJSONArray("candidateIds");
-        if(ids.length()<1||ids.length()>20)throw new IOException("Invalid candidate count");
+        JSONObject input=new JSONObject(payload);boolean promotion="promotion".equals(input.optString("task"));JSONArray ids=promotion?new JSONArray():input.getJSONArray("candidateIds");
+        if(!promotion&&(ids.length()<1||ids.length()>20))throw new IOException("Invalid candidate count");
         JSONObject schema=new JSONObject().put("type","object").put("properties",new JSONObject().put("candidateIds",new JSONObject().put("type","array").put("maxItems",3).put("items",new JSONObject().put("type","string").put("enum",ids)))).put("required",new JSONArray().put("candidateIds")).put("additionalProperties",false);
-        JSONObject body=new JSONObject().put("model",prefs.getString("model","gpt-4.1-mini")).put("store",false).put("max_output_tokens",800).put("input",input.getString("input")).put("instructions",input.getString("instructions")).put("text",new JSONObject().put("format",new JSONObject().put("type","json_schema").put("name","replacement").put("strict",true).put("schema",schema)));
+        if(promotion){
+          JSONObject stringType=new JSONObject().put("type","string");
+          schema=new JSONObject().put("type","object").put("properties",new JSONObject().put("headline",stringType).put("body",stringType).put("hashtags",new JSONObject().put("type","array").put("maxItems",8).put("items",stringType))).put("required",new JSONArray().put("headline").put("body").put("hashtags")).put("additionalProperties",false);
+        }
+        JSONObject body=new JSONObject().put("model",prefs.getString("model","gpt-4.1-mini")).put("store",false).put("max_output_tokens",promotion?1600:800).put("input",input.getString("input")).put("instructions",input.getString("instructions")).put("text",new JSONObject().put("format",new JSONObject().put("type","json_schema").put("name",promotion?"promotion":"replacement").put("strict",true).put("schema",schema)));
         connection=(HttpsURLConnection)new URL("https://api.openai.com/v1/responses").openConnection();
         connection.setConnectTimeout(12000);connection.setReadTimeout(25000);connection.setInstanceFollowRedirects(false);connection.setRequestMethod("POST");connection.setDoOutput(true);
         connection.setRequestProperty("Authorization","Bearer "+secret());connection.setRequestProperty("Content-Type","application/json");

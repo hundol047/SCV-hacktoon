@@ -41,6 +41,8 @@ import {Catalog,catalogFor,demoCatalog,indexCatalog,emptyRealCatalog} from '../d
 import {CatalogContext,useCatalog} from './CatalogContext';
 import RealSearch from './RealSearch';
 import WorldPlan from './WorldPlan';
+import LocalEvents from './LocalEvents';
+import PromotionStudio from './PromotionStudio';
 import RegionalCourse from './RegionalCourse';
 import StudentTaxiPlanner from './StudentTaxiPlanner';
 import TravelSummary from './TravelSummary';
@@ -439,6 +441,8 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
               <button className="primary" onClick={()=>startTaxi('taxi')}>택시 여행 빠르게 만들기 <ArrowRight size={18}/></button><button className="secondary" onClick={()=>startTaxi('driving')}>자가용 여행 빠르게 만들기 <ArrowRight size={18}/></button>
               <button className="secondary" onClick={()=>start(false)}>부모님 맞춤 여행 시작</button>
             </section>
+            <details className="cloud-panel"><summary>지역 축제·문화행사 찾아보기</summary><LocalEvents onTrip={t=>{setTrip(t);setDay(1);setProposal(null);navigate('result');}}/></details>
+            <details className="cloud-panel"><summary>소상공인 홍보 콘텐츠 만들기</summary><PromotionStudio/></details>
             <section className="hero">
               <div className="hero-copy">
                 <div className="eyebrow">
