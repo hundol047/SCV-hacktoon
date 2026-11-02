@@ -79,7 +79,7 @@ test("새 여행: 단계 입력, 생성, 새로고침 복원, 데이터 삭제",
 }) => {
   await page.goto("/");
   await page
-    .getByRole("button", { name: "우리 부모님 여행 만들기", exact: true })
+    .getByRole("button", { name: "부모님 맞춤 여행 시작", exact: true })
     .click();
   await page
     .getByRole("spinbutton", { name: /한 번에 걷고 싶은 최대 시간/ })
@@ -100,7 +100,7 @@ test("새 여행: 단계 입력, 생성, 새로고침 복원, 데이터 삭제",
   await page.getByRole("button", { name: "다음으로", exact: true }).click();
   await expect(page.locator(".condition-card")).toContainText("최대 20분");
   await page.getByRole("button", { name: "이 조건으로 여행 준비하기" }).click();
-  await page.getByRole("button", { name: "우리 가족 일정 만들기" }).click();
+  await page.getByRole("button", { name: "맞춤 코스 일정 만들기" }).click();
   await expect(
     page.getByRole("heading", { name: "확인된 정보 기준 충족", exact: true }),
   ).toBeVisible();
@@ -117,7 +117,7 @@ test("새 여행: 단계 입력, 생성, 새로고침 복원, 데이터 삭제",
 test("작성 중인 조건 초안은 새로고침 후 이어서 입력한다", async ({ page }) => {
   await page.goto("/");
   await page
-    .getByRole("button", { name: "우리 부모님 여행 만들기", exact: true })
+    .getByRole("button", { name: "부모님 맞춤 여행 시작", exact: true })
     .click();
   await page
     .getByRole("spinbutton", { name: /한 번에 걷고 싶은 최대 시간/ })
@@ -168,7 +168,7 @@ test("수동 편집은 재점검하고 고정 해제와 되돌리기가 작동�
 test("불가능한 걷기 조건을 자동 완화하지 않는다", async ({ page }) => {
   await page.goto("/");
   await page
-    .getByRole("button", { name: "우리 부모님 여행 만들기", exact: true })
+    .getByRole("button", { name: "부모님 맞춤 여행 시작", exact: true })
     .click();
   await page
     .getByRole("spinbutton", { name: /한 번에 걷고 싶은 최대 시간/ })
@@ -176,7 +176,7 @@ test("불가능한 걷기 조건을 자동 완화하지 않는다", async ({ pag
   await page.getByRole("button", { name: "다음으로", exact: true }).click();
   await page.getByRole("button", { name: "다음으로", exact: true }).click();
   await page.getByRole("button", { name: "이 조건으로 여행 준비하기" }).click();
-  await page.getByRole("button", { name: "우리 가족 일정 만들기" }).click();
+  await page.getByRole("button", { name: "맞춤 코스 일정 만들기" }).click();
   await expect(page.locator(".report")).toContainText("조건 충돌");
   await page
     .getByRole("button", { name: "부모님 조건에 맞게 수정하기" })
@@ -190,7 +190,7 @@ test("자연어 추출은 규칙 모드를 표시하고 사용자 확인 후 반
 }) => {
   await page.goto("/");
   await page
-    .getByRole("button", { name: "우리 부모님 여행 만들기", exact: true })
+    .getByRole("button", { name: "부모님 맞춤 여행 시작", exact: true })
     .click();
   await page.getByText("말로 적는 편이 더 편한가요?", { exact: true }).click();
   await page
@@ -236,7 +236,7 @@ test("늦게 도착한 AI 응답이 수정한 조건을 덮어쓰지 않는다",
   });
   await page.goto("/");
   await page
-    .getByRole("button", { name: "우리 부모님 여행 만들기", exact: true })
+    .getByRole("button", { name: "부모님 맞춤 여행 시작", exact: true })
     .click();
   await page.getByText("말로 적는 편이 더 편한가요?", { exact: true }).click();
   await page

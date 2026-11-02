@@ -41,6 +41,7 @@ import {Catalog,catalogFor,demoCatalog,indexCatalog,emptyRealCatalog} from '../d
 import {CatalogContext,useCatalog} from './CatalogContext';
 import RealSearch from './RealSearch';
 import WorldPlan from './WorldPlan';
+import RegionalCourse from './RegionalCourse';
 import StudentTaxiPlanner from './StudentTaxiPlanner';
 import TravelSummary from './TravelSummary';
 import {transportLabel,money,destinationFor,localInstant} from '../domain/world';
@@ -220,7 +221,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
   };
   const startTaxi = (transport:'taxi'|'driving'='taxi') => {
     start(false);
-    setB({...defaultBasics,title:'친구들과 가볍게 떠나는 여행',date:new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Seoul'}).format(new Date()),days:1,mode:'real',region:'실제 지역',transport,travelPriority:transport==='driving'?'comfort':'budget'});
+    setB({...defaultBasics,title:'나의 지역 맞춤 여행',date:new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Seoul'}).format(new Date()),days:1,mode:'real',region:'실제 지역',transport,travelPriority:'balanced'});
     setSelectedCatalog(emptyRealCatalog);
     navigate('basics');
   };
@@ -415,7 +416,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
             예시 체험 <ArrowUpRight size={16} />
           </button>
         </nav>
-        <span className="header-caption">함께 걷는 여행의 시작</span>
+        <span className="header-caption">AI 기반 지역 맞춤형 여행코스 추천</span>
       </header>
       <main id="main">
         {error && (
@@ -434,30 +435,30 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
         {screen === "home" ? (
           <>
             <section className="quick-start" aria-label="여행 시작 방법">
-              <div><span className="eyebrow">어떤 여행을 준비하나요?</span><h2>원하는 방식으로 바로 시작하세요</h2><p>부모님 여행은 걷기·휴식 조건부터, 친구 여행은 장소 선택부터 준비합니다.</p></div>
+              <div><span className="eyebrow">지역부터, 나에게 맞는 여행</span><h2>지역과 취향으로 나만의 코스를 만드세요</h2><p>지역 자료를 불러오고 취향·이동 수단을 선택하면 코스를 추천합니다. 부모님 동행 시 보행·휴식 조건도 함께 반영하세요.</p></div>
               <button className="primary" onClick={()=>startTaxi('taxi')}>택시 여행 빠르게 만들기 <ArrowRight size={18}/></button><button className="secondary" onClick={()=>startTaxi('driving')}>자가용 여행 빠르게 만들기 <ArrowRight size={18}/></button>
               <button className="secondary" onClick={()=>start(false)}>부모님 맞춤 여행 시작</button>
             </section>
             <section className="hero">
               <div className="hero-copy">
                 <div className="eyebrow">
-                  <span /> 부모님과 나, 같은 여행의 다른 보폭
+                  <span /> AI 기반 지역 맞춤형 여행코스 추천 서비스
                 </div>
                 <h1 tabIndex={-1}>
-                  부모님의 속도로,
+                  가고 싶은 지역에서,
                   <br />
-                  함께 떠나는 <em>여행</em>
+                  나에게 맞는 <em>여행</em>
                 </h1>
                 <p className="hero-description">
-                  걷는 시간부터 쉬는 순간까지, 우리 가족에게 맞게.
+                  지역의 관광지와 나의 취향을 연결해 코스를 만들어요.
                   <br />
-                  가고 싶은 마음은 그대로, 일정의 부담은 조금 덜어 보세요.
+                  혼자, 친구와, 가족과 함께 — 이동 수단과 보행 조건까지.
                 </p>
                 <button
                   className="primary hero-cta"
-                  onClick={() => start(false)}
+                  onClick={() => startTaxi('taxi')}
                 >
-                  우리 부모님 여행 만들기 <ArrowUpRight size={20} />
+                  지역 맞춤 여행 시작 <ArrowUpRight size={20} />
                 </button>
                 <button
                   className="text-button hero-secondary"
@@ -710,7 +711,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
               >
                 <ArrowLeft size={18} /> 이전으로
               </button>
-              <span className="eyebrow">우리 가족의 여행 노트</span>
+              <span className="eyebrow">나의 맞춤 여행 노트</span>
               <h1 tabIndex={-1}>
                 {screen === "basics"
                   ? "어디로, 언제 떠나볼까요?"
@@ -1015,7 +1016,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
               {screen === "conditions" && step === 2 && <ConditionCard c={c} />}
               {screen === "basics" && (
                 <>
-                  <ol className="journey-steps" aria-label="여행 준비 순서"><li>1. 날짜·지역 정하기</li><li>2. 가고 싶은 장소 선택</li><li>3. 순서 계산 후 일정 만들기</li></ol>
+                  <ol className="journey-steps" aria-label="여행 준비 순서"><li>1. 날짜·지역 정하기</li><li>2. 취향·이동 수단 선택</li><li>3. 추천 코스 확인·일정 만들기</li></ol>
                   <label>
                     여행 제목
                     <input
@@ -1093,7 +1094,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
                       </select>
                     </label>
                   </div>
-                  {b.mode==='real'&&<><RealSearch onLoaded={catalog=>{setSelectedCatalog(catalog);const meta=catalog.cities?.[0];setB({...b,region:catalog.region,timezone:meta?.timezone??b.timezone,destinations:[{region:catalog.region,startDay:1,endDay:b.days,timezone:meta?.timezone??b.timezone,currency:meta?.currency??'KRW'}],taxiPlan:undefined});setImportItems([]);}}/><details className="advanced-settings"><summary>시간대 설정</summary><label>현지 시간대 (IANA)<input value={b.timezone} onChange={e=>setB({...b,timezone:e.target.value})} placeholder="Asia/Seoul, Asia/Tokyo, Europe/Paris"/></label></details>{(b.transport==='taxi'||b.transport==='driving')&&selectedCatalog.places.length>0&&<><label>추천 기준<select value={b.travelPriority??(b.transport==='driving'?'comfort':'budget')} onChange={e=>setB({...b,travelPriority:e.target.value as Basics['travelPriority']})}><option value="budget">이동 거리 우선</option><option value="comfort">좌석·적은 보행 우선</option><option value="balanced">관심 경험·거리 균형</option></select></label><StudentTaxiPlanner conditions={c} basics={b} catalog={selectedCatalog} onChange={setB}/></>} {selectedCatalog.places.length>0&&<details className="advanced-settings"><summary>다도시·숙박·교통비 설정</summary><WorldPlan basics={b} catalog={selectedCatalog} onChange={(basics,catalog)=>{setB(basics);setSelectedCatalog(catalog);}}/></details>}</>}
+                  {b.mode==='real'&&<><RealSearch onLoaded={catalog=>{setSelectedCatalog(catalog);const meta=catalog.cities?.[0];setB({...b,region:catalog.region,timezone:meta?.timezone??b.timezone,destinations:[{region:catalog.region,startDay:1,endDay:b.days,timezone:meta?.timezone??b.timezone,currency:meta?.currency??'KRW'}],taxiPlan:undefined});setImportItems([]);}}/><details className="advanced-settings"><summary>시간대 설정</summary><label>현지 시간대 (IANA)<input value={b.timezone} onChange={e=>setB({...b,timezone:e.target.value})} placeholder="Asia/Seoul, Asia/Tokyo, Europe/Paris"/></label></details>{(b.transport==='taxi'||b.transport==='driving')&&selectedCatalog.places.length>0&&<><label>추천 기준<select value={b.travelPriority??(b.transport==='driving'?'comfort':'budget')} onChange={e=>setB({...b,travelPriority:e.target.value as Basics['travelPriority']})}><option value="budget">이동 거리 우선</option><option value="comfort">좌석·적은 보행 우선</option><option value="balanced">관심 경험·거리 균형</option></select></label><fieldset><legend>이번 여행에서 원하는 경험</legend><div className="place-filters">{['자연 풍경','문화·전시'].map(theme=><button type="button" key={theme} aria-pressed={c.experiences.includes(theme)} onClick={()=>setC({...c,experiences:c.experiences.includes(theme)?c.experiences.filter(e=>e!==theme):[...c.experiences,theme].slice(0,12)})}>{theme}</button>)}</div></fieldset><RegionalCourse basics={b} conditions={c} catalog={selectedCatalog} onChange={setB}/><StudentTaxiPlanner conditions={c} basics={b} catalog={selectedCatalog} onChange={setB}/></>} {selectedCatalog.places.length>0&&<details className="advanced-settings"><summary>다도시·숙박·교통비 설정</summary><WorldPlan basics={b} catalog={selectedCatalog} onChange={(basics,catalog)=>{setB(basics);setSelectedCatalog(catalog);}}/></details>}</>}
                   {existing && (
                     <section className="importer">
                       <h2>기존 일정 입력</h2>
@@ -1165,7 +1166,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
                   {screen === "basics"
                     ? existing
                       ? "일정 점검하기"
-                      : "우리 가족 일정 만들기"
+                      : "맞춤 코스 일정 만들기"
                     : step === 2
                       ? "이 조건으로 여행 준비하기"
                       : "다음으로"}
@@ -1295,7 +1296,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
                 </details>
               </div>
               <aside className="assessment">
-                <span className="eyebrow">부모님의 보폭으로 살펴봤어요</span>
+                <span className="eyebrow">선택한 여행 조건으로 살펴봤어요</span>
                 <ReportView report={report} />
                 <button className="primary full" onClick={propose}>
                   부모님 조건에 맞게 수정하기 <ArrowRight size={18} />
@@ -1420,7 +1421,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
                 <Printer size={20} /> 인쇄 / PDF 저장
               </button>
             </div>
-            <span className="eyebrow">우리 가족의 여행</span>
+            <span className="eyebrow">나의 지역 맞춤 여행</span>
             <h1 tabIndex={-1}>{trip.basics.title}</h1>
             <p className="parent-subtitle">
               {trip.basics.region} · {trip.basics.date}부터 {trip.basics.days}일

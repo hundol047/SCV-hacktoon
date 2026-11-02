@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { defaultConditions, type Conditions, type Basics } from '../domain/schema';
 import { haversineKm, optimizeTaxiOrder, taxiPlanSummary } from '../domain/taxi-plan';
 import type { Catalog } from '../data/catalog';
@@ -30,6 +30,7 @@ function Planner({ basics, catalog, onChange, conditions=defaultConditions }: Pr
   const [kind,setKind] = useState('all');
   const [onlySelected,setOnlySelected] = useState(false);
   const [message, setMessage] = useState('');
+  useEffect(()=>{if(saved){setSelected(saved.selectedPlaceIds);setStart(saved.startPlaceId);setEnd(saved.endPlaceId??'');setReturning(saved.returnToStart??false);setDay(saved.day??1);setTravelers(String(saved.travelers));setCapacity(String(saved.taxiCapacity));setBaseFare(saved.baseFare===null?'':String(saved.baseFare));setPerKmFare(saved.perKmFare===null?'':String(saved.perKmFare));setCosts({kmPerLiter:saved.drivingCosts?.kmPerLiter.toString()??'',fuelPrice:saved.drivingCosts?.fuelPrice.toString()??'',parking:saved.drivingCosts?.parking.toString()??'',tolls:saved.drivingCosts?.tolls.toString()??''});}},[saved]);
   const edit = () => { if(saved) onChange({...basics,taxiPlan:undefined}); setMessage('입력이 바뀌었습니다. 순서를 다시 계산해 주세요.'); };
   const region = basics.destinations?.find(d=>d.startDay<=day&&d.endDay>=day)?.region;
   const filtered = candidates.filter(p=>(!region||(p.region??catalog.region)===region)&&(kind==='all'||p.kind===kind)&&(!onlySelected||selected.includes(p.id))&&(!query.trim()||(p.name+' '+p.description).toLowerCase().includes(query.trim().toLowerCase())));

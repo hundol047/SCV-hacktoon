@@ -41,4 +41,4 @@ if(window.BopokAndroid){
     if(anchor?.getAttribute('href')==='/api/tourism/download'){event.preventDefault();window.BopokAndroid!.saveTourism();}
   });
 }
-createRoot(document.getElementById('root')!).render(<><aside className="mobile-notice">보폭 안드로이드 · 개인 AI 연결 지원<br/>국내 자료·일정은 오프라인 / 대체 관광지 AI는 개인 API 키·인터넷 필요</aside><Bopok/></>);
+createRoot(document.getElementById('root')!).render(<><aside className="mobile-notice">보폭 · AI 지역 맞춤 여행<br/>국내 자료·일정은 오프라인 / 지역 코스·대체 관광지 AI는 개인 API 키·인터넷 필요</aside><Bopok/></>);

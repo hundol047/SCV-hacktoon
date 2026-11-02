@@ -14,6 +14,7 @@ await new Promise(r=>server.listen(0,'127.0.0.1',r));
 const browser=await chromium.launch({executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH||'/usr/bin/chromium',headless:true});
 try{
   const car=await browser.newPage({viewport:{width:393,height:852},isMobile:true,hasTouch:true});
+  await car.addInitScript(()=>{window.BopokAndroid={aiStatus:()=>JSON.stringify({configured:true,model:'test-model'}),configureAI:()=>{},saveJson:()=>{},saveTourism:()=>{},printPage:()=>{},requestAI:(id,payload)=>{const request=JSON.parse(payload);setTimeout(()=>window.dispatchEvent(new CustomEvent('bopok:ai',{detail:{id,output:{candidateIds:request.candidateIds.slice(0,3)}}})),20);}};});
   await car.goto('http://127.0.0.1:'+server.address().port);
   await car.getByRole('button',{name:'자가용 여행 빠르게 만들기',exact:true}).click();
   assert.equal(await car.getByLabel('지역 내 이동 수단').inputValue(),'driving');
@@ -23,7 +24,16 @@ try{
   await car.getByRole('button',{name:'전국 자료 검색',exact:true}).click();
   await car.getByRole('status').filter({hasText:'전국 보관 166,427건'}).waitFor({timeout:60000});
   await car.getByRole('button',{name:'이 지역 후보를 일정에 사용'}).click();
+  await car.getByRole('button',{name:'API 키 없이 기본 코스 보기',exact:true}).click();
+  await car.locator('.course-preview').waitFor();
+  assert((await car.locator('.course-preview').innerText()).includes('기본 추천'));
+  await car.getByRole('checkbox',{name:'지역·취향·조건·후보를 OpenAI에 전송하며 API 비용이 발생하는 데 동의합니다.'}).check();
+  await car.getByRole('button',{name:'AI로 지역 코스 추천',exact:true}).click();
+  await car.locator('.course-preview').filter({hasText:'AI 추천'}).waitFor();
+  await car.getByRole('button',{name:'이 코스를 일정에 적용',exact:true}).click();
+  const courseCount=await car.locator('.regional-course').innerText();assert(courseCount.includes('곳이 선택'));
   const cp=car.locator('.taxi-planner');await cp.locator(':scope > summary').click();
+  await cp.getByRole('button',{name:'자가용 순서 해제',exact:true}).click();
   await cp.getByText('자가용 여행에 맞는 후보 추천',{exact:true}).click();
   await cp.getByRole('button',{name:/ 추가$/}).first().click();
   await cp.getByRole('checkbox',{name:/식사 · 좌표 확인/}).first().check();
@@ -39,7 +49,7 @@ try{
   await cp.locator('.notice').waitFor();
   assert((await cp.locator('.notice').innerText()).includes('차량 비용'));
   await cp.screenshot({path:'android/build/car-preview.png'});
-  await car.getByRole('button',{name:'우리 가족 일정 만들기'}).click();
+  await car.getByRole('button',{name:'맞춤 코스 일정 만들기'}).click();
   await car.locator('.timeline').waitFor();
   const carTrip=await car.evaluate(()=>JSON.parse(localStorage.getItem('bopok:trip:v1')));
   assert.equal(carTrip.basics.taxiPlan.transport,'driving');
@@ -74,7 +84,7 @@ try{
   await planner.locator('.notice').waitFor();
   assert(await planner.locator('.route-preview').innerText().then(t=>t.includes('직선')));
   await planner.screenshot({path:'android/build/planner-preview.png'});
-  await page.getByRole('button',{name:'우리 가족 일정 만들기'}).click();
+  await page.getByRole('button',{name:'맞춤 코스 일정 만들기'}).click();
   await page.locator('.timeline').waitFor();
   const trip=await page.evaluate(()=>JSON.parse(localStorage.getItem('bopok:trip:v1')));
   assert.equal(trip.basics.taxiPlan.orderedPlaceIds.length,2);assert(trip.items.length>=3);

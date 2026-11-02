@@ -9,7 +9,7 @@ test('taxi choices recalculate fare, pin endpoints, include return and survive s
   ]},new Date().toISOString());
   await page.route('**/api/catalog?*',r=>r.fulfill({json:catalog}));
   await page.goto('/');
-  await page.getByRole('button',{name:'우리 부모님 여행 만들기',exact:true}).click();
+  await page.getByRole('button',{name:'부모님 맞춤 여행 시작',exact:true}).click();
   await page.getByRole('button',{name:'다음으로',exact:true}).click();
   await page.getByRole('button',{name:'다음으로',exact:true}).click();
   await page.getByRole('button',{name:'이 조건으로 여행 준비하기'}).click();
@@ -37,7 +37,7 @@ test('taxi choices recalculate fare, pin endpoints, include return and survive s
   await expect(planner.locator('.notice')).toHaveCount(0);
   await planner.getByRole('button',{name:'택시 이동 순서 계산'}).click();
   await expect(planner.locator('.notice')).toContainText('14,400원');
-  await page.getByRole('button',{name:'우리 가족 일정 만들기'}).click();
+  await page.getByRole('button',{name:'맞춤 코스 일정 만들기'}).click();
   await expect(page.locator('.timeline')).toContainText('출발 공원');
   await expect.poll(async()=>page.evaluate(()=>JSON.parse(localStorage.getItem('bopok:trip:v1')??'null')?.basics.taxiPlan?.estimatedFare)).toBe(14400);
   const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('bopok:trip:v1')!));
