@@ -27,6 +27,11 @@ try{
   await services.getByText('지역 축제·문화행사 찾아보기',{exact:true}).click();
   await services.getByText('행사 자료 불러오기·보관',{exact:true}).click();
   assert((await services.locator('.local-events').innerText()).includes('공식 행사 서버가 연결되지 않았습니다'));
+  const eventRows=Array.from({length:700},(_,i)=>({id:'backup:'+i,title:'백업 검증 '+i,region:'서울',kind:'culture',start:'2030-01-01',end:'2030-01-03',address:'테스트 주소',description:'가'.repeat(1000),source:'https://example.org/test',latitude:null,longitude:null,origin:'manual',collectedAt:new Date().toISOString()}));
+  const eventBackup=Buffer.from(JSON.stringify({version:1,events:eventRows}));assert(eventBackup.length>2000000);
+  await services.getByLabel('행사 JSON 가져오기').setInputFiles({name:'events.json',mimeType:'application/json',buffer:eventBackup});
+  await services.locator('.local-events [role="status"]').filter({hasText:'700건을 가져왔습니다'}).waitFor();
+  assert.equal(await services.evaluate(()=>JSON.parse(localStorage.getItem('bopok:events:v1')).events.length),700);
   await services.close();console.log('PASS: APK promotion native bridge contract with synthetic text response; event offline availability is explicit.');
   const car=await browser.newPage({viewport:{width:393,height:852},isMobile:true,hasTouch:true});
   await car.addInitScript(()=>{window.BopokAndroid={aiStatus:()=>JSON.stringify({configured:true,model:'test-model'}),configureAI:()=>{},saveJson:()=>{},saveTourism:()=>{},printPage:()=>{},requestAI:(id,payload)=>{const request=JSON.parse(payload);setTimeout(()=>window.dispatchEvent(new CustomEvent('bopok:ai',{detail:{id,output:{candidateIds:request.candidateIds.slice(0,3)}}})),20);}};});

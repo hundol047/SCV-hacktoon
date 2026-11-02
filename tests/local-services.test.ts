@@ -17,6 +17,12 @@ it('기간 중첩·지역·유형·검색어를 함께 적용한다',()=>{
   expect(filterEvents([event],'','','festival','','')).toHaveLength(0);
   expect(filterEvents([event],'','','','2030-01-04','')).toHaveLength(0);
 });
+it('보관 한도 초과 때 기존 행사를 조용히 삭제하지 않는다',()=>{
+  const existing=Array.from({length:1000},(_,i)=>({...event,id:String(i)}));
+  expect(()=>mergeEvents(existing,[{...event,id:'new'}])).toThrow('기존 자료는 유지');
+  expect(existing).toHaveLength(1000);
+  expect(mergeEvents(existing,[{...event,id:'0',title:'갱신'}])).toHaveLength(1000);
+});
 it('행사 기간 내 좌표 있는 자료만 여행으로 연결하며 비용·시간을 확정하지 않는다',()=>{
   const trip=eventTrip(event,'2030-01-02');expect(tripSchema.safeParse(trip).success).toBe(true);
   expect(tripSchema.safeParse(eventTrip({...event,title:'긴 행사 이름 '.repeat(16)},'2030-01-02')).success).toBe(true);

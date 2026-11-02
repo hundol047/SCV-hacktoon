@@ -7,7 +7,7 @@ export const eventSchema=z.object({id:z.string().min(1).max(100),title:z.string(
 export type LocalEvent=z.infer<typeof eventSchema>;
 export const eventFileSchema=z.object({version:z.literal(1),events:z.array(eventSchema).max(1000)});
 export function filterEvents(events:LocalEvent[],query:string,region:string,kind:string,start:string,end:string){return events.filter(e=>(!region||e.region.includes(region))&&(!kind||e.kind===kind)&&(!start||e.end>=start)&&(!end||e.start<=end)&&[e.title,e.region,e.address,e.description].join(' ').toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())).sort((a,b)=>a.start.localeCompare(b.start)||a.title.localeCompare(b.title,'ko'));}
-export function mergeEvents(existing:LocalEvent[],incoming:LocalEvent[]){return [...new Map([...existing,...incoming].map(e=>[e.id,e])).values()].slice(-1000);}
+export function mergeEvents(existing:LocalEvent[],incoming:LocalEvent[]){const merged=[...new Map([...existing,...incoming].map(e=>[e.id,e])).values()];if(merged.length>1000)throw Error('행사는 최대 1,000건까지 보관할 수 있습니다. 백업 후 불필요한 자료를 삭제하세요. 기존 자료는 유지합니다.');return merged;}
 export function eventTrip(raw:LocalEvent,travelDate:string):Trip{
   const event=eventSchema.parse(raw);date.parse(travelDate);
   if(travelDate<event.start||travelDate>event.end)throw Error('행사 기간 안의 방문 날짜를 선택하세요.');
