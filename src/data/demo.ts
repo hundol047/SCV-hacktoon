@@ -10,7 +10,7 @@ export type Fact<T> = {
 const fact = <T>(id: string, field: string, value: T | null): Fact<T> => ({
   value,
   evidenceId: `${id}:${field}`,
-  source: "보폭 가상 시연 데이터 v1 · 실제 조사 없음",
+  source: "여행잇 가상 시연 데이터 v1 · 실제 조사 없음",
   nature: "demo",
   checked: "simulated",
 });

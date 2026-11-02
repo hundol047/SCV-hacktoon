@@ -85,7 +85,7 @@ public class MainActivity extends Activity {
     }
     @JavascriptInterface public void saveTourism(){save("bopok-korea-tourism.json.gz","application/gzip",null,true);}
     @JavascriptInterface public void printPage(){runOnUiThread(()->{
-      try{((PrintManager)getSystemService(PRINT_SERVICE)).print("보폭 여행 일정",web.createPrintDocumentAdapter("보폭 여행 일정"),null);}catch(Exception e){notice("인쇄 서비스를 사용할 수 없습니다.");}
+      try{((PrintManager)getSystemService(PRINT_SERVICE)).print("여행잇 여행 일정",web.createPrintDocumentAdapter("여행잇 여행 일정"),null);}catch(Exception e){notice("인쇄 서비스를 사용할 수 없습니다.");}
     });}
   }
   @Override protected void onActivityResult(int request,int result,Intent data){

@@ -41,6 +41,7 @@ import {Catalog,catalogFor,demoCatalog,indexCatalog,emptyRealCatalog} from '../d
 import {CatalogContext,useCatalog} from './CatalogContext';
 import RealSearch from './RealSearch';
 import WorldPlan from './WorldPlan';
+import BrandMark from './BrandMark';
 import DeferredPanel from './DeferredPanel';
 import LocalEvents from './LocalEvents';
 import PromotionStudio from './PromotionStudio';
@@ -403,11 +404,11 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
         <button
           className="brand"
           onClick={() => navigate("home")}
-          aria-label="보폭 홈"
+          aria-label="여행잇 홈"
         >
-          <Footprints size={26} />
+          <BrandMark size={32} />
           <span>
-            보폭<span className="brand-dot">.</span>
+            여행잇<span className="brand-dot">.</span>
           </span>
         </button>
         <nav aria-label="주요 메뉴">
@@ -1558,8 +1559,8 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
       </main>
       <footer className="site-footer no-print">
         <div className="footer-brand">
-          <Footprints size={20} />
-          <strong>보폭.</strong>
+          <BrandMark size={24} />
+          <strong>여행잇.</strong>
           <span>함께 떠나는 여행, 서로의 속도로.</span>
         </div>
         <div className="footer-meta">
@@ -1814,7 +1815,7 @@ function Timeline({
                 <details className="evidence">
                   <summary>장소 데이터 근거 보기</summary>
                   <p>
-                    {catalog.mode==='demo'?'보폭 가상 시연 데이터 v1 · 실제 조사 없음 · 가상 시나리오 설정':catalog.sourceNotice}
+                    {catalog.mode==='demo'?'여행잇 가상 시연 데이터 v1 · 실제 조사 없음 · 가상 시나리오 설정':catalog.sourceNotice}
                   </p>
                   {p && (
                     <p>
