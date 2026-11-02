@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowUpRight,
   ArrowLeft,
@@ -41,6 +41,7 @@ import {Catalog,catalogFor,demoCatalog,indexCatalog,emptyRealCatalog} from '../d
 import {CatalogContext,useCatalog} from './CatalogContext';
 import RealSearch from './RealSearch';
 import WorldPlan from './WorldPlan';
+import DeferredPanel from './DeferredPanel';
 import LocalEvents from './LocalEvents';
 import PromotionStudio from './PromotionStudio';
 import RegionalCourse from './RegionalCourse';
@@ -135,7 +136,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
   useEffect(()=>{const changed=()=>setIdentityRevision(n=>n+1);window.addEventListener('bopok:identity',changed);return ()=>window.removeEventListener('bopok:identity',changed);},[]);
   const currentCatalog=(screen==='conditions'||screen==='basics')?catalogFor(b.mode,selectedCatalog):catalogFor(trip?.basics.mode??'demo',trip?.catalog);
   const {placeById,getRoute}=indexCatalog(currentCatalog),places=currentCatalog.places;
-  const [,setVerificationTick]=useState(0);
+  const [verificationTick,setVerificationTick]=useState(0);
   useEffect(()=>{if(!trip?.catalog?.places.some(p=>p.review))return;let active=true;fetch('/api/verification?mode=key').then(r=>r.json()).then(async data=>{await Promise.all(trip.catalog!.places.filter(p=>p.review).map(p=>verifyReviewed(p,data.publicKey)));if(active)setVerificationTick(v=>v+1);}).catch(()=>{});return ()=>{active=false;};},[trip?.catalog]);
   const requestRevision = useRef(0);
   const activeRequest = useRef<AbortController | null>(null);
@@ -391,9 +392,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
     });
     setProposal(null);
   }
-  const report = trip
-    ? validateSchedule(trip.items, trip.conditions, trip.basics,trip.catalog)
-    : null;
+  const report = useMemo(()=>trip?validateSchedule(trip.items,trip.conditions,trip.basics,trip.catalog):null,[trip,verificationTick]);
   const progress = screen === "conditions" ? step + 1 : 4;
   return (
     <CatalogContext.Provider value={currentCatalog}><div className={screen === "parent" ? "app parent-mode" : "app"}>
@@ -441,8 +440,8 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
               <button className="primary" onClick={()=>startTaxi('taxi')}>택시 여행 빠르게 만들기 <ArrowRight size={18}/></button><button className="secondary" onClick={()=>startTaxi('driving')}>자가용 여행 빠르게 만들기 <ArrowRight size={18}/></button>
               <button className="secondary" onClick={()=>start(false)}>부모님 맞춤 여행 시작</button>
             </section>
-            <details className="cloud-panel"><summary>지역 축제·문화행사 찾아보기</summary><LocalEvents onTrip={t=>{setTrip(t);setDay(1);setProposal(null);navigate('result');}}/></details>
-            <details className="cloud-panel"><summary>소상공인 홍보 콘텐츠 만들기</summary><PromotionStudio/></details>
+            <DeferredPanel title="지역 축제·문화행사 찾아보기"><LocalEvents onTrip={t=>{setTrip(t);setDay(1);setProposal(null);navigate('result');}}/></DeferredPanel>
+            <DeferredPanel title="소상공인 홍보 콘텐츠 만들기"><PromotionStudio/></DeferredPanel>
             <section className="hero">
               <div className="hero-copy">
                 <div className="eyebrow">

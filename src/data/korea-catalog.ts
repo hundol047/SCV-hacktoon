@@ -2,10 +2,22 @@ import {settingFromTags} from '../domain/weather';
 import {koreaCategories,koreaRegions,type KoreaSnapshot,type KoreaRecord} from './korea-tourism';
 import {catalogSchema,type Catalog} from './catalog';
 import type {Place,Fact} from './demo';
+const statsCache=new WeakMap<KoreaSnapshot,{missingNames:number;missingCoordinates:number;missingAddresses:number}>();
+export function koreaStats(snapshot:KoreaSnapshot){let stats=statsCache.get(snapshot);if(!stats){stats={missingNames:0,missingCoordinates:0,missingAddresses:0};for(const r of snapshot.records){if(!r.nameKnown)stats.missingNames++;if(r.latitude===null||r.longitude===null)stats.missingCoordinates++;if(!r.address.trim())stats.missingAddresses++;}statsCache.set(snapshot,stats);}return stats;}
 const searchable=(value:string)=>value.normalize('NFKC').toLocaleLowerCase('ko').replace(/\s+/g,' ').trim();
+type SearchIndex={regions:Map<string,KoreaRecord[]>;text:WeakMap<KoreaRecord,string>;queries:Map<string,KoreaRecord[]>};
+const indexes=new WeakMap<KoreaSnapshot,SearchIndex>();
+const regionNames=new Map(koreaRegions.map(r=>[r.code,r.name]));
+function searchIndex(snapshot:KoreaSnapshot){let index=indexes.get(snapshot);if(!index){index={regions:new Map(),text:new WeakMap(),queries:new Map()};for(const r of snapshot.records)for(const code of r.provinces){const list=index.regions.get(code)??[];list.push(r);index.regions.set(code,list);}indexes.set(snapshot,index);}return index;}
 export function searchKorea(snapshot:KoreaSnapshot,query='',province='',category='',page=1,limit=25){
- const words=searchable(query).split(' ').filter(Boolean);
- const records=snapshot.records.filter(r=>(!province||r.provinces.includes(province as typeof koreaRegions[number]['code']))&&(!category||r.category===category)&&words.every(w=>searchable([r.name,r.address,...r.provinces.map(c=>koreaRegions.find(p=>p.code===c)?.name??''),...Object.values(r.tags).filter(Boolean)].join(' ')).includes(w)));
+ const normalized=searchable(query),words=normalized.split(' ').filter(Boolean),index=searchIndex(snapshot),key=JSON.stringify([normalized,province,category]);
+ let records=index.queries.get(key);
+ if(!records){records=(province?index.regions.get(province)??[]:snapshot.records).filter(r=>{
+   if(category&&r.category!==category)return false;
+   if(!words.length)return true;
+   let text=index.text.get(r);if(text===undefined){text=searchable([r.name,r.address,...r.provinces.map(c=>regionNames.get(c)??''),...Object.values(r.tags).filter(Boolean)].join(' '));index.text.set(r,text);}
+   return words.every(w=>text.includes(w));
+ });if(index.queries.size>=4)index.queries.delete(index.queries.keys().next().value!);index.queries.set(key,records);}
  return {total:records.length,page,limit,records:records.slice((page-1)*limit,page*limit)};
 }
 export function koreaPlace(record:KoreaRecord,snapshot:KoreaSnapshot,region:string):Place {

@@ -15,6 +15,15 @@ const source=data([
  {type:'node',id:5,lat:37.58,lon:126.98,tags:{name:'종로 커피',amenity:'cafe',opening_hours:'24/7',wheelchair:'yes'}},
 ]);
 const snapshot=():KoreaSnapshot=>({version:1,queryVersion:1,collectedAt:at,license:'ODbL-1.0',attribution:'© OpenStreetMap contributors',source:'https://overpass-api.de/api/interpreter',coverage:koreaRegions.map(r=>({...r,relationId:1,boundaryStatus:'administrative',currentName:null,collectedAt:at,sourceTimestamp:at,count:r.code==='KR-11'?5:0})),records:parseKoreaRegion(source,'KR-11').records});
+it('cached searches preserve pagination, filters and snapshot isolation',()=>{
+ const s=snapshot();const all=searchKorea(s,'종로','KR-11','',1,100);
+ expect(searchKorea(s,' 종로 ','KR-11','',2,1).records).toEqual(all.records.slice(1,2));
+ expect(searchKorea(s,'종로','KR-26','',1,100).total).toBe(0);
+ expect(searchKorea(s,'종로','KR-11','food',1,100).records.every(r=>r.category==='food')).toBe(true);
+ for(const q of ['한식','경복궁','커피','숙소','없는곳'])searchKorea(s,q);
+ expect(searchKorea(s,'종로','KR-11','',1,100)).toEqual(all);
+ expect(searchKorea({...s,records:[]},'종로','KR-11').total).toBe(0);
+});
 it('national parsing rejects truncated, duplicate and provider runtime-error responses',()=>{
  expect(()=>parseKoreaRegion({...source,remark:'runtime error: timeout'},'KR-11')).toThrow();
  expect(()=>parseKoreaRegion({...source,elements:source.elements.slice(1)},'KR-11')).toThrow();
