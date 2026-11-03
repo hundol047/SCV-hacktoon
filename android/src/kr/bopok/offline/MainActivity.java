@@ -15,7 +15,7 @@ import java.util.HashMap;
 public class MainActivity extends Activity {
   private static final String ORIGIN="https://appassets.androidplatform.net";
   private WebView web;
-  private PersonalAI ai;
+  private ServerAPI api;
   private PublicTravel travel;
   private ValueCallback<Uri[]> chooser;
   private byte[] pendingJson;
@@ -31,10 +31,10 @@ public class MainActivity extends Activity {
     web=new WebView(this);root.addView(web);setContentView(root);
     WebSettings settings=web.getSettings();settings.setJavaScriptEnabled(true);settings.setDomStorageEnabled(true);
     settings.setAllowFileAccess(false);settings.setAllowContentAccess(true);settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
-    settings.setUserAgentString(settings.getUserAgentString()+" Yeohaengit/0.13.0 (+https://github.com/hundol047/SCV-hacktoon)");
+    settings.setUserAgentString(settings.getUserAgentString()+" Yeohaengit/0.14.0 (+https://github.com/hundol047/SCV-hacktoon)");
     settings.setJavaScriptCanOpenWindowsAutomatically(false);settings.setSupportMultipleWindows(false);
     WebView.setWebContentsDebuggingEnabled(false);
-    ai=new PersonalAI(this,web);
+    api=new ServerAPI(this,web);
     travel=new PublicTravel(this,web);
     web.addJavascriptInterface(new Bridge(),"BopokAndroid");
     web.setWebViewClient(new WebViewClient(){
@@ -84,9 +84,7 @@ public class MainActivity extends Activity {
   public class Bridge {
     @JavascriptInterface public void cancelTravel(String id){travel.cancel(id);}
     @JavascriptInterface public void requestTravel(String id,String url){travel.request(id,url);}
-    @JavascriptInterface public String aiStatus(){return ai.status();}
-    @JavascriptInterface public void configureAI(String key,String model){try{ai.configure(key,model);}catch(Exception e){throw new IllegalArgumentException("AI configuration failed");}}
-    @JavascriptInterface public void requestAI(String id,String input){ai.request(id,input);}
+    @JavascriptInterface public void requestServer(String id,String path,String body){api.request(id,path,body);}
     @JavascriptInterface public void saveJson(String name,String data){
       if(data==null||data.length()>8*1024*1024){notice("파일이 너무 큽니다.");return;}
       byte[] bytes=data.getBytes(StandardCharsets.UTF_8);if(bytes.length>8*1024*1024){notice("8 MiB 이하 파일만 저장할 수 있습니다.");return;}

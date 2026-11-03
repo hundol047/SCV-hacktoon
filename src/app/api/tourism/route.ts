@@ -14,9 +14,8 @@ export async function GET(request:Request){
   const category=z.enum(['',...Object.keys(koreaCategories)] as ['',...KoreaCategory[]]).parse(params.get('category')??'');
   const page=z.coerce.number().int().min(1).max(100000).parse(params.get('page')??1);
   const limit=z.coerce.number().int().min(action==='catalog'?10:1).max(action==='catalog'?200:100).parse(params.get('limit')??(action==='catalog'?200:25));
-  if(action==='catalog'&&!province)return json({error:'일정 후보에는 한 시·도를 선택해 주세요.'},400);
   const snapshot=await readKoreaSnapshot();
-  if(action==='catalog')return json(koreaCatalog(snapshot,province,query,limit));
-  return json({...searchKorea(snapshot,query,province,category,page,limit),dataset:{total:snapshot.records.length,collectedAt:snapshot.collectedAt,coverage:snapshot.coverage,license:snapshot.license,attribution:snapshot.attribution,stale:Date.now()-Date.parse(snapshot.collectedAt)>7*86400000,...koreaStats(snapshot),notice:'17개 지역 구획 OSM 등록 자료입니다. 지도 미등록 장소·축제·운영정보의 전수 수집이 아닙니다. 이름·좌표 미등록 항목도 목록에 포함합니다.'}});
+  if(action==='catalog'){const matches=!province?searchKorea(snapshot,query,'','',1,100).records:[];const code=province||matches.find(r=>r.nameKnown)?.provinces[0];if(!code||!query&&!province)return json({error:'여행할 시·군·구를 입력해 주세요.'},400);return json(koreaCatalog(snapshot,code,query,limit));}
+  return json({...searchKorea(snapshot,query,province,category,page,limit),dataset:{total:snapshot.records.length,collectedAt:snapshot.collectedAt,coverage:snapshot.coverage,license:snapshot.license,attribution:snapshot.attribution,stale:Date.now()-Date.parse(snapshot.collectedAt)>7*86400000,...koreaStats(snapshot),notice:'© OpenStreetMap 기여자 · 운영시간과 현장 정보는 방문 전 확인해 주세요.'}});
  }catch(e){return json({error:e instanceof z.ZodError?'검색 조건을 확인해 주세요.':'전국 관광 자료를 읽지 못했습니다. 데이터 수집·무결성 상태를 확인해 주세요.'},e instanceof z.ZodError?400:503);}
 }

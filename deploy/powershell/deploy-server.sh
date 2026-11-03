@@ -16,9 +16,20 @@ if sudo docker container inspect "$name" >/dev/null 2>&1; then
   label="$(sudo docker inspect -f '{{index .Config.Labels "app.deployer"}}' "$name")"
   [[ "$label" == "$owner" ]] || { echo 'Existing yeohaengit-web container is not owned by this installer. Nothing changed.'; exit 1; }
 fi
+# Read the server's existing configuration, never overwrite it or embed keys in the ZIP.
+envfile=/etc/yeohaengit/server.env
+[[ -f "$envfile" ]] || { echo 'Missing /etc/yeohaengit/server.env. Copy server.env.example and set server AWS_REGION, session/storage and AI usage-price settings first.'; exit 1; }
+if sudo grep -Eq '^(AWS_ACCESS_KEY_ID|AWS_SECRET_ACCESS_KEY|AWS_SESSION_TOKEN|AWS_PROFILE|AWS_EC2_METADATA_SERVICE_ENDPOINT|BOPok_AI_KEY)=' "$envfile"; then
+  echo 'Remove static AWS/API credentials, profiles and metadata endpoint overrides. Only the EC2 instance role is supported.'; exit 1
+fi
+sudo grep -Eq '^(AWS_REGION|AWS_DEFAULT_REGION)=.+$' "$envfile" || { echo 'Set the existing server AWS region in server.env.'; exit 1; }
 image="yeohaengit-preview:$(date +%s)-$$"
 echo 'Building the Next.js web app. The first build can take several minutes.'
 sudo docker build -t "$image" .
+# Validate inside the same image/network before stopping the previous deployment.
+# This performs one short paid Converse request using the instance profile.
+sudo docker run --rm --env-file "$envfile" -e AWS_EC2_METADATA_V1_DISABLED=true \
+  -e NO_PROXY=169.254.169.254,localhost,127.0.0.1 "$image" node bedrock-role-probe.cjs --converse
 if sudo docker container inspect "$name" >/dev/null 2>&1; then
   old="${name}-previous-$(date +%s)-$$"
   sudo docker stop "$name" >/dev/null
@@ -33,6 +44,8 @@ rollback() {
 trap rollback ERR
 sudo docker run -d --name "$name" --label "app.deployer=$owner" \
   --restart unless-stopped --log-opt max-size=10m --log-opt max-file=3 \
+  --env-file "$envfile" -e AWS_EC2_METADATA_V1_DISABLED=true \
+  -e NO_PROXY=169.254.169.254,localhost,127.0.0.1 \
   -p "$port:3000" "$image"
 ready=false
 for attempt in {1..30}; do

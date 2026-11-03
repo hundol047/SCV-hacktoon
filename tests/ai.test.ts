@@ -1,11 +1,17 @@
+import {BedrockProvider,converseInput,BEDROCK_MODEL,type ConverseSender} from '../src/server/bedrock';
 import { it, expect, vi } from "vitest";
 import {
   RulesProvider,
-  OpenAIProvider,
   extractionSchema,
   validateExtraction,
   extractWithFallback,
 } from "../src/adapters/ai";
+function provider(fetcher:typeof fetch, timeout=30000){
+ return new BedrockProvider({send:async(command,options)=>{
+   const legacy=await fetcher('mock:bedrock',{body:JSON.stringify(command.input),signal:timeout===5?AbortSignal.timeout(5):options.abortSignal});
+   const body=await legacy.json();return {$metadata:{},usage:undefined,metrics:undefined,stopReason:'end_turn',output:{message:{role:'assistant',content:body.output?.flatMap((o:any)=>o.content??[]).map((b:any)=>({text:b.text}))}}};
+ }});
+}
 it("AI가 원문에 없는 보행 수치를 만들면 거절한다 (모의 응답)", async () => {
   const output = {
     ...(await new RulesProvider().extract("한 번에 20분")),
@@ -19,7 +25,7 @@ it("AI가 원문에 없는 보행 수치를 만들면 거절한다 (모의 응�
         ],
       }),
     )) as typeof fetch;
-  const p = new OpenAIProvider("test", "configured-model", fetcher);
+  const p = provider(fetcher);
   expect((await extractWithFallback("한 번에 20분", p)).status).toBe(
     "fallback",
   );
@@ -37,7 +43,7 @@ it("요청에서 제공하지 않은 후보 ID는 유효한 데이터 ID여도 �
         ],
       }),
     )) as typeof fetch;
-  const p = new OpenAIProvider("test", "configured-model", fetcher);
+  const p = provider(fetcher);
   expect((await extractWithFallback("한 번에 20분", p)).status).toBe(
     "fallback",
   );
@@ -98,11 +104,7 @@ it("실제 어댑터가 잘못된 JSON을 반환하면 대체한다 (모의 응�
         }),
       ),
   );
-  const p = new OpenAIProvider(
-    "test",
-    "configured-model",
-    fetcher as typeof fetch,
-  );
+  const p = provider(fetcher as typeof fetch);
   expect((await extractWithFallback("바다 보기", p)).status).toBe("fallback");
 });
 it("AI 요청 타임아웃 후 대체한다 (외부 API 미호출)", async () => {
@@ -110,10 +112,10 @@ it("AI 요청 타임아웃 후 대체한다 (외부 API 미호출)", async () =>
     new Promise<Response>((_resolve, reject) => {
       init.signal?.addEventListener("abort", () => reject(Error("aborted")));
     })) as typeof fetch;
-  const p = new OpenAIProvider("test", "configured-model", fetcher, 5);
+  const p = provider(fetcher,5);
   expect((await extractWithFallback("바다 보기", p)).status).toBe("fallback");
 });
-it("Responses 구조화 출력 요청을 만들고 검증한다 (모의 응답)", async () => {
+it("Bedrock Converse 구조화 출력 요청을 만들고 검증한다 (모의 응답)", async () => {
   const output = await new RulesProvider().extract("한 번에 20분");
   let requestBody: any;
   const fetcher = vi.fn(async (_url: unknown, init: RequestInit) => {
@@ -126,15 +128,11 @@ it("Responses 구조화 출력 요청을 만들고 검증한다 (모의 응답)"
       }),
     );
   });
-  const p = new OpenAIProvider(
-    "test",
-    "configured-model",
-    fetcher as typeof fetch,
-  );
+  const p = provider(fetcher as typeof fetch);
   expect((await extractWithFallback("한 번에 20분", p)).status).toBe(
     "connected",
   );
-  expect(requestBody.store).toBe(false);
-  expect(requestBody.text.format.type).toBe("json_schema");
-  expect(requestBody.text.format.strict).toBe(true);
+  expect(requestBody.modelId).toBe(BEDROCK_MODEL);
+  expect(requestBody.outputConfig.textFormat.type).toBe("json_schema");
+  expect(JSON.parse(requestBody.outputConfig.textFormat.structure.jsonSchema.schema).type).toBe('object');
 });

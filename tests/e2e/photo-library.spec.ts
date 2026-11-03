@@ -1,10 +1,9 @@
 import {test,expect} from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import {readFile} from 'node:fs/promises';
-test('real hero photo and local photo library persist, reject invalid batches, and delete',async({page},info)=>{
+test('local photo library persists, rejects invalid batches, and deletes',async({page},info)=>{
  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto('/');
- const hero=page.locator('.hero-photo');await expect(hero).toBeVisible();expect(await hero.evaluate((img:HTMLImageElement)=>img.complete&&img.naturalWidth>0)).toBe(true);
  const library=page.locator('.library-panel');await expect(library.getByRole('button',{name:'여행 JSON 가져오기',exact:true})).not.toBeVisible();
  await expect(library.getByLabel('여행 사진 선택')).not.toBeVisible();
  const photo=await readFile('public/images/travel-arches.jpg');

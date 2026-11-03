@@ -4,3 +4,8 @@ node_modules
 .env*
 playwright-report
 test-results
+.android-signing
+android/build
+downloads
+.cache
+*.tsbuildinfo

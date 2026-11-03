@@ -7,7 +7,7 @@ import type {KoreaSnapshot} from '../data/korea-tourism';
 import '../app/globals.css';
 import './mobile.css';
 
-declare global {interface Window {BopokAndroid?:{cancelTravel?:(id:string)=>void;requestTravel?:(id:string,url:string)=>void;saveJson:(name:string,data:string)=>void;saveTourism:()=>void;printPage:()=>void;aiStatus:()=>string;configureAI:(key:string,model:string)=>void;requestAI:(id:string,input:string)=>void};}}
+declare global {interface Window {BopokAndroid?:{cancelTravel?:(id:string)=>void;requestTravel?:(id:string,url:string)=>void;saveJson:(name:string,data:string)=>void;saveTourism:()=>void;printPage:()=>void;requestServer:(id:string,path:string,body:string)=>void};}}
 const nativeFetch=window.fetch.bind(window);
 let snapshot:Promise<KoreaSnapshot>|undefined;
 async function readSnapshot(){
@@ -23,13 +23,23 @@ const json=(data:unknown,status=200)=>new Response(JSON.stringify(data),{status,
 window.fetch=async(input,init)=>{
   const url=new URL(input instanceof Request?input.url:String(input),location.href);
   if(url.origin!==location.origin)return json({error:'외부 연결은 휴대폰 브라우저에서 열어 주세요.'},503);
+  if(['/api/courses','/api/replacements','/api/promotions','/api/conditions','/api/advice'].includes(url.pathname)){
+    if(!window.BopokAndroid?.requestServer)return json({error:'앱 서버 연결을 사용할 수 없습니다.'},503);
+    return await new Promise<Response>((resolve)=>{
+      const id=crypto.randomUUID();
+      const timer=setTimeout(()=>{window.removeEventListener('bopok:server',receive);resolve(json({error:'AI 서버 응답 시간이 초과되었습니다. 기존 일정은 유지됩니다.'},504));},45000);
+      function receive(event:Event){const d=(event as CustomEvent).detail;if(d.id!==id)return;clearTimeout(timer);window.removeEventListener('bopok:server',receive);resolve(json(d.data??{error:d.error},d.status));}
+      window.addEventListener('bopok:server',receive);
+      try{window.BopokAndroid!.requestServer(id,url.pathname,String(init?.body??''));}catch{clearTimeout(timer);window.removeEventListener('bopok:server',receive);resolve(json({error:'서버 연결 실패'},503));}
+    });
+  }
   if(url.pathname==='/api/status')return json({storage:{connected:false,ready:false,sessionConfigured:false}});
   if(url.pathname==='/api/account')return json({configured:false,authenticated:false});
   if(url.pathname==='/api/tourism'){
     try{
       const s=await readSnapshot(),p=url.searchParams,province=p.get('province')??'',q=p.get('q')??'';
-      if(p.get('action')==='catalog')return json(koreaCatalog(s,province,q,200));
-      return json({...searchKorea(s,q,province,p.get('category')??'',Math.max(1,Number(p.get('page'))||1),25),dataset:{total:s.records.length,collectedAt:s.collectedAt,coverage:s.coverage,stale:Date.now()-Date.parse(s.collectedAt)>7*86400000,...koreaStats(s),notice:'앱에 포함된 OSM 수집 자료입니다. 실시간 운영정보와 미등록 장소의 전수 자료가 아닙니다.'}});
+      if(p.get('action')==='catalog'){const code=province||searchKorea(s,q,'','',1,100).records.find(r=>r.nameKnown)?.provinces[0];if(!code)return json({error:'여행 지역을 입력해 주세요.'},400);return json(koreaCatalog(s,code,q,200));}
+      return json({...searchKorea(s,q,province,p.get('category')??'',Math.max(1,Number(p.get('page'))||1),25),dataset:{total:s.records.length,collectedAt:s.collectedAt,coverage:s.coverage,stale:Date.now()-Date.parse(s.collectedAt)>7*86400000,...koreaStats(s),notice:'© OpenStreetMap 기여자 · 운영시간과 현장 정보는 방문 전 확인해 주세요.'}});
     }catch(e){return json({error:e instanceof Error?e.message:'내장 자료 검색 실패'},503);}
   }
   if(url.pathname.startsWith('/api/'))return json({error:'이 APK는 오프라인 버전입니다. 전국 수집 자료와 로컬 일정 기능을 이용해 주세요. 로그인·AI·실시간 조회·서버 공유는 연결되지 않았습니다.'},503);
@@ -42,4 +52,4 @@ if(window.BopokAndroid){
     if(anchor?.getAttribute('href')==='/api/tourism/download'){event.preventDefault();window.BopokAndroid!.saveTourism();}
   });
 }
-createRoot(document.getElementById('root')!).render(<><aside className="mobile-notice">여행잇 · 여행·지역 행사·소상공인 홍보<br/>내장 관광·등록 행사는 오프라인 / 여행·홍보 AI는 개인 API 키·인터넷 필요</aside><Bopok/></>);
+createRoot(document.getElementById('root')!).render(<><aside className="mobile-notice">여행잇 · 여행·지역 행사·소상공인 홍보<br/>내장 관광·등록 행사는 오프라인 / 여행·홍보 AI는 서버 연결 필요</aside><Bopok/></>);

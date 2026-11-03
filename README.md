@@ -1,3 +1,8 @@
+> 최신 복구 미리보기: 0.14.0. Bedrock EC2 IAM 전환·5개 입력·Android 서버 연동을 반영했습니다.
+> 한국 관광지 사진 365장 수집은 네트워크 정책 403으로 미완료(0장)입니다.
+> 실제 서버 검증도 미완료입니다. [복구 및 검증 범위](docs/RECOVERY_0.14.0.md)를 먼저 확인하세요.
+> 아래 기존 문서는 이전 버전의 기록이며 개인 OpenAI 키 안내는 현재 버전에 적용되지 않습니다.
+
 # 여행잇 · Yeohaengit
 
 [안드로이드 APK 다운로드](downloads/bopok-android.apk?raw=true) · [설치 및 오프라인 지원 범위](docs/ANDROID.md)

@@ -12,7 +12,8 @@ with tempfile.TemporaryDirectory() as tmp:
     with tarfile.open(archive, 'w:gz') as tar:
         for name in ['package.json', 'package-lock.json', 'next.config.ts', 'tsconfig.json', '.dockerignore']:
             tar.add(root / name, arcname=name)
-        for name in ['src', 'data', 'public']:
+        tar.add(root / '.env.example', arcname='server.env.example')
+        for name in ['src', 'data', 'public', 'scripts']:
             tar.add(root / name, arcname=name)
         # The development Dockerfile has a proxy-CA mount; a public EC2 build
         # needs neither that private CA nor BuildKit's --mount support.
@@ -27,6 +28,7 @@ with tempfile.TemporaryDirectory() as tmp:
         tar.add(root / 'deploy/powershell/deploy-server.sh', arcname='deploy-server.sh')
     with zipfile.ZipFile(output, 'w', zipfile.ZIP_DEFLATED) as zipped:
         zipped.write(archive, 'yeohaengit-powershell/yeohaengit-source.tar.gz')
+        zipped.write(root / '.env.example', 'yeohaengit-powershell/server.env.example')
         for name in ['Deploy-Yeohaengit.ps1', 'deploy-server.sh', 'README.txt']:
             zipped.write(root / 'deploy/powershell' / name, 'yeohaengit-powershell/' + name)
     with zipfile.ZipFile(output) as zipped:

@@ -1877,3 +1877,5 @@ input[hidden] { display: none !important; }
 .trip-backup { margin-top: 22px; border-top: 1px solid var(--line); padding-top: 18px; }
 .trip-backup summary { cursor: pointer; min-height: 44px; }
 @media(max-width: 600px) { .photo-toolbar { align-items: flex-start; flex-direction: column; } .photo-toolbar button { width: 100%; justify-content: center; } .hero-photo-card .hero-photo { height: 320px; } }
+
+.photo-unavailable { min-height: 320px; display: grid; place-content: center; padding: 24px; color: #4e5a4d; }

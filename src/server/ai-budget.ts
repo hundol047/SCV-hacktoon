@@ -11,7 +11,7 @@ export async function reserveAI(request:Request):Promise<AIGate>{
   if((hasAccount(request)||authRequired()||process.env.BOPok_REQUIRE_BOT==='true')&&!accountOf(request))return {allowed:false,message:'AI 호출에는 계정 로그인이 필요합니다.'};
   let subject=ownerOf(request),cookie:string|undefined;
   if(!subject){const signed=issueSession();subject=verifySession(signed)!;const secure=(process.env.BOPok_APP_URL??request.url).startsWith('https:');cookie=`${COOKIE}=${signed}; HttpOnly; SameSite=Strict; Path=/; Max-Age=2592000${secure?'; Secure':''}`;}
-  const inputTokens=18000,outputTokens=1200,reservedTokens=inputTokens+outputTokens;
+  const inputTokens=18000,outputTokens=1600,reservedTokens=inputTokens+outputTokens;
   const reservedCostUsd=(inputTokens*inputPrice+outputTokens*outputPrice)/1000000;
   const dailyCost=Number(process.env.BOPok_AI_DAILY_USD_LIMIT??1),dailyTokens=Number(process.env.BOPok_AI_DAILY_TOKEN_LIMIT??200000),dailyRequests=Number(process.env.BOPok_AI_DAILY_REQUEST_LIMIT??30);
   if(!Number.isFinite(dailyCost)||dailyCost<=0||dailyCost>100||!Number.isSafeInteger(dailyTokens)||dailyTokens<1||!Number.isSafeInteger(dailyRequests)||dailyRequests<1)return {allowed:false,message:'AI 비용·토큰·횟수 한도 설정을 확인해 주세요.'};

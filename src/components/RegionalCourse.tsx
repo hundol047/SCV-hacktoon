@@ -18,10 +18,7 @@ export default function RegionalCourse(props:Props){
 function Course({basics,conditions,catalog,onChange,day,setDay}:Props&{day:number;setDay:(day:number)=>void}){
   const [busy,setBusy]=useState(false),[consent,setConsent]=useState(false),[message,setMessage]=useState('');
   const [result,setResult]=useState<ReturnType<typeof regionalCourse>|null>(null),[method,setMethod]=useState('');
-  const [key,setKey]=useState(''),[model,setModel]=useState('gpt-4.1-mini'),[configured,setConfigured]=useState(false);
   const active=useRef(true);useEffect(()=>{active.current=true;return()=>{active.current=false;};},[]);
-  const bridge=typeof window!=='undefined'?window.BopokAndroid:undefined;
-  useEffect(()=>{try{const s=bridge?.aiStatus&&JSON.parse(bridge.aiStatus());if(s){setConfigured(s.configured);setModel(s.model);}}catch{}},[bridge]);
   const pref=basics.coursePreferences?.find(p=>p.day===day);
   const region=basics.destinations?.find(d=>d.startDay<=day&&d.endDay>=day)?.region??basics.region;
   const local=catalog.places.filter(p=>(p.region??catalog.region)===region&&Number.isFinite(p.latitude)&&Number.isFinite(p.longitude));
@@ -36,19 +33,8 @@ function Course({basics,conditions,catalog,onChange,day,setDay}:Props&{day:numbe
       if(!ai)raw={candidateIds:input.candidates.slice(0,3).map(p=>p.place.id)};
       else{
         if(!consent)throw Error('조건·후보 전송과 API 비용에 동의해 주세요.');
-        if(bridge?.requestAI){
-          if(!configured)throw Error('개인 API 키를 먼저 등록하세요.');
-          raw=await new Promise((resolve,reject)=>{
-            const id=crypto.randomUUID();
-            const timer=setTimeout(()=>{window.removeEventListener('bopok:ai',receive);reject(Error('AI 응답 시간이 초과되었습니다. 다시 요청하세요.'));},45000);
-            function receive(event:Event){const data=(event as CustomEvent).detail;if(data.id!==id)return;clearTimeout(timer);window.removeEventListener('bopok:ai',receive);if(data.error)reject(Error(data.error));else resolve(data.output);}
-            window.addEventListener('bopok:ai',receive);
-            try{bridge.requestAI(id,JSON.stringify({input:input.text,instructions:courseInstructions,candidateIds:input.candidates.map(p=>p.place.id)}));}catch(e){clearTimeout(timer);window.removeEventListener('bopok:ai',receive);reject(e);}
-          });
-        }else{
           const response=await fetch('/api/courses',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({basics,conditions,catalog,day,consent:true})});
           const data=await response.json();if(!response.ok)throw Error(data.error);raw=data;
-        }
       }
       if(!active.current)return;
       setResult(regionalCourse(basics,conditions,catalog,day,raw));setMethod(ai?'AI 추천':'기본 추천 · 등록 자료와 조건 기준');
@@ -66,9 +52,8 @@ function Course({basics,conditions,catalog,onChange,day,setDay}:Props&{day:numbe
     <LiveWeather key={day+originId} place={local.find(p=>p.id===originId)} date={dayDate(basics,day)} saved={pref?.forecast} onApply={forecast=>preference({weather:forecastWeather(forecast),forecast})}/>
     <a href="https://www.weather.go.kr/" target="_blank" rel="noreferrer">기상청 예보·특보 확인</a>
     <label>관광지당 체류 시간<select value={pref?.visitMinutes??60} disabled={busy} onChange={e=>preference({visitMinutes:Number(e.target.value)})}>{[30,45,60,90,120].map(m=><option key={m} value={m}>{m}분</option>)}</select></label>
-    {bridge?.configureAI&&<details><summary>AI 연결 설정</summary><p>{configured?'키 등록됨 · 실제 연결은 요청 시 확인':'API 키 미등록 · 기본 추천은 바로 이용 가능'}</p><label>코스 추천 OpenAI API 키<input type="password" autoComplete="off" value={key} onChange={e=>setKey(e.target.value)}/></label><label>코스 추천 모델<input value={model} onChange={e=>setModel(e.target.value)}/></label><button type="button" disabled={busy||!key.trim()} onClick={()=>{try{bridge.configureAI(key.trim(),model.trim());setConfigured(JSON.parse(bridge.aiStatus()).configured);setKey('');setMessage('기기에 키를 암호화 저장했습니다.');}catch{setMessage('키·모델 또는 암호화 저장소를 확인하세요.');}}}>코스 추천 키 저장</button><button type="button" disabled={busy} onClick={()=>{try{bridge.configureAI('',model);setConfigured(false);setKey('');setMessage('API 키를 삭제했습니다.');}catch{setMessage('키 삭제에 실패했습니다.');}}}>코스 추천 키 삭제</button></details>}
-    <label className="check-row"><input type="checkbox" checked={consent} disabled={busy} onChange={e=>setConsent(e.target.checked)}/>지역·취향·조건·후보를 OpenAI에 전송하며 API 비용이 발생하는 데 동의합니다.</label>
-    <button type="button" className="primary" disabled={busy||pref?.weather==='storm'||!consent||!!bridge?.requestAI&&!configured} onClick={()=>recommend(true)}>{busy?'추천 준비 중…':'AI로 지역 코스 추천'}</button>
+    <label className="check-row"><input type="checkbox" checked={consent} disabled={busy} onChange={e=>setConsent(e.target.checked)}/>지역·취향·조건·후보를 Amazon Bedrock에 전송하며 API 비용이 발생하는 데 동의합니다.</label>
+    <button type="button" className="primary" disabled={busy||pref?.weather==='storm'||!consent} onClick={()=>recommend(true)}>{busy?'추천 준비 중…':'AI로 지역 코스 추천'}</button>
     <button type="button" className="secondary" disabled={busy||pref?.weather==='storm'} onClick={()=>recommend(false)}>API 키 없이 기본 코스 보기</button>
     <p>AI 추천은 API 연결이 필요합니다. 기본 추천은 AI를 호출하지 않습니다. 방문 순서는 직선거리 기준이며 실제 경로·비용·운영시간·주차는 미확인입니다.</p>
     {result&&<article className="course-preview"><h3>{method} · {day}일차</h3><ol>{result.places.map(p=><li key={p.id}><strong>{p.name} · {p.kind==='meal'?'식사':'관광'}</strong><p>{result.reasons.find(r=>r.id===p.id)?.text}</p><p>{p.experiences.filter(e=>conditions.experiences.includes(e)).join(' · ')||'지역 후보 중 선택'} · 보행 {p.walkMin.value===null?'미확인':`${p.walkMin.value}분`}</p></li>)}</ol><p>관광 후 휴식 {result.plan.courseOptions.restMinutes}분씩 · 관광 체류 {result.plan.courseOptions.visitMinutes}분씩</p><ul>{result.warnings.map((w,i)=><li key={i}>{w}</li>)}</ul><p>직선 이동 합계 {result.plan.distanceKm.toFixed(1)}km. 적용하면 이 날짜의 기존 방문 순서와 비용 가정은 바뀝니다.</p><button type="button" onClick={()=>onChange(savePlan(basics,result.plan))}>이 코스를 일정에 적용</button></article>}

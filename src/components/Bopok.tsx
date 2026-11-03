@@ -40,8 +40,10 @@ import { DEMO_NOTICE } from "../data/demo";
 import {Catalog,catalogFor,demoCatalog,indexCatalog,emptyRealCatalog} from '../data/catalog';
 import {CatalogContext,useCatalog} from './CatalogContext';
 import RealSearch from './RealSearch';
+import SimpleTripForm from './SimpleTripForm';
 import WorldPlan from './WorldPlan';
 import BrandMark from './BrandMark';
+import DailyTourismPhoto from './DailyTourismPhoto';
 import DeferredPanel from './DeferredPanel';
 import LocalEvents from './LocalEvents';
 import PromotionStudio from './PromotionStudio';
@@ -487,8 +489,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
               </div>
               <div className="hero-art hero-photo-card">
                 <div className="art-top">A LITTLE SLOWER, A LITTLE CLOSER</div>
-                <img className="hero-photo" src="/images/travel-arches.jpg" width="477" height="720" fetchPriority="high" alt="미국 아치스 국립공원의 붉은 사암과 푸른 하늘을 담은 실제 여행 사진" />
-                <p className="photo-credit">미국 아치스 국립공원 · 사진 Joshua D. Warner<br /><a href="https://github.com/scikit-image/skimage-tutorials/blob/26e2d4d27113a86b9dd99dc7e559ab25aa782436/images/pano/JDW_0302.jpg" target="_blank" rel="noreferrer">사진 원본</a> · <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer">CC BY 4.0</a></p>
+                <DailyTourismPhoto/>
                 <div className="art-caption">
                   <span>
                     우리의 여행은
@@ -642,6 +643,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
                       ? "여행에서 만나고 싶은 것들."
                       : "부모님 조건, 함께 확인해요."}
               </h1>
+              {screen!=="basics"&&<>
               <p>
                 모르는 조건은 비워 두세요. 나이나 활동 선호로 수치를 대신 정하지
                 않아요.
@@ -658,15 +660,18 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
                   ),
                 )}
               </div>
+              </>}
             </div>
             <div className="form-body">
+              {(screen!=="basics"||existing)&&<>
               <div className="demo-banner">
                 <Leaf size={18} />
                 <div>
                   <strong>{b.mode==='demo'?'가상 시연과 전국·해외 실제 도시 검색을 구분해요.':currentCatalog.sourceNotice}</strong>
-                  <span>{DEMO_NOTICE}</span>
+                  {b.mode==='demo'&&<span>{DEMO_NOTICE}</span>}
                 </div>
               </div>
+              </>}
               {screen === "conditions" && step === 0 && (
                 <>
                   <fieldset>
@@ -772,7 +777,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
                           setBusy(false);
                         }}
                       />
-                      선택: 서버에 AI가 설정된 경우, 이 여행 조건을 OpenAI에
+                      선택: 서버에 AI가 설정된 경우, 이 여행 조건을 Amazon Bedrock에
                       보내 추출하는 데 동의해요.
                     </label>
                     <p className="helper">
@@ -937,6 +942,8 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
               {screen === "conditions" && step === 2 && <ConditionCard c={c} />}
               {screen === "basics" && (
                 <>
+                  {!existing&&<SimpleTripForm conditions={c} onTrip={t=>{setTrip(t);setDay(1);setProposal(null);navigate('result');}}/>}
+                  <details className="advanced-settings"><summary>상세 일정 설정·직접 만들기</summary>
                   <ol className="journey-steps" aria-label="여행 준비 순서"><li>1. 날짜·지역 정하기</li><li>2. 취향·이동 수단 선택</li><li>3. 추천 코스 확인·일정 만들기</li></ol>
                   <label>
                     여행 제목
@@ -1016,6 +1023,8 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
                     </label>
                   </div>
                   {b.mode==='real'&&<><RealSearch onLoaded={catalog=>{setSelectedCatalog(catalog);const meta=catalog.cities?.[0];setB({...b,region:catalog.region,timezone:meta?.timezone??b.timezone,destinations:[{region:catalog.region,startDay:1,endDay:b.days,timezone:meta?.timezone??b.timezone,currency:meta?.currency??'KRW'}],taxiPlan:undefined,coursePlans:undefined,coursePreferences:undefined});setImportItems([]);}}/><details className="advanced-settings"><summary>시간대 설정</summary><label>현지 시간대 (IANA)<input value={b.timezone} onChange={e=>setB({...b,timezone:e.target.value})} placeholder="Asia/Seoul, Asia/Tokyo, Europe/Paris"/></label></details>{(b.transport==='taxi'||b.transport==='driving')&&selectedCatalog.places.length>0&&<><label>추천 기준<select value={b.travelPriority??(b.transport==='driving'?'comfort':'budget')} onChange={e=>setB({...b,travelPriority:e.target.value as Basics['travelPriority']})}><option value="budget">이동 거리 우선</option><option value="comfort">좌석·적은 보행 우선</option><option value="balanced">관심 경험·거리 균형</option></select></label><fieldset><legend>이번 여행에서 원하는 경험</legend><div className="place-filters">{['자연 풍경','문화·전시'].map(theme=><button type="button" key={theme} aria-pressed={c.experiences.includes(theme)} onClick={()=>setC({...c,experiences:c.experiences.includes(theme)?c.experiences.filter(e=>e!==theme):[...c.experiences,theme].slice(0,12)})}>{theme}</button>)}</div></fieldset><RegionalCourse basics={b} conditions={c} catalog={selectedCatalog} onChange={setB}/><StudentTaxiPlanner conditions={c} basics={b} catalog={selectedCatalog} onChange={setB}/></>} {selectedCatalog.places.length>0&&<details className="advanced-settings"><summary>다도시·숙박·교통비 설정</summary><WorldPlan basics={b} catalog={selectedCatalog} onChange={(basics,catalog)=>{setB(basics);setSelectedCatalog(catalog);}}/></details>}</>}
+                  {!existing&&<button type="button" className="secondary" onClick={createTrip}>상세 설정으로 직접 일정 만들기</button>}
+                  </details>
                   {existing && (
                     <section className="importer">
                       <h2>기존 일정 입력</h2>
@@ -1070,7 +1079,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
                   )}
                 </>
               )}
-              <div className="form-actions">
+              {(screen!=="basics"||existing)&&<div className="form-actions">
                 <p>입력하신 여행은 이 브라우저에만 저장돼요.</p>
                 <button
                   className="primary"
@@ -1093,7 +1102,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
                       : "다음으로"}
                   <ArrowRight size={18} />
                 </button>
-              </div>
+              </div>}
             </div>
           </section>
         )}

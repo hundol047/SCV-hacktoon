@@ -1,3 +1,4 @@
+import {bedrockConfigured} from './bedrock';
 import {appURL} from './config';
 import {z} from 'zod';
 import {configuredRPC,type RPC} from './store';
@@ -12,7 +13,7 @@ export async function inspectStorage(rpc:RPC|null=configuredRPC(),required=REQUI
  catch{let connected=false;try{connected=(await rpc.call('bopok_trip',{p_action:'health'})).ready===true;}catch{}return {configured:true,connected,ready:false,sessionConfigured,schemaVersion:0,requiredVersion:required,reason:connected?'migration_missing':'unavailable'};}
 }
 export async function readiness(){
- const storage=await inspectStorage(),authConfigured=!!(process.env.BOPok_SUPABASE_URL&&process.env.BOPok_SUPABASE_ANON_KEY),routingConfigured=!!process.env.BOPok_ROUTE_KEY,aiConfigured=!!(process.env.BOPok_AI_KEY&&process.env.BOPok_AI_MODEL&&Number(process.env.BOPok_AI_INPUT_USD_PER_MILLION)>0&&Number(process.env.BOPok_AI_OUTPUT_USD_PER_MILLION)>0),botConfigured=!!(process.env.BOPok_TURNSTILE_SITE_KEY&&process.env.BOPok_TURNSTILE_SECRET);
+ const storage=await inspectStorage(),authConfigured=!!(process.env.BOPok_SUPABASE_URL&&process.env.BOPok_SUPABASE_ANON_KEY),routingConfigured=!!process.env.BOPok_ROUTE_KEY,aiConfigured=!!(bedrockConfigured()&&Number(process.env.BOPok_AI_INPUT_USD_PER_MILLION)>0&&Number(process.env.BOPok_AI_OUTPUT_USD_PER_MILLION)>0),botConfigured=!!(process.env.BOPok_TURNSTILE_SITE_KEY&&process.env.BOPok_TURNSTILE_SECRET);
  const missing:string[]=[];if(!storage.ready)missing.push(storage.reason);if(!appURL())missing.push('app_url_missing');
  const features=new Set((process.env.BOPok_REQUIRED_FEATURES??(process.env.NODE_ENV==='production'?'storage,auth,routing,transit,ai,bot,catalog,fx,maintenance,reviews,alerts,backup':'storage')).split(',').map(s=>s.trim()));
  if([...features].some(f=>!['storage','auth','routing','transit','ai','bot','catalog','fx','maintenance','reviews','alerts','backup'].includes(f)))missing.push('features_invalid');

@@ -1,6 +1,6 @@
 {
   "name": "bopok",
-  "version": "0.6.0",
+  "version": "0.14.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -20,9 +20,13 @@
     "test:storage-load": "node scripts/storage-load.mjs",
     "data:korea": "node scripts/collect-korea-tourism.mjs",
     "data:korea:official": "node scripts/collect-tourapi.mjs",
-    "probe:public-travel": "node scripts/probe-public-travel.mjs"
+    "probe:public-travel": "node scripts/probe-public-travel.mjs",
+    "photos:collect": "node scripts/collect-korea-photos.mjs",
+    "photos:verify": "node scripts/verify-photos.mjs"
   },
   "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.1161.0",
+    "@smithy/credential-provider-imds": "^4.5.2",
     "leaflet": "^1.9.4",
     "lucide-react": "1.52.0",
     "next": "16.4.0",
@@ -42,6 +46,7 @@
     "@types/react-dom": "^19.0.0",
     "esbuild": "0.28.2",
     "typescript": "5.9.3",
+    "undici": "^8.12.3",
     "vitest": "5.0.3"
   },
   "engines": {

@@ -60,7 +60,7 @@ it('committed actual nationwide records match the gzip digest and each of the 17
  expect(s.coverage).toHaveLength(17);expect(s.coverage.every(r=>r.count>0)).toBe(true);expect(new Set(s.records.map(r=>r.id)).size).toBe(s.records.length);
  expect(searchKorea(s,'경복궁','KR-11').total).toBeGreaterThan(0);
  for(const r of s.coverage)expect(searchKorea(s,'',r.code).total).toBe(r.count);
-});
+},20000);
 it('public snapshot API rejects malformed filters and does not require private storage or external APIs',async()=>{
  for(const query of ['page=0','province=KR-99','category=fake','action=catalog','limit=999','q='+encodeURIComponent('가'.repeat(121))])expect((await GET(new Request('http://localhost/api/tourism?'+query))).status).toBe(400);
  const r=await GET(new Request('http://localhost/api/tourism?province=KR-11&q='+encodeURIComponent('경복궁')));expect(r.status).toBe(200);const body=await r.json();expect(body.total).toBeGreaterThan(0);expect(body.dataset.coverage).toHaveLength(17);

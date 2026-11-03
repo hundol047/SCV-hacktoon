@@ -1,3 +1,13 @@
+# 최신 복구 미리보기 0.14.0
+
+`bopok-android.apk`: 버전 코드 15, 새 미리보기 서명. 이전 서명과 호환되지 않을 수 있습니다.
+`yeohaengit-powershell.zip`: 웹 소스와 EC2 IAM/Bedrock 사전 검증을 포함한 PowerShell 배포 묶음.
+
+한국 관광지 사진 365장 요구사항은 현재 0장으로 미완료입니다. 실제 서버·실물 기기·Windows 검증도 미완료입니다.
+세부 내용은 [복구 기록](../docs/RECOVERY_0.14.0.md)을 확인하세요.
+
+## 이전 배포 안내 (역사 기록)
+
 # Android APK
 
 [여행잇 안드로이드 APK 다운로드](./bopok-android.apk?raw=true)
