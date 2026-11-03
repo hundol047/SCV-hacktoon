@@ -1,4 +1,5 @@
 "use client";
+import {createId} from '../domain/id';
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowUpRight,
@@ -118,7 +119,7 @@ const feedbackOptions = [
   "쉬는 시간을 늘려 주세요",
   "식사를 바꾸고 싶어요",
 ] as const;
-const uid = () => crypto.randomUUID();
+const uid = () => createId();
 export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTrip;accessToken?:string}={}) {
   const [screen, setScreen] = useState<Screen>("home"),
     [trip, setTrip] = useState<Trip | null>(null),
@@ -1012,9 +1013,9 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
           <span>함께 떠나는 여행, 서로의 속도로.</span>
         </div>
         <div className="footer-meta">
-          <span>규칙 기반 점검 · 실제 도시 검색 · 서버 공유는 연결 후 사용</span>
+
           <span>
-            로컬 기록은 같은 브라우저에 저장됩니다. 서버 저장·가족 링크는 서버 설정 후 사용할 수 있습니다.
+            여행 기록은 이 기기에 저장됩니다.
           </span>
           <button className="text-button" onClick={remove}>
             <Trash2 size={14} /> 내 여행 데이터 삭제

@@ -1,3 +1,4 @@
+import {createId} from '../domain/id';
 import 'leaflet/dist/leaflet.css';
 import React from 'react';
 import {createRoot} from 'react-dom/client';
@@ -26,7 +27,7 @@ window.fetch=async(input,init)=>{
   if(['/api/courses','/api/replacements','/api/promotions','/api/conditions','/api/advice'].includes(url.pathname)){
     if(!window.BopokAndroid?.requestServer)return json({error:'앱 서버 연결을 사용할 수 없습니다.'},503);
     return await new Promise<Response>((resolve)=>{
-      const id=crypto.randomUUID();
+      const id=createId();
       const timer=setTimeout(()=>{window.removeEventListener('bopok:server',receive);resolve(json({error:'AI 서버 응답 시간이 초과되었습니다. 기존 일정은 유지됩니다.'},504));},45000);
       function receive(event:Event){const d=(event as CustomEvent).detail;if(d.id!==id)return;clearTimeout(timer);window.removeEventListener('bopok:server',receive);resolve(json(d.data??{error:d.error},d.status));}
       window.addEventListener('bopok:server',receive);

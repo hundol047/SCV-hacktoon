@@ -26,7 +26,7 @@ export default function AIReplacement({trip,onTrip}:{trip:Trip;onTrip:(t:Trip)=>
   }
   return <details className="cloud-panel"><summary>AI 대체 관광지 추천</summary>
     <ol className="journey-steps"><li>1. 바꿀 장소 선택</li><li>2. AI 추천 받기</li><li>3. 비교 후 직접 적용</li></ol>
-    <p>여행 조건과 후보 장소를 Amazon Bedrock에 전송해 대체 관광지를 추천받습니다. 선택한 후보만 적용하며 고정 일정은 유지합니다. API 사용료가 발생합니다.</p>
+    <p>여행 취향에 맞는 다른 관광지를 추천합니다. 마음에 드는 장소를 골라 일정에 적용하세요.</p>
     {trip.basics.taxiPlan&&<p>관광지를 바꾸면 해당 날짜의 차량 순서·비용 가정 결과를 해제합니다. 교체 후 동선과 비용을 다시 확인하세요.</p>}
     {!visits.length&&<p>바꿀 수 있는 관광 일정이 없습니다. 관광지를 추가하거나 해당 일정의 고정을 해제하세요.</p>}
     <label>교체할 관광 일정<select value={item} disabled={busy||!visits.length} onChange={e=>{version.current++;setItem(e.target.value);setResults([]);setMessage('');}}><option value="">관광지를 선택하세요</option>{visits.map(i=><option key={i.id} value={i.id}>{i.day}일차 · {catalog.places.find(p=>p.id===i.placeId)?.name??i.placeId}</option>)}</select></label>

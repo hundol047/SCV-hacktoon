@@ -1894,7 +1894,10 @@ input[hidden] { display: none !important; }
 
 .header-account{position:relative;flex-shrink:0;margin-left:12px}
 .header-account .cloud-panel{margin:0;padding:0;border:0;background:transparent}
-.header-account summary{list-style:none;cursor:pointer;border:1px solid var(--line);border-radius:20px;padding:8px 14px;font-size:13px;white-space:nowrap}
+.header-account summary{list-style:none;cursor:pointer;border:0;border-radius:0;background:transparent;box-shadow:none;padding:8px 4px;font-size:13px;white-space:nowrap}
 .header-account summary::-webkit-details-marker{display:none}
 .header-account .account-popover{position:absolute;right:0;top:44px;z-index:100;width:min(360px,calc(100vw - 32px));padding:20px;background:#fffdf8;border:1px solid var(--line);border-radius:14px;box-shadow:0 8px 24px #0002;max-height:75vh;overflow:auto}
 @media(max-width:600px){.header-account{margin-left:4px}.header-account summary{padding:8px 10px}.site-header{gap:8px}}
+
+.header-account summary:hover{text-decoration:underline}
+.header-account summary:focus-visible{outline:2px solid var(--green);outline-offset:3px}

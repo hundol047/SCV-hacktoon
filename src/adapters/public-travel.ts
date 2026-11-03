@@ -1,8 +1,9 @@
+import {createId} from '../domain/id';
 // Fixed public providers only; Android uses a bounded native HTTPS bridge.
 export async function publicTravelJSON(url:string,signal?:AbortSignal):Promise<unknown>{
   const native=typeof window!=='undefined'?window.BopokAndroid?.requestTravel:undefined;
   if(native)return new Promise((resolve,reject)=>{
-    const id=crypto.randomUUID();let timer:ReturnType<typeof setTimeout>;
+    const id=createId();let timer:ReturnType<typeof setTimeout>;
     const cleanup=()=>{clearTimeout(timer);window.removeEventListener('bopok:travel',receive);signal?.removeEventListener('abort',abort);};
     const stop=()=>{try{window.BopokAndroid?.cancelTravel?.(id);}catch{}};
     const abort=()=>{stop();cleanup();reject(Error('조회가 취소되었습니다.'));};

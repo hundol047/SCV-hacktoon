@@ -1,4 +1,5 @@
 'use client';
+import {createId} from '../domain/id';
 import {useEffect,useRef,useState} from 'react';
 import {defaultBasics,type Conditions,type Trip,type Basics} from '../domain/schema';
 import {catalogSchema} from '../data/catalog';
@@ -26,7 +27,7 @@ export default function SimpleTripForm({onTrip,conditions:baseConditions,initial
      basics=savePlan(basics,regionalCourse(basics,conditions,catalog,day,raw).plan);
    }
    const result=generate(conditions,basics,[],[],catalog);if(result.blocked&&!result.items.length)throw Error(result.reasons.join(' '));
-   if(current===revision.current)onTrip({version:1,id:crypto.randomUUID(),revision:0,conditions,basics,items:result.items,history:[],feedback:[],catalog});
+   if(current===revision.current)onTrip({version:1,id:createId(),revision:0,conditions,basics,items:result.items,history:[],feedback:[],catalog});
  }catch(e){if(current===revision.current)setError(e instanceof Error?e.message:'일정을 만들지 못했습니다.');}finally{if(current===revision.current)setBusy(false);}}
  return <section className="simple-trip" aria-label="간편 AI 일정 입력"><h2>어디로 떠날까요?</h2><div className="field-grid">
  <label>여행 지역<input disabled={busy} value={region} maxLength={120} placeholder="서울 종로구, 강릉, 경주" onChange={e=>setRegion(e.target.value)}/></label>
@@ -34,6 +35,6 @@ export default function SimpleTripForm({onTrip,conditions:baseConditions,initial
  <label>여행 기간<select disabled={busy} value={days} onChange={e=>setDays(Number(e.target.value))}>{[1,2,3,4,5].map(d=><option key={d} value={d}>{d===1?'당일':`${d-1}박 ${d}일`}</option>)}</select></label>
  <label>이동 수단<select disabled={busy} value={transport} onChange={e=>setTransport(e.target.value as 'taxi'|'driving')}><option value="taxi">택시</option><option value="driving">자가용</option></select></label>
  <label>여행 취향<select disabled={busy} value={interest} onChange={e=>setInterest(e.target.value)}><option value="">골고루</option><option>자연 풍경</option><option>문화·전시</option><option>지역 음식</option><option>사진 찍기</option><option>바다 보기</option><option>조용한 카페</option></select></label>
- </div><p>생성을 누르면 여행 조건과 후보 장소를 Amazon Bedrock에 전송합니다. 운영시간·이동시간은 출발 전 확인해 주세요.</p>
+ </div>
  <button type="button" className="primary" disabled={busy} onClick={create}>{busy?'AI 일정 생성 중…':'지역 검색하고 AI 일정 생성'}</button>{error&&<p role="alert">{error}</p>}</section>;
 }
