@@ -12,7 +12,7 @@ async function load(page:Page,trip:Trip){await page.addInitScript(t=>localStorag
 
 test('a downloaded trip larger than 512 KB imports with its complete undo history',async({page},info)=>{
  const trip=realTrip();trip.history=Array.from({length:5},()=>Array.from({length:1000},(_,n)=>visit('history-'+n,trip.catalog!.places[0].id)));await load(page,trip);
- const pending=page.waitForEvent('download');await page.getByRole('button',{name:'여행 JSON 내보내기',exact:true}).click();const download=await pending,path=info.outputPath('large-trip.json');await download.saveAs(path);expect((await readFile(path)).length).toBeGreaterThan(524288);
+ await page.getByText('일정 백업·복원',{exact:true}).click();const pending=page.waitForEvent('download');await page.getByRole('button',{name:'여행 JSON 내보내기',exact:true}).click();const download=await pending,path=info.outputPath('large-trip.json');await download.saveAs(path);expect((await readFile(path)).length).toBeGreaterThan(524288);
  await page.getByLabel('여행 JSON 파일').setInputFiles(path);await expect(page.getByRole('heading',{name:trip.basics.title,exact:true})).toBeVisible();expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('bopok:trip:v1')!).history.length)).toBe(5);await expect(page.getByRole('alert').filter({hasText:'JSON'})).toHaveCount(0);
 });
 test('family links display transit timing and a transfer-only day accessibly',async({page})=>{

@@ -1856,3 +1856,24 @@ summary {
 .local-events .field-grid,.promotion-studio .field-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr))}.local-events textarea,.promotion-studio textarea{width:100%;min-height:100px;padding:12px;border:1px solid #b7c8bc;border-radius:10px;font:inherit}.local-events select,.promotion-studio select{width:100%;padding:10px}.cloud-panel .check-row{display:flex;align-items:center;gap:10px}.cloud-panel .check-row input[type="checkbox"]{width:auto;flex:0 0 auto}.cloud-panel .cloud-panel{margin:12px 0;padding:16px}.local-events button,.promotion-studio button{min-height:44px;padding:10px 14px;margin:4px 0;border:1px solid #b7c8bc;border-radius:10px}.promotion-preview{margin-top:20px}
 
 .road-map{height:340px;width:100%;border-radius:12px;isolation:isolate;margin:1rem 0}.road-map .leaflet-control a{color:#174f41}.live-weather{border:1px solid #b7c7be;border-radius:12px;padding:1rem;margin:1rem 0}
+
+/* File pickers are opened by the labelled buttons, not browser default controls. */
+input[hidden] { display: none !important; }
+.hero-photo-card .hero-photo { display: block; width: 100%; height: 360px; object-fit: cover; object-position: 50% 43%; border-radius: 100px 100px 12px 12px; margin-top: 28px; }
+.hero-photo-card .photo-credit { font-size: 10px; line-height: 1.5; text-align: right; margin: 8px 0 18px; color: #4e5a4d; }
+.photo-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin: 16px 0; }
+.photo-toolbar h3 { margin: 0 0 6px; font-size: 19px; }
+.photo-toolbar p { margin: 0; color: var(--muted); }
+.photo-toolbar button { display: inline-flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.photo-empty { display: flex; flex-direction: column; gap: 12px; align-items: center; justify-content: center; width: 100%; min-height: 190px; border: 1px dashed #8eaa99; border-radius: 16px; background: #f0f4ed; color: var(--green); padding: 28px 16px; }
+.photo-empty span { font-size: 14px; font-weight: 400; }
+.photo-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(220px,1fr)); gap: 18px; }
+.travel-photo { margin: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 14px; background: white; }
+.travel-photo img { display: block; width: 100%; height: 200px; object-fit: cover; }
+.travel-photo figcaption { padding: 14px; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+.travel-photo figcaption span { font-size: 12px; overflow-wrap: anywhere; color: var(--muted); }
+.travel-photo button { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; }
+.photo-storage-note { font-size: 13px; color: var(--muted); line-height: 1.7; }
+.trip-backup { margin-top: 22px; border-top: 1px solid var(--line); padding-top: 18px; }
+.trip-backup summary { cursor: pointer; min-height: 44px; }
+@media(max-width: 600px) { .photo-toolbar { align-items: flex-start; flex-direction: column; } .photo-toolbar button { width: 100%; justify-content: center; } .hero-photo-card .hero-photo { height: 320px; } }

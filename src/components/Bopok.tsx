@@ -49,6 +49,7 @@ import RegionalCourse from './RegionalCourse';
 import StudentTaxiPlanner from './StudentTaxiPlanner';
 import TravelSummary from './TravelSummary';
 import {transportLabel,money,destinationFor,localInstant} from '../domain/world';
+import {clearPhotos} from '../adapters/photo-storage';
 import LibraryPanel from './LibraryPanel';
 import FamilySync from './FamilySync';
 import AccountPanel from './AccountPanel';
@@ -253,8 +254,9 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
       "가상의 문제 일정입니다. 아래에서 점검하고 수정안을 비교해 보세요.",
     );
   };
-  const remove = () => {
+  const remove = async () => {
     try {
+      await clearPhotos();
       localStorage.removeItem(STORAGE_KEY);
       localStorage.removeItem(FORM_KEY);
       localStorage.removeItem('bopok:cloud:v1');localStorage.removeItem(LIBRARY_KEY);setLibrary([]);
@@ -483,100 +485,10 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
                   기준으로
                 </div>
               </div>
-              <div
-                className="hero-art"
-                aria-label="바다와 산책길을 담은 여행 일러스트"
-                role="img"
-              >
+              <div className="hero-art hero-photo-card">
                 <div className="art-top">A LITTLE SLOWER, A LITTLE CLOSER</div>
-                <svg viewBox="0 0 520 470" fill="none" aria-hidden="true">
-                  <defs>
-                    <linearGradient
-                      id="sky"
-                      x1="260"
-                      y1="0"
-                      x2="260"
-                      y2="420"
-                      gradientUnits="userSpaceOnUse"
-                    >
-                      <stop stopColor="#e9ece0" />
-                      <stop offset="1" stopColor="#f7ebcc" />
-                    </linearGradient>
-                  </defs>
-                  <path
-                    d="M36 170C36 74 108 27 260 27s224 47 224 143v244H36V170Z"
-                    fill="url(#sky)"
-                  />
-                  <circle cx="368" cy="136" r="34" fill="#e9b65d" />
-                  <path
-                    d="M36 269c111-28 200-31 448-4v149H36V269Z"
-                    fill="#b5cfcb"
-                  />
-                  <path
-                    d="M36 306c115-24 230-27 448-1"
-                    stroke="#e7f1e9"
-                    strokeWidth="3"
-                  />
-                  <path
-                    d="M36 339c102-24 320-18 448-1"
-                    stroke="#e7f1e9"
-                    strokeWidth="3"
-                  />
-                  <path
-                    d="M36 345c120-68 131-109 189-115 74-8 125 87 259 117v67H36v-69Z"
-                    fill="#678675"
-                  />
-                  <path
-                    d="M36 380c97-13 128-75 165-65 55 16 48 72 137 99H36v-34Z"
-                    fill="#365e4d"
-                  />
-                  <path
-                    d="M139 414c37-24 56-54 62-76 4-16 29-23 45-16 24 10 42 47 89 92"
-                    fill="#ded6b7"
-                  />
-                  <path
-                    d="M76 250v96M76 224l-28 50h56l-28-50ZM76 194l-24 51h48l-24-51Z"
-                    fill="#355946"
-                    stroke="#355946"
-                    strokeWidth="5"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    d="M440 248v112M440 213l-33 57h66l-33-57ZM440 180l-28 56h56l-28-56Z"
-                    fill="#456c54"
-                    stroke="#456c54"
-                    strokeWidth="5"
-                    strokeLinejoin="round"
-                  />
-                  <circle cx="251" cy="298" r="9" fill="#544735" />
-                  <path d="M242 311h18l6 36h-30l6-36Z" fill="#eee5ce" />
-                  <path
-                    d="m244 346-5 30m15-30 5 30"
-                    stroke="#544735"
-                    strokeWidth="6"
-                    strokeLinecap="round"
-                  />
-                  <circle cx="282" cy="309" r="8" fill="#544735" />
-                  <path d="M275 321h16l5 30h-26l5-30Z" fill="#b47b4c" />
-                  <path
-                    d="m277 351-5 25m14-25 4 25"
-                    stroke="#544735"
-                    strokeWidth="5"
-                    strokeLinecap="round"
-                  />
-                  <path
-                    d="m260 322 11 9"
-                    stroke="#544735"
-                    strokeWidth="5"
-                    strokeLinecap="round"
-                  />
-                  <path
-                    d="M147 189c9-6 16-6 24 0m0 0c8-6 15-6 23 0"
-                    stroke="#678675"
-                    strokeWidth="3"
-                    strokeLinecap="round"
-                  />
-                </svg>
+                <img className="hero-photo" src="/images/travel-arches.jpg" width="477" height="720" fetchPriority="high" alt="미국 아치스 국립공원의 붉은 사암과 푸른 하늘을 담은 실제 여행 사진" />
+                <p className="photo-credit">미국 아치스 국립공원 · 사진 Joshua D. Warner<br /><a href="https://github.com/scikit-image/skimage-tutorials/blob/26e2d4d27113a86b9dd99dc7e559ab25aa782436/images/pano/JDW_0302.jpg" target="_blank" rel="noreferrer">사진 원본</a> · <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer">CC BY 4.0</a></p>
                 <div className="art-caption">
                   <span>
                     우리의 여행은

@@ -6,7 +6,7 @@ AI 기반 지역 맞춤형 여행코스 추천 서비스. 지역 자료를 불�
 
 홈의 ‘지역 축제·문화행사 찾아보기’에서 출처 있는 행사 등록/JSON 가져오기, 지역·기간·유형 검색, 즐겨찾기, 행사 방문 일정 생성을 지원합니다. 웹 공식 조회는 BOPok_TOURAPI_KEY 설정이 필요하며 Android에는 공식 행사 서버를 연결하지 않았습니다. ‘소상공인 홍보 콘텐츠 만들기’는 인스타그램·블로그·문자용 기본/AI 초안, 편집, 검토 후 복사, 기기 저장을 지원합니다. 자동 게시나 행사 운영 여부 인증 기능은 아닙니다.
 
-Next.js + TypeScript + Zod, Vitest, Playwright. Node 24, npm, `package-lock.json`을 사용합니다. 안드로이드 미리보기는 0.12.0입니다. [개선 결과와 남은 운영 연결](docs/RELEASE_READINESS.md)을 먼저 확인하세요.
+Next.js + TypeScript + Zod, Vitest, Playwright. Node 24, npm, `package-lock.json`을 사용합니다. 안드로이드 미리보기는 0.13.0입니다. [개선 결과와 남은 운영 연결](docs/RELEASE_READINESS.md)을 먼저 확인하세요.
 
 ```sh
 npm ci
@@ -66,3 +66,5 @@ OpenAI Responses API의 구조화 출력으로 자연어 조건을 추출하고 
 0.11.0에서 HYUNDAI의 OSM/OSRM 구성 기반 앱 내부 도로 지도와 Open-Meteo 예보 연결을 추가했습니다. [사용법과 검증 범위](docs/LIVE_TRAVEL.md)를 확인하세요.
 
 0.12.0은 하루 전체 도로 코스 비교·적용·되돌리기, 실내 대안 비교, 시설 조건·영업시간·예약 확인을 추가합니다. 상세 조건은 접힌 메뉴에 배치합니다. 오래된 예보 차단, 복합 기상 위험 표시, Android 조회 취소·재시도와 지도 타일 복구도 개선했습니다.
+
+0.13.0에서 실제 여행 사진과 사진 중심 보관함을 추가했습니다. 사진은 기기에만 보관하며 일정 JSON 백업은 펼침 메뉴로 이동했습니다. [사용법과 저장 범위](docs/PHOTO_LIBRARY.md)를 확인하세요.

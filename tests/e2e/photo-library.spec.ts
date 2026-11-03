@@ -1,0 +1,24 @@
+import {test,expect} from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
+import {readFile} from 'node:fs/promises';
+test('real hero photo and local photo library persist, reject invalid batches, and delete',async({page},info)=>{
+ const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.goto('/');
+ const hero=page.locator('.hero-photo');await expect(hero).toBeVisible();expect(await hero.evaluate((img:HTMLImageElement)=>img.complete&&img.naturalWidth>0)).toBe(true);
+ const library=page.locator('.library-panel');await expect(library.getByRole('button',{name:'여행 JSON 가져오기',exact:true})).not.toBeVisible();
+ await expect(library.getByLabel('여행 사진 선택')).not.toBeVisible();
+ const photo=await readFile('public/images/travel-arches.jpg');
+ await library.getByLabel('여행 사진 선택').setInputFiles([{name:'여행.jpg',mimeType:'image/jpeg',buffer:photo},{name:'동행.png',mimeType:'image/png',buffer:Buffer.from('not an image')}]);
+ await expect(library.getByRole('status')).toContainText('사진을 읽지 못했습니다');await expect(library.locator('.travel-photo')).toHaveCount(0);
+ const chooser=page.waitForEvent('filechooser');await library.getByRole('button',{name:'사진 올리기',exact:true}).click();await (await chooser).setFiles([{name:'여행.jpg',mimeType:'image/jpeg',buffer:photo},{name:'풍경.jpg',mimeType:'image/jpeg',buffer:photo}]);
+ await expect(library.locator('.travel-photo')).toHaveCount(2);await expect(library.getByRole('status')).toContainText('2장의 사진');
+ for(const img of await library.locator('.travel-photo img').all())expect(await img.evaluate(async(img:HTMLImageElement)=>{await img.decode();return img.naturalWidth>0;})).toBe(true);
+ await page.reload();await expect(page.locator('.travel-photo')).toHaveCount(2);
+ await page.getByRole('button',{name:'여행.jpg 사진 삭제',exact:true}).click();await expect(page.locator('.travel-photo')).toHaveCount(1);
+ await expect(page.getByRole('img',{name:'풍경.jpg',exact:true})).toBeVisible();
+ expect((await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze()).violations).toEqual([]);
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ await page.screenshot({path:info.outputPath('photo-home.png'),fullPage:true});
+ await page.getByRole('button',{name:'내 여행 데이터 삭제'}).click();await expect(page.locator('.travel-photo')).toHaveCount(0);await page.reload();await expect(page.locator('.travel-photo')).toHaveCount(0);
+ expect(errors).toEqual([]);
+});

@@ -7,7 +7,7 @@ const root=resolve('android/build/assets');
 const server=createServer(async(req,res)=>{try{
   const path=resolve(root,'.'+(req.url==='/'?'/index.html':req.url.split('?')[0]));
   if(!path.startsWith(root+'/'))throw Error();
-  res.setHeader('Content-Type',({'.html':'text/html','.js':'application/javascript','.css':'text/css','.gz':'application/gzip'})[extname(path)]??'text/plain');
+  res.setHeader('Content-Type',({'.html':'text/html','.js':'application/javascript','.css':'text/css','.gz':'application/gzip','.jpg':'image/jpeg'})[extname(path)]??'text/plain');
   res.end(await readFile(path));
 }catch{res.writeHead(404);res.end();}});
 await new Promise(r=>server.listen(0,'127.0.0.1',r));
@@ -16,6 +16,17 @@ try{
   const services=await browser.newPage({viewport:{width:393,height:852},isMobile:true,hasTouch:true});
   await services.addInitScript(()=>{window.BopokAndroid={aiStatus:()=>JSON.stringify({configured:true,model:'test-model'}),configureAI:()=>{},saveJson:()=>{},saveTourism:()=>{},printPage:()=>{},requestAI:(id,payload)=>{const p=JSON.parse(payload);if(p.task!=='promotion')throw Error('Wrong AI task');setTimeout(()=>window.dispatchEvent(new CustomEvent('bopok:ai',{detail:{id,output:{headline:'검증 카페',body:'커피를 판매합니다.',hashtags:['#카페']}}})),20);}};});
   await services.goto('http://127.0.0.1:'+server.address().port);
+  console.log('Checking APK photo assets.');
+  await services.locator('.hero-photo').evaluate(async img=>{await Promise.race([img.decode(),new Promise((_,reject)=>setTimeout(()=>reject(Error('Hero image decode timed out')),10000))]);});
+  console.log('APK hero photo decoded.');
+  await services.getByLabel('여행 사진 선택',{exact:true}).setInputFiles('public/images/travel-arches.jpg');
+  await services.locator('.travel-photo img').waitFor({timeout:15000});
+  console.log('APK photo uploaded.');
+  await services.locator('.travel-photo img').scrollIntoViewIfNeeded();
+  await services.locator('.travel-photo img').evaluate(async img=>{await Promise.race([img.decode(),new Promise((_,reject)=>setTimeout(()=>reject(Error('Stored image decode timed out')),10000))]);});
+  await services.reload();await services.locator('.travel-photo img').waitFor({timeout:15000});
+  await services.getByRole('button',{name:'travel-arches.jpg 사진 삭제',exact:true}).click();
+  await services.getByText('첫 여행 사진을 올려 보세요',{exact:true}).waitFor();
   await services.getByText('소상공인 홍보 콘텐츠 만들기',{exact:true}).click();
   const promotion=services.locator('.promotion-studio');
   for(const [label,value] of [['상호명','검증 카페'],['가게 지역','서울'],['업종·대표 상품','커피'],['확인된 상품·서비스 사실','커피를 판매합니다.']])await promotion.getByLabel(label,{exact:true}).fill(value);
@@ -151,7 +162,7 @@ try{
   await page.locator('.timeline').waitFor();
   const trip=await page.evaluate(()=>JSON.parse(localStorage.getItem('bopok:trip:v1')));
   assert.equal(trip.basics.taxiPlan.orderedPlaceIds.length,2);assert(trip.items.length>=3);
-  const downloadEvent=page.waitForEvent('download');await page.getByRole('button',{name:'여행 JSON 내보내기'}).click();
+  await page.getByText('일정 백업·복원',{exact:true}).click();const downloadEvent=page.waitForEvent('download');await page.getByRole('button',{name:'여행 JSON 내보내기'}).click();
   const download=await downloadEvent;assert(download.suggestedFilename().endsWith('.json'));
   await page.screenshot({path:'android/build/android-preview.png',fullPage:true});
   await page.reload();await page.getByRole('button',{name:'이어서 보기',exact:true}).click();await page.locator('.timeline').waitFor();
