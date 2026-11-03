@@ -22,3 +22,11 @@ DB 설치 후 서버의 Supabase·리전·세션·모델 단가 설정과 최신
 
 생성: `node scripts/package-supabase.mjs`
 격리 DB 검증: `node scripts/test-supabase-install.mjs`
+
+최초 서버 설정은 `scripts/setup-server-ai.py`를 성공한 Bedrock Python 환경에서
+ubuntu 사용자로 실행합니다. Supabase URL, legacy service_role/anon 키, 실제 모델의
+백만 토큰당 USD 입력/출력 단가와 일일 한도를 대화식으로 입력합니다.
+키는 화면에 표시하지 않으며 /etc/yeohaengit/server.env를 root 소유 0600으로
+새로 만듭니다. 기존 파일은 덮어쓰지 않습니다. 서버 IAM 역할/리전과 DB 스키마를
+검사하며 로그인·비용 한도는 유지합니다. Docker IAM 연결은 배포 단계에서 별도로
+검증합니다. 웹은 이메일 로그인이 필요하고 Android의 로그인 연결은 미완료입니다.
