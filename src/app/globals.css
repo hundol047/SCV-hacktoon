@@ -1879,3 +1879,11 @@ input[hidden] { display: none !important; }
 @media(max-width: 600px) { .photo-toolbar { align-items: flex-start; flex-direction: column; } .photo-toolbar button { width: 100%; justify-content: center; } .hero-photo-card .hero-photo { height: 320px; } }
 
 .photo-unavailable { min-height: 320px; display: grid; place-content: center; padding: 24px; color: #4e5a4d; }
+.korea-gallery { margin: 48px 0; }
+.korea-photo-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 20px; }
+.korea-photo-grid figure { margin: 0; overflow: hidden; border-radius: 18px; border: 1px solid #dfe4da; background: #fff; }
+.korea-photo-grid img { width: 100%; height: 220px; object-fit: cover; display: block; background: #e8eee5; }
+.korea-photo-grid figcaption { padding: 18px; }
+.korea-photo-grid h3 { margin: 0; }
+.korea-photo-grid small { color: #52624f; line-height: 1.6; display: block; }
+@media(max-width:700px) { .korea-photo-grid { grid-template-columns: 1fr; } }

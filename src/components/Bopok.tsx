@@ -44,6 +44,7 @@ import SimpleTripForm from './SimpleTripForm';
 import WorldPlan from './WorldPlan';
 import BrandMark from './BrandMark';
 import DailyTourismPhoto from './DailyTourismPhoto';
+import KoreaPhotoGallery from './KoreaPhotoGallery';
 import DeferredPanel from './DeferredPanel';
 import LocalEvents from './LocalEvents';
 import PromotionStudio from './PromotionStudio';
@@ -218,9 +219,9 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
     setNotice("");
   };
   const start = (isExisting: boolean) => {
-    setSelectedCatalog(demoCatalog);
+    setSelectedCatalog(emptyRealCatalog);
     setC(structuredClone(defaultConditions));
-    setB({ ...defaultBasics, date:new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Seoul'}).format(new Date()) });
+    setB({ ...defaultBasics,mode:'real',title:'나의 여행',region:'실제 지역',days:1, date:new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Seoul'}).format(new Date()) });
     setStep(0);
     setExisting(isExisting);
     setImportItems([]);
@@ -228,7 +229,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
     setText("");
     setAi(null);
     setProposal(null);
-    navigate("conditions");
+    navigate("basics");
   };
   const startTaxi = (transport:'taxi'|'driving'='taxi') => {
     start(false);
@@ -422,7 +423,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
         </button>
         <nav aria-label="주요 메뉴">
           <button onClick={() => start(false)}>여행 만들기</button>
-          <button onClick={() => start(true)}>일정 점검</button>
+
           <button className="nav-demo" onClick={demo}>
             예시 체험 <ArrowUpRight size={16} />
           </button>
@@ -446,9 +447,9 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
         {screen === "home" ? (
           <>
             <section className="quick-start" aria-label="여행 시작 방법">
-              <div><span className="eyebrow">지역부터, 나에게 맞는 여행</span><h2>지역과 취향으로 나만의 코스를 만드세요</h2><p>지역 자료를 불러오고 취향·이동 수단을 선택하면 코스를 추천합니다. 부모님 동행 시 보행·휴식 조건도 함께 반영하세요.</p></div>
+              <div><span className="eyebrow">지역부터, 나에게 맞는 여행</span><h2>지역과 취향으로 나만의 코스를 만드세요</h2><p>지역 자료를 불러오고 취향·이동 수단을 선택하면 코스를 추천합니다. 가고 싶은 지역과 취향만 골라 보세요.</p></div>
               <button className="primary" onClick={()=>startTaxi('taxi')}>택시 여행 빠르게 만들기 <ArrowRight size={18}/></button><button className="secondary" onClick={()=>startTaxi('driving')}>자가용 여행 빠르게 만들기 <ArrowRight size={18}/></button>
-              <button className="secondary" onClick={()=>start(false)}>부모님 맞춤 여행 시작</button>
+
             </section>
             <DeferredPanel title="지역 축제·문화행사 찾아보기"><LocalEvents onTrip={t=>{setTrip(t);setDay(1);setProposal(null);navigate('result');}}/></DeferredPanel>
             <DeferredPanel title="소상공인 홍보 콘텐츠 만들기"><PromotionStudio/></DeferredPanel>
@@ -465,7 +466,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
                 <p className="hero-description">
                   지역의 관광지와 나의 취향을 연결해 코스를 만들어요.
                   <br />
-                  혼자, 친구와, 가족과 함께 — 이동 수단과 보행 조건까지.
+                  혼자, 친구와, 가족과 함께 — 취향에 맞는 한국 여행.
                 </p>
                 <button
                   className="primary hero-cta"
@@ -475,7 +476,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
                 </button>
                 <button
                   className="text-button hero-secondary"
-                  onClick={() => start(true)}
+                  onClick={() => {if(trip)navigate("result");else {navigate("home");setNotice("여행 보관함에서 저장된 일정을 선택하세요.");}}}
                 >
                   이미 계획한 여행이 있나요?{" "}
                   <span>
@@ -483,8 +484,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
                   </span>
                 </button>
                 <div className="hero-note">
-                  <Leaf size={16} /> 나이가 아닌, 직접 선택한 걷기·휴식 조건을
-                  기준으로
+                  <Leaf size={16} /> 바다부터 골목까지, 나만의 여행 취향으로
                 </div>
               </div>
               <div className="hero-art hero-photo-card">
@@ -524,7 +524,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
                     setExisting(savedDraft.existing);
                     setImportText(savedDraft.importText);
                     setImportItems(savedDraft.importItems);
-                    navigate("conditions");
+                    navigate("basics");
                   }}
                 >
                   입력 이어서 하기 <ArrowRight size={18} />
@@ -549,6 +549,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
                 </button>
               </section>
             )}
+            <KoreaPhotoGallery/>
             <LibraryPanel trips={library} current={trip} onSelect={t=>{setTrip(t);setDay(1);navigate('result');}}/>
             <section className="intro-section">
               <div className="section-heading">
@@ -556,10 +557,10 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
                 <h2>
                   좋은 여행은,
                   <br />
-                  서로의 보폭을 아는 것부터.
+                  가고 싶은 곳을 고르는 것부터.
                 </h2>
                 <p>
-                  무조건 적게 걷는 여행이 아니라,
+                  새로운 풍경과 맛있는 음식,
                   <br />
                   하고 싶은 경험을 함께 지키는 여행을 설계해요.
                 </p>
@@ -568,9 +569,9 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
                 <article>
                   <span className="step-number">01</span>
                   <Footprints />
-                  <h3>먼저, 부모님의 이야기</h3>
+                  <h3>지역과 날짜 선택</h3>
                   <p>
-                    편하게 걷는 시간, 원하는 휴식,
+                    떠나고 싶은 지역과 날짜,
                     <br />꼭 보고 싶은 풍경을 직접 선택해요.
                   </p>
                 </article>
@@ -591,7 +592,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
                   <p>
                     큰 글씨의 쉬운 일정으로 살펴보고,
                     <br />
-                    부모님의 의견을 다시 반영해요.
+                    여행 취향에 맞게 일정을 바꿔요.
                   </p>
                 </article>
               </div>
@@ -606,7 +607,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
                 <span className="eyebrow">먼저 가볍게 둘러보세요</span>
                 <h2>바다를 보고 싶은 마음은 그대로.</h2>
                 <p>
-                  걷기 20분, 계단 피하기, 충분한 휴식.
+                  관광지와 식사, 이동 동선을 한눈에.
                   <br className="mobile-only" /> 가상 솔바다 여행이 어떻게
                   달라지는지 확인해 보세요.
                 </p>
@@ -620,497 +621,15 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
         ) : null}
         {(screen === "conditions" || screen === "basics") && (
           <section className="workspace form-workspace">
-            <div className="form-heading">
-              <button
-                className="back"
-                onClick={() =>
-                  screen === "basics"
-                    ? navigate("conditions")
-                    : step > 0
-                      ? setStep(step - 1)
-                      : navigate("home")
-                }
-              >
-                <ArrowLeft size={18} /> 이전으로
-              </button>
-              <span className="eyebrow">나의 맞춤 여행 노트</span>
-              <h1 tabIndex={-1}>
-                {screen === "basics"
-                  ? "어디로, 언제 떠나볼까요?"
-                  : step === 0
-                    ? "편안한 보폭을 알려 주세요."
-                    : step === 1
-                      ? "여행에서 만나고 싶은 것들."
-                      : "부모님 조건, 함께 확인해요."}
-              </h1>
-              {screen!=="basics"&&<>
-              <p>
-                모르는 조건은 비워 두세요. 나이나 활동 선호로 수치를 대신 정하지
-                않아요.
-              </p>
-              <div className="progress" aria-label={`${progress}/4 단계`}>
-                {["걷기와 휴식", "여행 취향", "조건 확인", "여행 정보"].map(
-                  (t, i) => (
-                    <div key={t} className={i + 1 <= progress ? "active" : ""}>
-                      <span>
-                        {i + 1 < progress ? <Check size={14} /> : i + 1}
-                      </span>
-                      {t}
-                    </div>
-                  ),
-                )}
-              </div>
-              </>}
-            </div>
-            <div className="form-body">
-              {(screen!=="basics"||existing)&&<>
-              <div className="demo-banner">
-                <Leaf size={18} />
-                <div>
-                  <strong>{b.mode==='demo'?'가상 시연과 전국·해외 실제 도시 검색을 구분해요.':currentCatalog.sourceNotice}</strong>
-                  {b.mode==='demo'&&<span>{DEMO_NOTICE}</span>}
-                </div>
-              </div>
-              </>}
-              {screen === "conditions" && step === 0 && (
-                <>
-                  <fieldset>
-                    <legend>어떤 속도의 여행이 좋으세요?</legend>
-                    <div className="choice-grid">
-                      {[
-                        ["slow", "천천히 둘러보고 싶어요"],
-                        ["moderate", "적당히 걷는 것은 괜찮아요"],
-                        ["active", "활동적인 여행이 좋아요"],
-                        ["unknown", "잘 모르겠어요"],
-                      ].map(([v, l]) => (
-                        <label
-                          className={`choice ${c.activity === v ? "selected" : ""}`}
-                          key={v}
-                        >
-                          <input
-                            type="radio"
-                            name="activity"
-                            value={v}
-                            checked={c.activity === v}
-                            onChange={() =>
-                              changeC({ activity: v as Conditions["activity"] })
-                            }
-                          />
-                          {l}
-                        </label>
-                      ))}
-                    </div>
-                  </fieldset>
-                  <div className="field-grid">
-                    <Limit
-                      label="한 번에 걷고 싶은 최대 시간"
-                      unit="분"
-                      max={180}
-                      value={c.maxWalkMin}
-                      onChange={(v) => changeC({ maxWalkMin: v })}
-                    />
-                    <Limit
-                      label="한 번에 걷고 싶은 최대 거리"
-                      unit="m"
-                      max={10000}
-                      value={c.maxWalkM}
-                      onChange={(v) => changeC({ maxWalkM: v })}
-                    />
-                    <Limit
-                      label="원하는 휴식 간격"
-                      unit="분마다"
-                      max={240}
-                      value={c.restInterval}
-                      onChange={(v) => changeC({ restInterval: v })}
-                    />
-                    <Limit
-                      label="한 번 쉴 때 원하는 시간"
-                      unit="분"
-                      max={120}
-                      value={c.restMin}
-                      onChange={(v) => changeC({ restMin: v })}
-                    />
-                  </div>
-                  <label className="check-row">
-                    <input
-                      type="checkbox"
-                      checked={c.avoidStairs}
-                      onChange={(e) =>
-                        changeC({ avoidStairs: e.target.checked })
-                      }
-                    />
-                    <span>
-                      계단은 반드시 피하고 싶어요{" "}
-                      <small>필수 조건으로 점검합니다.</small>
-                    </span>
-                  </label>
-                  <details className="natural">
-                    <summary>말로 적는 편이 더 편한가요?</summary>
-                    <p>
-                      명확하게 적은 여행 조건만 추출해요. 의료
-                      정보·주민등록번호는 입력하지 마세요.
-                    </p>
-                    <label>
-                      부모님의 여행 이야기
-                      <textarea
-                        maxLength={1800}
-                        value={text}
-                        onChange={(e) => {
-                          requestRevision.current++;
-                          activeRequest.current?.abort();
-                          setText(e.target.value);
-                          setAi(null);
-                          setBusy(false);
-                        }}
-                        placeholder="한 번에 걷기는 20분이면 좋겠어요. 바다를 보고 싶고, 매운 음식은 피하고 싶어요."
-                      />
-                    </label>
-                    <label className="check-row">
-                      <input
-                        type="checkbox"
-                        checked={consent}
-                        onChange={(e) => {
-                          requestRevision.current++;
-                          activeRequest.current?.abort();
-                          setConsent(e.target.checked);
-                          setAi(null);
-                          setBusy(false);
-                        }}
-                      />
-                      선택: 서버에 AI가 설정된 경우, 이 여행 조건을 Amazon Bedrock에
-                      보내 추출하는 데 동의해요.
-                    </label>
-                    <p className="helper">
-                      동의하지 않거나 키가 없으면 규칙 기반으로 처리합니다. 전송
-                      목적은 조건 추출이며, 저장 요청은 하지 않습니다. 개인·의료
-                      정보를 적지 마세요.
-                    </p>
-                    <button
-                      className="secondary"
-                      onClick={extract}
-                      disabled={busy}
-                    >
-                      {busy ? "조건을 읽는 중…" : "조건 추출하기"}
-                    </button>
-                    {ai && (
-                      <div className="extraction">
-                        <strong>{ai.message}</strong>
-                        <p>
-                          추출 제안: 걷기 {ai.output.maxWalkMin ?? "미확인"}분 /
-                          거리 {ai.output.maxWalkM ?? "미확인"}m / 휴식{" "}
-                          {ai.output.restMin ?? "미확인"}분 / 계단{" "}
-                          {ai.output.avoidStairs === true ? "피하기" : "미확인"}{" "}
-                          / {ai.output.experiences.join(", ") || "경험 미확인"}{" "}
-                          / 피할 음식:{" "}
-                          {ai.output.foodAvoids.join(", ") || "미확인"}
-                        </p>
-                        {ai.output.questions.map((q) => (
-                          <p key={q}>확인 질문 · {q}</p>
-                        ))}
-                        <button
-                          className="secondary"
-                          onClick={confirmExtraction}
-                        >
-                          확인 후 조건 카드에 반영
-                        </button>
-                      </div>
-                    )}
-                  </details>
-                </>
-              )}
-              {screen === "conditions" && step === 1 && (
-                <>
-                  <fieldset>
-                    <legend>꼭 만나고 싶은 여행의 순간</legend>
-                    <div className="chips">
-                      {experienceOptions.map((e) => (
-                        <button
-                          key={e}
-                          className={
-                            c.experiences.includes(e) ? "chip selected" : "chip"
-                          }
-                          aria-pressed={c.experiences.includes(e)}
-                          onClick={() =>
-                            changeC({
-                              experiences: c.experiences.includes(e)
-                                ? c.experiences.filter((v) => v !== e)
-                                : [...c.experiences, e],
-                            })
-                          }
-                        >
-                          {c.experiences.includes(e) && <Check size={15} />} {e}
-                        </button>
-                      ))}
-                    </div>
-                    <div className="inline-field">
-                      <label>
-                        다른 경험 직접 입력
-                        <input
-                          value={customExperience}
-                          onChange={(e) => setCustomExperience(e.target.value)}
-                          maxLength={60}
-                        />
-                      </label>
-                      <button
-                        className="secondary"
-                        onClick={() => {
-                          if (customExperience.trim()) {
-                            changeC({
-                              experiences: [
-                                ...new Set([
-                                  ...c.experiences,
-                                  customExperience.trim(),
-                                ]),
-                              ],
-                            });
-                            setCustomExperience("");
-                          }
-                        }}
-                      >
-                        추가
-                      </button>
-                    </div>
-                  </fieldset>
-                  {c.experiences.length > 0 && (
-                    <fieldset>
-                      <legend>이 중 반드시 포함할 경험이 있나요?</legend>
-                      {c.experiences.map((e) => (
-                        <label key={e} className="check-row">
-                          <input
-                            type="checkbox"
-                            checked={c.requiredExperiences.includes(e)}
-                            onChange={(ev) =>
-                              changeC({
-                                requiredExperiences: ev.target.checked
-                                  ? [...c.requiredExperiences, e]
-                                  : c.requiredExperiences.filter(
-                                      (v) => v !== e,
-                                    ),
-                              })
-                            }
-                          />
-                          {e} · 필수 경험
-                        </label>
-                      ))}
-                    </fieldset>
-                  )}
-                  <div className="field-grid">
-                    <StringList
-                      label="좋아하는 음식"
-                      placeholder="지역 음식, 순한 음식"
-                      values={c.foodLikes}
-                      onChange={(v) => changeC({ foodLikes: v })}
-                    />
-                    <StringList
-                      label="피하고 싶은 음식"
-                      placeholder="매운 음식"
-                      values={c.foodAvoids}
-                      onChange={(v) => changeC({ foodAvoids: v })}
-                    />
-                  </div>
-                  <StringList
-                    label="피하고 싶은 상황"
-                    placeholder="붐비는 곳, 소음"
-                    values={c.avoidSituations}
-                    onChange={(v) => changeC({ avoidSituations: v })}
-                  />
-                  <label>
-                    점심은 늦어도 이 시간에{" "}
-                    <input
-                      type="time"
-                      value={c.latestLunch === null ? "" : time(c.latestLunch)}
-                      onChange={(e) =>
-                        changeC({
-                          latestLunch: e.target.value
-                            ? minutes(e.target.value)
-                            : null,
-                        })
-                      }
-                    />
-                    <small>
-                      선택 사항 · 11:00~15:00. 비워 두면 늦은 점심 조건을
-                      판정하지 않습니다.
-                    </small>
-                  </label>
-                  <p className="helper">
-                    음식 선호 확인 기능입니다. 알레르기 안전 판정이나 의료 식단
-                    추천은 제공하지 않습니다. 기록에 없는 음식·상황은 현장
-                    확인이 필요합니다.
-                  </p>
-                </>
-              )}
-              {screen === "conditions" && step === 2 && <ConditionCard c={c} />}
-              {screen === "basics" && (
-                <>
-                  {!existing&&<SimpleTripForm conditions={c} onTrip={t=>{setTrip(t);setDay(1);setProposal(null);navigate('result');}}/>}
-                  <details className="advanced-settings"><summary>상세 일정 설정·직접 만들기</summary>
-                  <ol className="journey-steps" aria-label="여행 준비 순서"><li>1. 날짜·지역 정하기</li><li>2. 취향·이동 수단 선택</li><li>3. 추천 코스 확인·일정 만들기</li></ol>
-                  <label>
-                    여행 제목
-                    <input
-                      value={b.title}
-                      maxLength={80}
-                      onChange={(e) => setB({ ...b, title: e.target.value })}
-                    />
-                  </label>
-                  <div className="field-grid">
-                    <label>
-                      여행 지역
-                      <select aria-label="데이터 모드" value={b.mode} onChange={e=>{const mode=e.target.value as Basics['mode'];setB({...b,mode,region:mode==='demo'?'가상 솔바다':'실제 지역',days:Math.min(b.days,2),transport:'taxi',destinations:undefined,transfers:undefined,expenses:undefined,currency:'KRW',taxiPlan:undefined,coursePlans:undefined,coursePreferences:undefined});setSelectedCatalog(mode==='demo'?demoCatalog:emptyRealCatalog);setImportItems([]);}}><option value="demo">가상 솔바다 · 시연</option><option value="real">전국·해외 실제 도시</option></select>
-                    </label>
-                    <label>
-                      출발 날짜
-                      <input
-                        type="date"
-                        value={b.date}
-                        onChange={(e) => setB({ ...b, date: e.target.value })}
-                      />
-                    </label>
-                    <label>
-                      여행 기간
-                      <select
-                        value={b.days}
-                        onChange={(e) =>
-                          setB({ ...b, days: Number(e.target.value),taxiPlan:undefined,coursePlans:undefined,coursePreferences:undefined,destinations:b.destinations?.length===1?[{...b.destinations[0],endDay:Number(e.target.value)}]:b.destinations })
-                        }
-                      >
-                        <option value={1}>당일 · 1일</option>
-                        <option value={2}>1박 2일</option>{b.mode==='real'&&Array.from({length:28},(_,n)=><option key={n+3} value={n+3}>{n+3}일</option>)}
-                      </select>
-                    </label>
-                    <label>
-                      전체 예산 ({b.currency??'KRW'})
-                      <input
-                        type="number"
-                        min={0}
-                        max={10000000}
-                        value={b.budget}
-                        onChange={(e) =>
-                          setB({ ...b, budget: Number(e.target.value) })
-                        }
-                      />
-                      <small>
-                        확인된 일정 비용과 추가 비용을 합산합니다. 미확인 금액은 별도로 표시합니다.
-                      </small>
-                    </label>
-                    <label>
-                      지역 내 이동 수단
-                      <select
-                        value={b.transport}
-                        onChange={(e) =>
-                          setB({
-                            ...b,
-                            transport: e.target.value as Basics["transport"],
-                            taxiPlan: undefined,coursePlans:undefined,coursePreferences:undefined,
-                          })
-                        }
-                      >
-                        <option value="taxi">택시</option>
-                        <option value="walk">도보</option>{b.mode==='real'&&<><option value="driving">자가용</option><option value="transit">대중교통</option></>}
-                      </select>
-                    </label>
-                    <label>
-                      일정 작성 방법
-                      <select
-                        value={existing ? "existing" : "new"}
-                        onChange={(e) =>
-                          setExisting(e.target.value === "existing")
-                        }
-                      >
-                        <option value="new">새 일정 만들기</option>
-                        <option value="existing">기존 일정 점검하기</option>
-                      </select>
-                    </label>
-                  </div>
-                  {b.mode==='real'&&<><RealSearch onLoaded={catalog=>{setSelectedCatalog(catalog);const meta=catalog.cities?.[0];setB({...b,region:catalog.region,timezone:meta?.timezone??b.timezone,destinations:[{region:catalog.region,startDay:1,endDay:b.days,timezone:meta?.timezone??b.timezone,currency:meta?.currency??'KRW'}],taxiPlan:undefined,coursePlans:undefined,coursePreferences:undefined});setImportItems([]);}}/><details className="advanced-settings"><summary>시간대 설정</summary><label>현지 시간대 (IANA)<input value={b.timezone} onChange={e=>setB({...b,timezone:e.target.value})} placeholder="Asia/Seoul, Asia/Tokyo, Europe/Paris"/></label></details>{(b.transport==='taxi'||b.transport==='driving')&&selectedCatalog.places.length>0&&<><label>추천 기준<select value={b.travelPriority??(b.transport==='driving'?'comfort':'budget')} onChange={e=>setB({...b,travelPriority:e.target.value as Basics['travelPriority']})}><option value="budget">이동 거리 우선</option><option value="comfort">좌석·적은 보행 우선</option><option value="balanced">관심 경험·거리 균형</option></select></label><fieldset><legend>이번 여행에서 원하는 경험</legend><div className="place-filters">{['자연 풍경','문화·전시'].map(theme=><button type="button" key={theme} aria-pressed={c.experiences.includes(theme)} onClick={()=>setC({...c,experiences:c.experiences.includes(theme)?c.experiences.filter(e=>e!==theme):[...c.experiences,theme].slice(0,12)})}>{theme}</button>)}</div></fieldset><RegionalCourse basics={b} conditions={c} catalog={selectedCatalog} onChange={setB}/><StudentTaxiPlanner conditions={c} basics={b} catalog={selectedCatalog} onChange={setB}/></>} {selectedCatalog.places.length>0&&<details className="advanced-settings"><summary>다도시·숙박·교통비 설정</summary><WorldPlan basics={b} catalog={selectedCatalog} onChange={(basics,catalog)=>{setB(basics);setSelectedCatalog(catalog);}}/></details>}</>}
-                  {!existing&&<button type="button" className="secondary" onClick={createTrip}>상세 설정으로 직접 일정 만들기</button>}
-                  </details>
-                  {existing && (
-                    <section className="importer">
-                      <h2>기존 일정 입력</h2>
-                      <p>
-                        지원 범위는 아래 후보 장소입니다. 실제 장소명은 가져오지
-                        않습니다. 이동 구간은 시간표에서 별도로 추가해 주세요.
-                      </p>
-                      <details>
-                        <summary>후보 장소 목록 보기</summary>
-                        <ul className="candidate-list">
-                          {places.map((p) => (
-                            <li key={p.id}>
-                              {p.id} · {p.name} · {labels[p.kind]}
-                            </li>
-                          ))}
-                        </ul>
-                      </details>
-                      <label>
-                        1일차 텍스트 일정
-                        <textarea
-                          maxLength={10000}
-                          value={importText}
-                          onChange={(e) => setImportText(e.target.value)}
-                          placeholder={
-                            "09:30-10:15 가상 바다마루 전망길\n14:00-14:50 가상 솔바다 매운밥집"
-                          }
-                        />
-                      </label>
-                      <button
-                        className="secondary"
-                        onClick={() => {
-                          const parsed = parseItinerary(importText, 1, currentCatalog);
-                          if (parsed.errors.length)
-                            setError(parsed.errors.join(" "));
-                          else {
-                            setImportItems(parsed.items);
-                            setError("");
-                            setNotice(
-                              "텍스트 일정을 가져왔어요. 시간표에서 이동과 휴식을 추가해 주세요.",
-                            );
-                          }
-                        }}
-                      >
-                        텍스트를 시간표로 가져오기
-                      </button>
-                      <Editor
-                        items={importItems}
-                        days={b.days}
-                        onChange={setImportItems}
-                      />
-                    </section>
-                  )}
-                </>
-              )}
-              {(screen!=="basics"||existing)&&<div className="form-actions">
-                <p>입력하신 여행은 이 브라우저에만 저장돼요.</p>
-                <button
-                  className="primary"
-                  onClick={() => {
-                    if (!conditionsSchema.safeParse(c).success) {
-                      setError("걷기·휴식 숫자 범위를 확인해 주세요.");
-                      return;
-                    }
-                    if (screen === "basics") createTrip();
-                    else if (step < 2) setStep(step + 1);
-                    else navigate("basics");
-                  }}
-                >
-                  {screen === "basics"
-                    ? existing
-                      ? "일정 점검하기"
-                      : "맞춤 코스 일정 만들기"
-                    : step === 2
-                      ? "이 조건으로 여행 준비하기"
-                      : "다음으로"}
-                  <ArrowRight size={18} />
-                </button>
-              </div>}
-            </div>
+            <div className="form-heading"><button className="back" onClick={()=>navigate('home')}><ArrowLeft size={18}/> 홈으로</button><span className="eyebrow">나만의 한국 여행</span><h1 tabIndex={-1}>다섯 가지만 고르면 여행 준비 끝</h1><p>지역부터 취향까지, 한 화면에서 코스를 만들어 보세요.</p></div>
+            <div className="form-body"><SimpleTripForm initialTransport={b.transport==='driving'?'driving':'taxi'} conditions={defaultConditions} onTrip={t=>{setTrip(t);setDay(1);setProposal(null);setSavedDraft(null);try{localStorage.removeItem(FORM_KEY);}catch{}navigate('result');}}/></div>
           </section>
         )}
         {screen === "result" && trip && report && (
           <section className="workspace">
             <div className="result-heading">
               <div>
-                <span className="eyebrow">OUR FAMILY TRAVEL NOTE</span>
+                <span className="eyebrow">MY TRAVEL NOTE</span>
                 <h1 tabIndex={-1}>{trip.basics.title}</h1>
                 <p>
                   {trip.basics.region} · {trip.basics.date}부터{" "}
@@ -1118,7 +637,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
                 </p>
               </div>
               <button className="secondary" onClick={() => navigate("parent")}>
-                <Heart size={18} /> 부모님 모드
+                <Heart size={18} /> 일정 한눈에
               </button>
             </div>
             <DemoBanner />
@@ -1193,7 +712,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
                 </div>
                 {trip.feedback.length > 0 && (
                   <div className="feedback-summary">
-                    <h2>부모님이 남긴 이야기</h2>
+                    <h2>여행 메모</h2>
                     {trip.feedback.map((f) => (
                       <p key={f.id}>
                         <Heart size={16} /> {f.text}
@@ -1219,7 +738,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
                       setStep(0);
                       setExisting(true);
                       setImportItems(trip.items);
-                      navigate("conditions");
+                      navigate("basics");
                     }}
                   >
                     조건 수정 후 재점검
@@ -1230,7 +749,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
                 <span className="eyebrow">선택한 여행 조건으로 살펴봤어요</span>
                 <ReportView report={report} />
                 <button className="primary full" onClick={propose}>
-                  부모님 조건에 맞게 수정하기 <ArrowRight size={18} />
+                  여행 취향에 맞게 수정하기 <ArrowRight size={18} />
                 </button>
                 <p className="helper">
                   규칙 기반 점검 · 조건을 완화하지 않고 후보를 다시
@@ -1587,74 +1106,7 @@ function StringList({
     </label>
   );
 }
-function ConditionCard({ c }: { c: Conditions }) {
-  return (
-    <div className="condition-card">
-      <div className="condition-card-title">
-        <Footprints size={24} />
-        <h2>부모님 여행 조건 카드</h2>
-      </div>
-      <dl>
-        <div>
-          <dt>한 번에 걷기</dt>
-          <dd>
-            {c.maxWalkMin === null
-              ? "시간 잘 모르겠어요"
-              : `최대 ${c.maxWalkMin}분`}{" "}
-            /{" "}
-            {c.maxWalkM === null ? "거리 잘 모르겠어요" : `최대 ${c.maxWalkM}m`}
-          </dd>
-        </div>
-        <div>
-          <dt>쉬는 시간</dt>
-          <dd>
-            {c.restInterval === null
-              ? "간격 잘 모르겠어요"
-              : `${c.restInterval}분마다`}{" "}
-            ·{" "}
-            {c.restMin === null
-              ? "길이 잘 모르겠어요"
-              : `한 번에 ${c.restMin}분`}
-          </dd>
-        </div>
-        <div>
-          <dt>계단</dt>
-          <dd>{c.avoidStairs ? "반드시 피하기" : "회피 조건 설정 안 함"}</dd>
-        </div>
-        <div>
-          <dt>좋아하는 음식</dt>
-          <dd>{c.foodLikes.join(", ") || "선택 안 함"}</dd>
-        </div>
-        <div>
-          <dt>피할 음식</dt>
-          <dd>{c.foodAvoids.join(", ") || "선택 안 함"}</dd>
-        </div>
-        <div>
-          <dt>원하는 경험</dt>
-          <dd>{c.experiences.join(", ") || "선택 안 함"}</dd>
-        </div>
-        <div>
-          <dt>필수 경험</dt>
-          <dd>{c.requiredExperiences.join(", ") || "선택 안 함"}</dd>
-        </div>
-        <div>
-          <dt>피할 상황</dt>
-          <dd>{c.avoidSituations.join(", ") || "선택 안 함"}</dd>
-        </div>
-        <div>
-          <dt>늦어도 점심</dt>
-          <dd>{c.latestLunch === null ? "설정 안 함" : time(c.latestLunch)}</dd>
-        </div>
-      </dl>
-      <p>
-        필수 조건: 걷기·휴식 수치, 계단 회피, 피할 음식·상황, 필수 경험, 점심
-        마감, 예산.
-        <br />
-        정보가 없는 조건은 충족으로 판정하지 않습니다.
-      </p>
-    </div>
-  );
-}
+function ConditionCard({c}:{c:Conditions}) {return <div className="condition-card"><h2>여행 취향</h2><p>{c.experiences.join(' · ')||'다양한 경험'}</p></div>;}
 function itemName(i: Item,catalog:Catalog=demoCatalog) {
   const {placeById}=indexCatalog(catalog);
   if (i.kind === "move")

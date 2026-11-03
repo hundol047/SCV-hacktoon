@@ -31,7 +31,7 @@ public class MainActivity extends Activity {
     web=new WebView(this);root.addView(web);setContentView(root);
     WebSettings settings=web.getSettings();settings.setJavaScriptEnabled(true);settings.setDomStorageEnabled(true);
     settings.setAllowFileAccess(false);settings.setAllowContentAccess(true);settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
-    settings.setUserAgentString(settings.getUserAgentString()+" Yeohaengit/0.14.0 (+https://github.com/hundol047/SCV-hacktoon)");
+    settings.setUserAgentString(settings.getUserAgentString()+" Yeohaengit/0.15.0 (+https://github.com/hundol047/SCV-hacktoon)");
     settings.setJavaScriptCanOpenWindowsAutomatically(false);settings.setSupportMultipleWindows(false);
     WebView.setWebContentsDebuggingEnabled(false);
     api=new ServerAPI(this,web);
@@ -41,6 +41,7 @@ public class MainActivity extends Activity {
       @Override public WebResourceResponse shouldInterceptRequest(WebView view,WebResourceRequest request){
         Uri uri=request.getUrl();
         if("GET".equals(request.getMethod())&&"https".equals(uri.getScheme())&&"tile.openstreetmap.org".equals(uri.getHost())&&uri.getPort()==-1&&uri.getPath()!=null&&uri.getPath().matches("/[0-9]{1,2}/[0-9]{1,7}/[0-9]{1,7}\\.png")&&uri.getQuery()==null)return null;
+        if("GET".equals(request.getMethod())&&"https".equals(uri.getScheme())&&("upload.wikimedia.org".equals(uri.getHost())||"thumb.wikimedia.org".equals(uri.getHost()))&&uri.getPort()==-1&&uri.getPath()!=null&&uri.getPath().startsWith("/wikipedia/commons/")&&uri.getPath().endsWith(".jpg")&&uri.getQuery()==null)return null;
         if("https".equals(uri.getScheme())&&"appassets.androidplatform.net".equals(uri.getHost())){
           String path=uri.getPath();if(path==null||path.equals("/"))path="/index.html";
           if(!path.contains(".."))try{

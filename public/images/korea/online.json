@@ -1,0 +1,5 @@
+[
+ {"id":"haeundae","place":"해운대","region":"부산","author":"frakorea","source":"https://commons.wikimedia.org/wiki/File:Korea-Busan-Haeundae-01.jpg","image":"https://upload.wikimedia.org/wikipedia/commons/6/64/Korea-Busan-Haeundae-01.jpg","license":"CC BY 2.0","licenseURL":"https://creativecommons.org/licenses/by/2.0/","thumbnail":false},
+ {"id":"bulguksa","place":"불국사","region":"경북 경주","author":"martinroell","source":"https://commons.wikimedia.org/wiki/File:Korea-Gyeongju-Bulguksa-01.jpg","image":"https://upload.wikimedia.org/wikipedia/commons/a/a4/Korea-Gyeongju-Bulguksa-01.jpg","license":"CC BY-SA 2.0","licenseURL":"https://creativecommons.org/licenses/by-sa/2.0/","thumbnail":false},
+ {"id":"seongsan","place":"성산일출봉","region":"제주","author":"Korea.net / Korean Culture and Information Service","source":"https://commons.wikimedia.org/wiki/File:Seongsan_Ilchulbong_from_the_air.jpg","image":"https://thumb.wikimedia.org/wikipedia/commons/thumb/6/61/Seongsan_Ilchulbong_from_the_air.jpg/960px-Seongsan_Ilchulbong_from_the_air.jpg","license":"CC BY-SA 2.0","licenseURL":"https://creativecommons.org/licenses/by-sa/2.0/","thumbnail":true}
+]

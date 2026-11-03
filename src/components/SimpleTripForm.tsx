@@ -7,8 +7,8 @@ import {savePlan} from '../domain/course-plans';
 import {generate} from '../domain/engine';
 import {koreaRegions} from '../data/korea-tourism';
 
-export default function SimpleTripForm({onTrip,conditions:baseConditions}:{onTrip:(trip:Trip)=>void;conditions:Conditions}){
- const [region,setRegion]=useState(''),[date,setDate]=useState(()=>new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Seoul'}).format(new Date())),[days,setDays]=useState(1),[transport,setTransport]=useState<'taxi'|'driving'>('taxi'),[interest,setInterest]=useState(baseConditions.experiences[0]??'자연 풍경');
+export default function SimpleTripForm({onTrip,conditions:baseConditions,initialTransport='taxi'}:{onTrip:(trip:Trip)=>void;conditions:Conditions;initialTransport?:'taxi'|'driving'}){
+ const [region,setRegion]=useState(''),[date,setDate]=useState(()=>new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Seoul'}).format(new Date())),[days,setDays]=useState(1),[transport,setTransport]=useState<'taxi'|'driving'>(initialTransport),[interest,setInterest]=useState(baseConditions.experiences[0]??'자연 풍경');
  const [busy,setBusy]=useState(false),[error,setError]=useState('');const revision=useRef(0);useEffect(()=>()=>{revision.current++;},[]);
  async function create(){const current=++revision.current;setBusy(true);setError('');try{
    if(!region.trim())throw Error('여행 지역을 입력해 주세요.');
@@ -33,7 +33,7 @@ export default function SimpleTripForm({onTrip,conditions:baseConditions}:{onTri
  <label>출발 날짜<input disabled={busy} type="date" value={date} onChange={e=>setDate(e.target.value)}/></label>
  <label>여행 기간<select disabled={busy} value={days} onChange={e=>setDays(Number(e.target.value))}>{[1,2,3,4,5].map(d=><option key={d} value={d}>{d===1?'당일':`${d-1}박 ${d}일`}</option>)}</select></label>
  <label>이동 수단<select disabled={busy} value={transport} onChange={e=>setTransport(e.target.value as 'taxi'|'driving')}><option value="taxi">택시</option><option value="driving">자가용</option></select></label>
- <label>여행 취향<select disabled={busy} value={interest} onChange={e=>setInterest(e.target.value)}><option value="">골고루</option><option>자연 풍경</option><option>문화·전시</option></select></label>
+ <label>여행 취향<select disabled={busy} value={interest} onChange={e=>setInterest(e.target.value)}><option value="">골고루</option><option>자연 풍경</option><option>문화·전시</option><option>지역 음식</option><option>사진 찍기</option><option>바다 보기</option><option>조용한 카페</option></select></label>
  </div><p>생성을 누르면 여행 조건과 후보 장소를 Amazon Bedrock에 전송합니다. 운영시간·이동시간은 출발 전 확인해 주세요.</p>
  <button type="button" className="primary" disabled={busy} onClick={create}>{busy?'AI 일정 생성 중…':'지역 검색하고 AI 일정 생성'}</button>{error&&<p role="alert">{error}</p>}</section>;
 }
