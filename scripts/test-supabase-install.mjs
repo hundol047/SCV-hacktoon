@@ -1,0 +1,17 @@
+import {PGlite} from '@electric-sql/pglite';
+import {readFile} from 'node:fs/promises';
+import assert from 'node:assert/strict';
+const sql=await readFile('downloads/yeohaengit-supabase-first-install.sql','utf8');
+const db=new PGlite();
+await db.exec("create role service_role; create role anon; create role authenticated; create table public.existing_app(value text); insert into public.existing_app values ('keep');");
+const results=await db.exec(sql);
+assert.deepEqual(results.at(-1).rows[0],{travel_tables_ready:true,ai_usage_function_ready:true,schema_version:12});
+assert.equal((await db.query('select value from existing_app')).rows[0].value,'keep');
+await db.exec('set role service_role');
+const quota=await db.query("select public.bopok_reserve(p_subject => repeat('a',64), p_scope => 'ai', p_tokens => 100, p_cost => 0.001) as result");
+assert.equal(quota.rows[0].result.allowed,true);
+await db.exec('reset role');
+await assert.rejects(db.exec(sql),/Existing bopok objects/);await db.exec('rollback');
+assert.equal((await db.query('select value from existing_app')).rows[0].value,'keep');
+await db.close();
+console.log('PASS: clean install v12, existing data preserved, service-role AI quota, repeat-install guard');
