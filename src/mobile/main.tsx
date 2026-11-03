@@ -7,7 +7,7 @@ import type {KoreaSnapshot} from '../data/korea-tourism';
 import '../app/globals.css';
 import './mobile.css';
 
-declare global {interface Window {BopokAndroid?:{requestTravel?:(id:string,url:string)=>void;saveJson:(name:string,data:string)=>void;saveTourism:()=>void;printPage:()=>void;aiStatus:()=>string;configureAI:(key:string,model:string)=>void;requestAI:(id:string,input:string)=>void};}}
+declare global {interface Window {BopokAndroid?:{cancelTravel?:(id:string)=>void;requestTravel?:(id:string,url:string)=>void;saveJson:(name:string,data:string)=>void;saveTourism:()=>void;printPage:()=>void;aiStatus:()=>string;configureAI:(key:string,model:string)=>void;requestAI:(id:string,input:string)=>void};}}
 const nativeFetch=window.fetch.bind(window);
 let snapshot:Promise<KoreaSnapshot>|undefined;
 async function readSnapshot(){

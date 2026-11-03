@@ -1,3 +1,5 @@
+import {confirmedFacilities} from './venue-details';
+import {dayWeather} from './day-weather';
 import {rankVehiclePlaces,vehiclePriority} from './vehicle-recommendations';
 import {placeSimilarity} from './place-similarity';
 import {weatherAllowed,weatherScore} from './weather';
@@ -13,6 +15,8 @@ export function replacementItems(trip:Trip,itemId:string,placeId:string){
   const catalog=catalogFor(trip.basics.mode,trip.catalog),target=trip.items.find(i=>i.id===itemId);
   const candidate=catalog.places.find(p=>p.id===placeId),source=catalog.places.find(p=>p.id===target?.placeId);
   if(!target||target.kind!=='visit'||target.locked||!source||!candidate||candidate.kind!=='visit'||source.id===candidate.id)throw Error('교체할 관광지와 고정 여부를 확인해 주세요.');
+  if(!confirmedFacilities(candidate,trip.basics.requiredFacilities))throw Error('필수 시설이 최근 확인되지 않은 장소입니다.');
+  if(!weatherAllowed(candidate,dayWeather(trip.basics,target.day)))throw Error('선택한 날씨에 맞지 않는 관광지입니다.');
   if((candidate.region??catalog.region)!==(source.region??catalog.region))throw Error('같은 지역 관광지만 추천할 수 있습니다.');
   if(trip.items.some(i=>i.day===target.day&&i.placeId===placeId))throw Error('이미 이 날짜에 포함된 장소입니다.');
   const day=trip.items.filter(i=>i.day===target.day).sort((a,b)=>a.start-b.start),at=day.findIndex(i=>i.id===itemId);
@@ -36,7 +40,7 @@ export function replacementInput(trip:Trip,itemId:string){
   if(!target||target.kind!=='visit'||target.locked)throw Error('고정되지 않은 관광 일정을 선택해 주세요.');
   const source=catalog.places.find(p=>p.id===target.placeId)!;
   if(!source)throw Error('원래 관광지 자료가 없습니다.');
-  const weather=trip.basics.coursePreferences?.find(p=>p.day===target.day)?.weather??'unknown';
+  const weather=dayWeather(trip.basics,target.day);
   const candidates:typeof catalog.places=[];
   for(const {place:p} of rankVehiclePlaces(catalog.places.filter(p=>weatherAllowed(p,weather)),trip.basics,trip.conditions,source).sort((a,d)=>weatherScore(d.place,weather)-weatherScore(a.place,weather)||placeSimilarity(source,d.place).score-placeSimilarity(source,a.place).score)){try{replacementItems(trip,itemId,p.id);candidates.push(p);if(candidates.length===20)break;}catch{}}
   if(!candidates.length)throw Error('현재 자료에 조건을 지키며 교체할 다른 관광지가 없습니다. 장소 후보를 더 불러오거나 고정 구간을 확인해 주세요.');

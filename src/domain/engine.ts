@@ -61,13 +61,18 @@ export function applyProposal(trip: Trip, items: Item[]): Trip {
     items: structuredClone(items),
     revision: trip.revision + 1,
     history: [...trip.history, structuredClone(trip.items)].slice(-20),
+    historyBasics:[...trip.history.map((_,i)=>trip.historyBasics?.[i]??null),structuredClone(trip.basics)].slice(-20),
   };
 }
 export function undo(trip: Trip): Trip {
   if (!trip.history.length) return trip;
+  const previous=trip.historyBasics?.at(-1);
+  const compatible=previous&&previous.mode===trip.basics.mode&&previous.transport===trip.basics.transport&&previous.days===trip.basics.days;
   return {
     ...trip,
     items: trip.history.at(-1)!,
+    basics:compatible?{...trip.basics,taxiPlan:previous.taxiPlan,coursePlans:previous.coursePlans}:trip.basics,
+    historyBasics:trip.historyBasics?.slice(0,-1),
     history: trip.history.slice(0, -1),
     revision: trip.revision + 1,
   };

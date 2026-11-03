@@ -79,7 +79,7 @@ export function optimizeTaxiOrder(
 }
 
 export function taxiPlanSummary(plan: TaxiPlan): string {
-  const distance = `${plan.distanceKm.toFixed(1)}km(좌표 직선거리)`;
+  const distance = `${plan.distanceKm.toFixed(1)}km(${plan.distanceBasis==='road'?'조회한 도로 거리':'좌표 직선거리'})`;
   if(plan.transport==='driving')return plan.estimatedFare===null?`${distance} · 자가용 연료비·주차비·통행료 미입력`:`${distance} · 입력 가정 기준 차량 비용 ${plan.estimatedFare.toLocaleString()}원 · 1인 약 ${Math.ceil(plan.estimatedFare/plan.travelers).toLocaleString()}원 (실제 도로 견적 아님)`;
   if (!plan.fareModel) return `${distance} · 이전 계산입니다. 구간별 요금을 다시 계산해 주세요.`;
   if (plan.estimatedFare === null) return `${distance} · 실제 도로 거리·택시요금은 출발 전 확인 필요`;

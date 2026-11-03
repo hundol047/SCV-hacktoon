@@ -1,0 +1,42 @@
+import {test,expect} from '@playwright/test';
+import {osmCatalog} from '../../src/adapters/real-data';
+import {defaultBasics,defaultConditions,type Trip} from '../../src/domain/schema';
+import {optimizeTaxiOrder} from '../../src/domain/taxi-plan';
+import AxeBuilder from '@axe-core/playwright';
+const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=','base64');
+test('simple whole-day road preview, retry, apply/undo, indoor comparison and venue checks',async({page},testInfo)=>{
+ const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
+ const at=new Date().toISOString(),date=at.slice(0,10);
+ const catalog=osmCatalog('서울',{elements:[1,2,3,4].map(i=>({type:'node',id:i,lat:37.5+i/100,lon:127,tags:{name:'검증 장소'+i,tourism:'museum',indoor:i===1?'no':'yes'}}))},at);
+ const p=catalog.places.slice(0,3),plan=optimizeTaxiOrder(p,p.map(p=>p.id),p[0].id,2,null,null,at,{day:1,transport:'driving',drivingCosts:{kmPerLiter:10,fuelPrice:1700,parking:5000,tolls:0}});if('error'in plan)throw Error();
+ const trip:Trip={version:1,id:'simple-e2e',revision:0,basics:{...defaultBasics,date,days:1,region:'서울',mode:'real',transport:'driving',taxiPlan:plan.plan},conditions:defaultConditions,catalog,history:[],feedback:[],items:p.map((p,i)=>({id:'v'+i,kind:'visit',day:1,start:540+i*80,end:570+i*80,placeId:p.id,fromId:null,toId:null,transport:null,locked:false,mode:'real'}))};
+ await page.addInitScript(t=>{if(!localStorage.getItem('audit-seeded')){localStorage.setItem('bopok:trip:v1',JSON.stringify(t));localStorage.setItem('audit-seeded','yes');}},trip);
+ let tilesFail=true;
+ await page.route('https://tile.openstreetmap.org/**',r=>tilesFail?r.fulfill({status:503,body:''}):r.fulfill({contentType:'image/png',body:png}));
+ await page.route('https://router.project-osrm.org/**',r=>{
+  const url=new URL(r.request().url()),points=url.pathname.split('/').pop()!.split(';').map(v=>v.split(',').map(Number)),locations=points.map(location=>({location}));
+  if(url.pathname.includes('/table/'))return r.fulfill({json:{code:'Ok',sources:locations,destinations:locations,durations:[[0,600,60],[60,0,600],[600,60,0]],distances:[[0,6000,600],[600,0,6000],[6000,600,0]]}});
+  return r.fulfill({json:{code:'Ok',waypoints:locations,routes:[{distance:2000*(points.length-1),duration:120*(points.length-1),geometry:{type:'LineString',coordinates:points},legs:points.slice(1).map(()=>({distance:2000,duration:120}))}]}});
+ });
+ await page.goto('/');await page.getByRole('button',{name:'이어서 보기',exact:true}).click();
+ const day=page.locator('.day-road-planner');await day.getByRole('button',{name:'도로 기준으로 다시 계산',exact:true}).click();
+ await expect(day).toContainText('전체 도로 4.00km');await expect(day).toContainText('5,680원');
+ await expect(day.getByRole('button',{name:'지도 다시 불러오기',exact:true})).toBeVisible();tilesFail=false;await day.getByRole('button',{name:'지도 다시 불러오기',exact:true}).click();await expect(day).toContainText('도로 지도 표시 완료');await expect(day.getByRole('button',{name:'지도 다시 불러오기',exact:true})).toHaveCount(0);
+ await day.screenshot({path:`android/build/simple-day-${testInfo.project.name}.png`});
+ expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('bopok:trip:v1')!).basics.taxiPlan.distanceBasis)).toBeUndefined();
+ await day.getByRole('button',{name:'이 도로 코스를 일정에 적용',exact:true}).click();
+ await expect.poll(()=>page.evaluate(()=>JSON.parse(localStorage.getItem('bopok:trip:v1')!).basics.taxiPlan.distanceBasis)).toBe('road');
+ await page.getByRole('button',{name:/되돌리기/}).click();
+ await expect.poll(()=>page.evaluate(()=>JSON.parse(localStorage.getItem('bopok:trip:v1')!).basics.taxiPlan.distanceBasis)).toBeUndefined();
+ const weather=page.locator('.weather-alternatives');await weather.locator(':scope > summary').click();await weather.getByText('날씨 직접 선택',{exact:true}).click();await weather.getByLabel('대안 추천 날씨').selectOption('rain');
+ await weather.getByRole('button',{name:'실내 대안 보기',exact:true}).click();await expect(weather).toContainText('검증 장소4');
+ await weather.getByRole('button',{name:'비교한 실내 대안 적용',exact:true}).click();await expect(page.locator('.timeline')).toContainText('검증 장소4');
+ // Facility/operation recording stays collapsed until explicitly needed.
+ await page.getByText('출발 전 시설·메뉴 확인 기록',{exact:true}).click();await page.getByLabel('확인할 실제 장소').selectOption(catalog.places[3].id);
+ await page.getByLabel('확인 자료 HTTPS 주소').fill('https://example.org/venue');await page.getByText('주차·편의시설과 운영시간 기록',{exact:true}).click();
+ await page.getByRole('combobox',{name:'주차장 확인',exact:true}).selectOption('yes');await page.getByLabel('영업 시작',{exact:true}).fill('08:00');await page.getByLabel('영업 종료',{exact:true}).fill('20:00');await page.getByLabel('예약 필요 여부').selectOption('yes');
+ await page.getByRole('button',{name:'시설·메뉴 확인 기록 저장',exact:true}).click();
+ await page.getByText('출발 전 확인 · 시설·영업·예약',{exact:true}).click();await page.getByRole('checkbox',{name:'이 날짜의 예약 완료를 직접 확인했습니다',exact:true}).check();
+ const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('bopok:trip:v1')!));expect(saved.basics.reservations[0].date).toBe(date);expect(saved.catalog.places.find((p:any)=>p.id==='osm:node:4').facilities.parking.value).toBe(true);
+ expect((await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze()).violations).toEqual([]);expect(errors).toEqual([]);
+});

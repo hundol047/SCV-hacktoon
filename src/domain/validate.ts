@@ -1,3 +1,6 @@
+import {dayWeather} from './day-weather';
+import {weatherAllowed} from './weather';
+import {availability,confirmedFacilities} from './venue-details';
 import { Conditions, Item, Basics, time } from "./schema";
 import { Catalog,catalogFor,indexCatalog } from '../data/catalog';
 import {destinationFor,convertMoney,localInstant,money,isTravelOnlyDay,transferForTransition,freshAt} from './world';
@@ -31,6 +34,11 @@ export function validateSchedule(
     message: string,
     evidenceIds: string[] = [],
   ) => issues.push({ code, status, itemIds: ids, message, evidenceIds });
+  if(b.mode==='real')for(const day of new Set(items.map(i=>i.day))){
+    const visits=items.filter(i=>i.day===day&&(i.kind==='visit'||i.kind==='meal'));
+    try{const weather=dayWeather(b,day);for(const i of visits){const p=placeById.get(i.placeId??'');if(p&&!weatherAllowed(p,weather))add('weather-place','violation',[i.id],weather==='storm'?'악천후 조건입니다. 관광 연기와 공식 안내를 확인하세요.':'선택한 날씨에 맞지 않는 야외 장소입니다. 실내 대안을 확인하세요.');}}
+    catch(e){add('weather-stale','unknown',visits.map(i=>i.id),(e as Error).message);}
+  }
   if (!items.length&&!Array.from({length:b.days},(_,i)=>isTravelOnlyDay(b,i+1)).some(Boolean))
     add(
       "empty",
@@ -215,9 +223,12 @@ export function validateSchedule(
             );
         }
         if(b.mode==='real'){
+          if(!confirmedFacilities(p,b.requiredFacilities))add('facility-required','unknown',[i.id],'필수 시설의 최근 확인 기록이 없는 장소입니다.');
+          const visitDate=dayDate(b,i.day),reserved=b.reservations?.some(r=>r.placeId===p.id&&r.date===visitDate)??false;
+          for(const issue of availability(p,visitDate,i.start,i.end,reserved))add('opening',issue.status,[i.id],issue.message,p.opening?[p.opening.evidenceId]:[]);
           if(p.hours.value===null)add('hours-unknown','unknown',[i.id],'운영 시간·휴무일을 확인해 주세요.',[p.hours.evidenceId]);
           if(p.cost.value===null)add('cost-unknown','unknown',[i.id],'이 항목 비용은 미확인입니다. 예산 충족을 판정할 수 없습니다.',[p.cost.evidenceId]);
-          const facts=[p.walkMin,p.walkM,p.stairs,p.seat,p.foods,p.cost,p.hours,p.situations];
+          const facts=[p.walkMin,p.walkM,p.stairs,p.seat,p.foods,p.cost,p.hours,p.situations,...(p.setting?[p.setting]:[]),...(p.opening?[p.opening]:[]),...Object.values(p.facilities??{})];
           if(!isReviewed(p)&&facts.some(f=>f.value!==null&&f.checked==='source'))add('source-review','unknown',[i.id],'출처에 등록된 시설 정보는 독립 검토 전입니다. 현지 상태를 확인해 주세요.');
           if(!isReviewed(p)&&facts.some(f=>f.checked==='user'))add('user-evidence','unknown',[i.id],'사용자가 기록한 시설·메뉴 정보입니다. 서비스가 독립적으로 검증하지 않았으니 출발 전에 다시 확인해 주세요.',facts.filter(f=>f.checked==='user').map(f=>f.evidenceId));
           if(p.review&&!isReviewed(p))add('review-invalid','unknown',[i.id],'독립 검토 서명을 확인하지 못했습니다. 기록을 다시 조회해 주세요.');

@@ -1,3 +1,5 @@
+import {dayWeather} from './day-weather';
+import {weatherAllowed} from './weather';
 import { Basics,Conditions,Item } from './schema';
 import { Catalog,catalogFor,indexCatalog } from '../data/catalog';
 import { Place } from '../data/demo';
@@ -121,7 +123,7 @@ export function optimize(c:Conditions,b:Basics,original:Item[]=[],feedback:strin
       searchLimited: false,
       preserved: requested.filter(experience => selected.some(place => place!.experiences.includes(experience))),
       reasons: [
-        `선택한 장소를 좌표 직선거리 기준으로 ${selected.map(place => place!.name).join(' → ')} 순서로 배치했습니다.`,
+        `선택한 장소를 ${b.taxiPlan.distanceBasis==='road'?'도로 조회':'좌표 직선거리'} 기준으로 ${selected.map(place => place!.name).join(' → ')} 순서로 배치했습니다.`,
         `여행 인원 ${b.taxiPlan.travelers}명 · ${transportLabel[b.transport]} ${b.taxiPlan.vehicles}대(대당 ${b.taxiPlan.taxiCapacity}명)`,
         taxiPlanSummary(b.taxiPlan),
         b.transport==='driving'?'자가용 일정입니다. 주차 가능 여부·주차장부터 입구까지의 보행·보호자 하차 위치는 별도로 확인하세요.':'택시 일정입니다. 승하차 위치·호출 가능 여부·대기 및 할증 요금은 별도로 확인하세요.',
@@ -145,14 +147,16 @@ export function optimize(c:Conditions,b:Basics,original:Item[]=[],feedback:strin
     const fewer=feedback.includes('걷는 구간을 줄여 주세요'),restMin=(c.restMin??20)+(feedback.includes('쉬는 시간을 늘려 주세요')?10:0);
     for(let day=1;day<=b.days;day++){
       if(isTravelOnlyDay(b,day))continue;
-      const dayRegion=destinationFor(b,day)?.region,cityVisits=availableVisits.filter(p=>!dayRegion||(p.region??catalog.region)===dayRegion);let candidates=cityVisits.filter(p=>!used.has(p.id));
+      const dayRegion=destinationFor(b,day)?.region;
+      let weather:ReturnType<typeof dayWeather>;try{weather=dayWeather(b,day);}catch{weather='storm';}
+      const cityVisits=availableVisits.filter(p=>(!dayRegion||(p.region??catalog.region)===dayRegion)&&weatherAllowed(p,weather));let candidates=cityVisits.filter(p=>!used.has(p.id));
       if(!candidates.length&&cityVisits.length){candidates=cityVisits;notes.add('추가 관광 후보가 없어 일부 장소를 반복했습니다. 다른 후보를 조회하거나 직접 선택해 주세요.');}
       candidates.sort((a,b)=>c.requiredExperiences.filter(x=>!covered.has(x)&&b.experiences.includes(x)).length-c.requiredExperiences.filter(x=>!covered.has(x)&&a.experiences.includes(x)).length||requested.filter(x=>!covered.has(x)&&b.experiences.includes(x)).length-requested.filter(x=>!covered.has(x)&&a.experiences.includes(x)).length);
       const count=fewer?1:Math.min(2,Math.max(1,Math.ceil(candidates.length/(b.days-day+1))));
       const selected=candidates.slice(0,count);
       // Keep required experiences even when the request asks for fewer visits.
       if(day===b.days)for(const experience of c.requiredExperiences)if(!covered.has(experience)&&!selected.some(p=>p.experiences.includes(experience))){const p=candidates.find(p=>p.experiences.includes(experience));if(p&&!selected.includes(p))selected.push(p);}
-      let mealCandidates=availableMeals.filter(p=>!dayRegion||(p.region??catalog.region)===dayRegion);
+      let mealCandidates=availableMeals.filter(p=>(!dayRegion||(p.region??catalog.region)===dayRegion)&&weatherAllowed(p,weather));
       if(feedback.includes('식사를 바꾸고 싶어요')){const alternatives=mealCandidates.filter(p=>!original.some(i=>i.kind==='meal'&&i.placeId===p.id));if(alternatives.length)mealCandidates=alternatives;else notes.add('다른 식당 후보가 없어 식사를 바꾸지 못했습니다. 메뉴·회피 음식 정보도 확인해 주세요.');}
       const meal=[...mealCandidates].sort((a,b)=>Number(used.has(a.id))-Number(used.has(b.id))+c.foodLikes.filter(x=>b.foods.value?.includes(x)).length-c.foodLikes.filter(x=>a.foods.value?.includes(x)).length)[0];
       if(meal){if(used.has(meal.id))notes.add('식당 후보가 부족해 식당을 반복했습니다. 다른 식당 후보를 추가해 주세요.');selected.splice(Math.min(1,selected.length),0,meal);}

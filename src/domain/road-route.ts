@@ -17,5 +17,5 @@ export function parseRoadRoute(raw:unknown,from:Place,to:Place):RoadRoute{
 export function roadFact(r:RoadRoute,from:Place,to:Place,transport:'taxi'|'driving'):Route{
   const id=`r:${from.id}:${to.id}:${transport}`;
   const fact=<T>(field:string,value:T|null):Fact<T>=>({value,evidenceId:`${id}:${field}`,source:'https://router.project-osrm.org',nature:'real',checked:value===null?'unknown':'source',collectedAt:r.fetchedAt});
-  return {id,fromId:from.id,toId:to.id,transport,mode:'real',duration:fact('duration',Math.ceil(r.seconds/60)),walkMin:fact<number>('walkMin',null),walkM:fact<number>('walkM',null),cost:fact<number>('cost',null),stairs:fact<boolean>('stairs',null)};
+  return {id,fromId:from.id,toId:to.id,transport,mode:'real',distanceM:fact('distanceM',r.distance),duration:fact('duration',Math.ceil(r.seconds/60)),walkMin:fact<number>('walkMin',null),walkM:fact<number>('walkM',null),cost:fact<number>('cost',null),stairs:fact<boolean>('stairs',null)};
 }

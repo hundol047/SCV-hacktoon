@@ -40,7 +40,11 @@ try{
     if(url.hostname==='api.open-meteo.com'){
       const date=new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Seoul'}).format(new Date());
       output={timezone:'Asia/Seoul',daily:{time:[date],weather_code:[0],temperature_2m_max:[23],temperature_2m_min:[17],precipitation_probability_max:[0],wind_speed_10m_max:[10]},current:{temperature_2m:20,time:date+'T10:00'}};
-    }else if(url.hostname==='router.project-osrm.org')output={code:'Ok',routes:[{distance:1200,duration:360,geometry:{type:'LineString',coordinates:url.pathname.split('/').pop().split(';').map(p=>p.split(',').map(Number))}}]};
+    }else if(url.hostname==='router.project-osrm.org'){
+      const coordinates=url.pathname.split('/').pop().split(';').map(p=>p.split(',').map(Number));
+      const waypoints=coordinates.map(location=>({location}));
+      output=url.pathname.startsWith('/table/')?{code:'Ok',sources:waypoints,destinations:waypoints,distances:coordinates.map((_,i)=>coordinates.map((_,j)=>1200*Math.abs(i-j))),durations:coordinates.map((_,i)=>coordinates.map((_,j)=>360*Math.abs(i-j)))}:{code:'Ok',waypoints,routes:[{distance:1200*(coordinates.length-1),duration:360*(coordinates.length-1),legs:coordinates.slice(1).map(()=>({distance:1200,duration:360})),geometry:{type:'LineString',coordinates}}]};
+    }
     else throw Error('Unexpected public provider');
     setTimeout(()=>window.dispatchEvent(new CustomEvent('bopok:travel',{detail:{id,output}})),20);
   };});
@@ -89,9 +93,14 @@ try{
   assert(carTrip.items.filter(i=>i.kind==='move').every(i=>i.transport==='driving'));
   assert.equal(carTrip.basics.taxiPlan.estimatedFare,Math.ceil(carTrip.basics.taxiPlan.distanceKm/10*1700+5000));
   await car.reload();await car.getByRole('button',{name:'이어서 보기',exact:true}).click();await car.locator('.timeline').waitFor();
+  await car.getByRole('button',{name:'도로 기준으로 다시 계산',exact:true}).click();
+  await car.getByRole('button',{name:'이 도로 코스를 일정에 적용',exact:true}).click();
+  const dayRoad=await car.evaluate(()=>JSON.parse(localStorage.getItem('bopok:trip:v1')));
+  assert.equal(dayRoad.basics.taxiPlan.distanceBasis,'road');
+  await car.getByText('한 구간만 자세히 보기',{exact:true}).click();
   await car.getByRole('button',{name:'API 키 없이 도로 경로 조회',exact:true}).click();
   await car.locator('.live-road-route').getByText(/도로 거리 1.20km/).waitFor();
-  await car.locator('.leaflet-container').waitFor();
+  await car.locator('.live-road-route .leaflet-container').waitFor();
   await car.locator('.live-road-route').screenshot({path:'android/build/road-preview.png'});
   await car.getByRole('button',{name:'도로 예상 시간을 일정 점검에 반영',exact:true}).click();
   const roadTrip=await car.evaluate(()=>JSON.parse(localStorage.getItem('bopok:trip:v1')));

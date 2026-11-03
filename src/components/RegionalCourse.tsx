@@ -2,6 +2,7 @@
 import {useEffect,useRef,useState} from 'react';
 import {savePlan,removePlan,savedPlans} from '../domain/course-plans';
 import {weatherLabels,weatherGuidance,type Weather} from '../domain/weather';
+import FacilityFilter from './FacilityFilter';
 import LiveWeather from './LiveWeather';
 import {forecastWeather} from '../domain/live-weather';
 import {dayDate} from '../domain/schema';
@@ -56,6 +57,7 @@ function Course({basics,conditions,catalog,onChange,day,setDay}:Props&{day:numbe
   }
   return <section className="cloud-panel regional-course" aria-label="지역 맞춤 코스 추천"><div className="panel-body">
     <h2>지역 맞춤 코스 추천</h2><p>{basics.region}의 관광지와 선택한 취향·보행 조건을 비교합니다. 먼저 2~3곳의 관광 코스를 확인하고 일정에 적용하세요. 조건에 맞는 식당이 있으면 식사를 넣고 관광 후 휴식을 배정합니다. 영업시간·실제 소요시간은 별도 확인이 필요합니다.</p>
+    <FacilityFilter basics={basics} onChange={onChange}/>
     <label>추천할 여행일<select value={day} disabled={busy} onChange={e=>{setDay(Number(e.target.value));setResult(null);setMessage('');}}>{Array.from({length:basics.days},(_,i)=><option key={i} value={i+1}>{i+1}일차</option>)}</select></label>
     <label>기준 출발 장소<select value={originId} disabled={busy} onChange={e=>preference({originId:e.target.value,forecast:undefined,weather:pref?.forecast?'unknown':pref?.weather??'unknown'})}>{local.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label>
     <p>이 장소와의 직선거리를 후보 선정에 반영합니다. 출발지에서 첫 관광지까지의 이동은 별도이며, 코스 거리는 관광지 사이 거리입니다.</p>

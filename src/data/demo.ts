@@ -1,3 +1,4 @@
+import type {Facility,OpeningInfo} from '../domain/venue-details';
 export const DEMO_NOTICE = "가상 시연 데이터 · 실제 여행에 사용하지 마세요";
 export type Fact<T> = {
   value: T | null;
@@ -15,6 +16,8 @@ const fact = <T>(id: string, field: string, value: T | null): Fact<T> => ({
   checked: "simulated",
 });
 export type Place = {
+  facilities?:Partial<Record<Facility,Fact<boolean>>>;
+  opening?:Fact<OpeningInfo>;
   id: string;
   name: string;
   kind: "visit" | "meal" | "rest";
@@ -134,6 +137,7 @@ export const places: Place[] = names.map((name, i) => {
 });
 export const placeById = new Map(places.map((p) => [p.id, p]));
 export type Route = {
+  distanceM?: Fact<number>;
   departureAt?:string;
   id: string;
   fromId: string;

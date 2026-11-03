@@ -31,7 +31,7 @@ public class MainActivity extends Activity {
     web=new WebView(this);root.addView(web);setContentView(root);
     WebSettings settings=web.getSettings();settings.setJavaScriptEnabled(true);settings.setDomStorageEnabled(true);
     settings.setAllowFileAccess(false);settings.setAllowContentAccess(true);settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
-    settings.setUserAgentString(settings.getUserAgentString()+" Yeohaengit/0.11.0 (+https://github.com/hundol047/SCV-hacktoon)");
+    settings.setUserAgentString(settings.getUserAgentString()+" Yeohaengit/0.12.0 (+https://github.com/hundol047/SCV-hacktoon)");
     settings.setJavaScriptCanOpenWindowsAutomatically(false);settings.setSupportMultipleWindows(false);
     WebView.setWebContentsDebuggingEnabled(false);
     ai=new PersonalAI(this,web);
@@ -79,6 +79,7 @@ public class MainActivity extends Activity {
     });
   }
   public class Bridge {
+    @JavascriptInterface public void cancelTravel(String id){travel.cancel(id);}
     @JavascriptInterface public void requestTravel(String id,String url){travel.request(id,url);}
     @JavascriptInterface public String aiStatus(){return ai.status();}
     @JavascriptInterface public void configureAI(String key,String model){try{ai.configure(key,model);}catch(Exception e){throw new IllegalArgumentException("AI configuration failed");}}

@@ -4,10 +4,11 @@ export async function publicTravelJSON(url:string,signal?:AbortSignal):Promise<u
   if(native)return new Promise((resolve,reject)=>{
     const id=crypto.randomUUID();let timer:ReturnType<typeof setTimeout>;
     const cleanup=()=>{clearTimeout(timer);window.removeEventListener('bopok:travel',receive);signal?.removeEventListener('abort',abort);};
-    const abort=()=>{cleanup();reject(Error('조회가 취소되었습니다.'));};
+    const stop=()=>{try{window.BopokAndroid?.cancelTravel?.(id);}catch{}};
+    const abort=()=>{stop();cleanup();reject(Error('조회가 취소되었습니다.'));};
     const receive=(event:Event)=>{const data=(event as CustomEvent).detail;if(data.id!==id)return;cleanup();data.error?reject(Error(data.error)):resolve(data.output);};
     if(signal?.aborted){reject(Error('조회가 취소되었습니다.'));return;}
-    timer=setTimeout(()=>{cleanup();reject(Error('서버 응답 시간이 초과되었습니다. 다시 시도하세요.'));},30000);
+    timer=setTimeout(()=>{stop();cleanup();reject(Error('서버 응답 시간이 초과되었습니다. 다시 시도하세요.'));},30000);
     window.addEventListener('bopok:travel',receive);signal?.addEventListener('abort',abort,{once:true});
     try{native(id,url);}catch(e){cleanup();reject(e);}
   });

@@ -7,7 +7,7 @@ export function refreshCatalog(trip:Trip,fresh:Catalog,region:string):Catalog{
  const required=new Set([trip.items,...trip.history].flat().flatMap(i=>[i.placeId,i.fromId,i.toId].filter((id):id is string=>!!id)));
  const old=new Map(previous.places.map(p=>[p.id,p]));
  const fields=['walkMin','walkM','stairs','seat','foods','cost','hours','situations'] as const;
- const updated=fresh.places.map(p=>{const before=old.get(p.id),merged={...p};if(before)for(const field of fields)if(before[field].checked==='user')Object.assign(merged,{[field]:before[field]});return merged;});
+ const updated=fresh.places.map(p=>{const before=old.get(p.id),merged={...p};if(before){for(const field of fields)if(before[field].checked==='user')Object.assign(merged,{[field]:before[field]});for(const field of ['setting','opening'] as const)if(before[field]?.checked==='user')Object.assign(merged,{[field]:before[field]});for(const [key,fact] of Object.entries(before.facilities??{}))if(fact.checked==='user')merged.facilities={...merged.facilities,[key]:fact};}return merged;});
  const candidates=[...updated,...previous.places.filter(p=>required.has(p.id)||p.region&&p.region!==region)];
  const updatedById=new Map(updated.map(p=>[p.id,p]));
  const unique=[...new Map(candidates.map(p=>[p.id,p])).keys()].map(id=>updatedById.get(id)??old.get(id)!);

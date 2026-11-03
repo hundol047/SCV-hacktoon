@@ -1,5 +1,6 @@
-import {forecastFresh} from './live-weather';
+import {closedOn} from './venue-details';
 import {dayDate} from './schema';
+import {dayWeather} from './day-weather';
 import {z} from 'zod';
 import type {Basics,Conditions} from './schema';
 import type {Catalog} from '../data/catalog';
@@ -15,10 +16,9 @@ export function courseInput(b:Basics,c:Conditions,catalog:Catalog,day:number){
   if(b.mode!=='real'||catalog.mode!=='real'||!['taxi','driving'].includes(b.transport))throw Error('실제 지역과 택시 또는 자가용을 선택하세요.');
   if(!Number.isInteger(day)||day<1||day>b.days||b.travelDays?.includes(day)||isTravelOnlyDay(b,day))throw Error('관광할 여행일을 확인하세요.');
   const region=b.destinations?.find(d=>d.startDay<=day&&d.endDay>=day)?.region??b.region;
-  const preference=b.coursePreferences?.find(p=>p.day===day),weather=preference?.weather??'unknown';
-  if(preference?.forecast&&!forecastFresh(preference.forecast,dayDate(b,day)))throw Error('예보를 다시 조회하거나 날씨를 직접 선택해 주세요. 저장된 예보의 날짜 또는 유효 시간이 지났습니다.');
+  const preference=b.coursePreferences?.find(p=>p.day===day),weather=dayWeather(b,day);
   if(weather==='storm')throw Error(weatherGuidance.storm);
-  const local=catalog.places.filter(p=>(p.region??catalog.region)===region&&Number.isFinite(p.latitude)&&Number.isFinite(p.longitude));
+  const local=catalog.places.filter(p=>!closedOn(p,dayDate(b,day))&&(p.region??catalog.region)===region&&Number.isFinite(p.latitude)&&Number.isFinite(p.longitude));
   const origin=preference?.originId?local.find(p=>p.id===preference.originId):local.find(p=>p.kind==='visit');
   if(!origin)throw Error('이 지역의 기준 출발 장소를 선택하세요.');
   const used=new Set(savedPlans(b).filter(p=>(p.day??1)!==day).flatMap(p=>p.selectedPlaceIds));

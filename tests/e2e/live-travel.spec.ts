@@ -19,13 +19,13 @@ test('forecast applies only on confirmation; in-app road preview persists time f
  await course.getByRole('button',{name:'이 예보를 코스 추천에 적용',exact:true}).click();await expect(course.getByLabel('여행일 날씨 가정')).toHaveValue('rain');
  await course.getByRole('button',{name:'API 키 없이 기본 코스 보기',exact:true}).click();await course.getByRole('button',{name:'이 코스를 일정에 적용',exact:true}).click();
  await page.getByRole('button',{name:'맞춤 코스 일정 만들기',exact:true}).click();await page.locator('.timeline').waitFor();
- const road=page.locator('.live-road-route');await road.getByRole('button',{name:'API 키 없이 도로 경로 조회',exact:true}).click();
+ await page.getByText('한 구간만 자세히 보기',{exact:true}).click();const road=page.locator('.live-road-route');await road.getByRole('button',{name:'API 키 없이 도로 경로 조회',exact:true}).click();
  await expect(road).toContainText('도로 거리 1.45km');await expect(road).toContainText('자동차 예상 7분');await expect(road.locator('.leaflet-container')).toBeVisible();
  await road.getByRole('button',{name:'도로 예상 시간을 일정 점검에 반영',exact:true}).click();
  const trip=await page.evaluate(()=>JSON.parse(localStorage.getItem('bopok:trip:v1')!));expect(trip.catalog.routes.some((r:any)=>r.duration.value===7&&r.cost.value===null)).toBe(true);expect(trip.basics.coursePreferences[0].forecast.rainChance).toBe(80);
  // Change the selected leg, making the previous geometry inapplicable.
  await road.getByLabel('확인할 차량 이동 구간').selectOption({index:1});await expect(road.locator('.leaflet-container')).toHaveCount(0);
  await page.route('https://router.project-osrm.org/**',r=>r.fulfill({status:503,json:{error:'fixture failure'}}));
- await page.reload();await page.getByRole('button',{name:'이어서 보기',exact:true}).click();
+ await page.reload();await page.getByRole('button',{name:'이어서 보기',exact:true}).click();await page.getByText('한 구간만 자세히 보기',{exact:true}).click();
  await road.getByRole('button',{name:'API 키 없이 도로 경로 조회',exact:true}).click();await expect(road).toContainText('외부 서버에 연결하지 못했습니다');await expect(road.locator('.leaflet-container')).toHaveCount(0);expect(errors).toEqual([]);
 });

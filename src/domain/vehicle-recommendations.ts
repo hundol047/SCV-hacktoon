@@ -1,3 +1,4 @@
+import {confirmedFacilities} from './venue-details';
 import type {Place} from '../data/demo';
 import type {Basics,Conditions} from './schema';
 import {haversineKm} from './taxi-plan';
@@ -5,7 +6,7 @@ import {haversineKm} from './taxi-plan';
 export function vehiclePriority(b:Basics){return b.travelPriority??(b.transport==='driving'?'comfort':'budget');}
 export function rankVehiclePlaces(places:Place[],b:Basics,c:Conditions,origin?:Place){
   const priority=vehiclePriority(b);
-  return places.filter(p=>!(c.avoidStairs&&p.stairs.value===true)&&!(c.maxWalkMin!==null&&p.walkMin.value!==null&&p.walkMin.value>c.maxWalkMin)&&!(c.maxWalkM!==null&&p.walkM.value!==null&&p.walkM.value>c.maxWalkM)&&!c.avoidSituations.some(s=>p.situations.value?.includes(s))&&!c.foodAvoids.some(f=>p.foods.value?.includes(f))).map(place=>{
+  return places.filter(p=>confirmedFacilities(p,b.requiredFacilities)&&!(c.avoidStairs&&p.stairs.value===true)&&!(c.maxWalkMin!==null&&p.walkMin.value!==null&&p.walkMin.value>c.maxWalkMin)&&!(c.maxWalkM!==null&&p.walkM.value!==null&&p.walkM.value>c.maxWalkM)&&!c.avoidSituations.some(s=>p.situations.value?.includes(s))&&!c.foodAvoids.some(f=>p.foods.value?.includes(f))).map(place=>{
     const distance=origin?haversineKm(origin,place):null;
     const comfort=Number(place.seat.value===true)*2+Number(place.stairs.value===false);
     const experience=c.experiences.filter(e=>place.experiences.includes(e)).length;
