@@ -3,6 +3,7 @@ import {fromInstanceMetadata} from '@smithy/credential-provider-imds';
 import {z} from 'zod';
 import {extractionSchema,validateExtraction,type AIProvider} from '../adapters/ai';
 
+export class BedrockReplyError extends Error{constructor(public code:string){super(code);}}
 export const BEDROCK_MODEL='global.openai.gpt-6-sol';
 export function bedrockConfigured(){return !!(process.env.AWS_REGION||process.env.AWS_DEFAULT_REGION);}
 export function createBedrockClient(){
@@ -14,18 +15,20 @@ export function createBedrockClient(){
 }
 export type ConverseSender={send:(command:ConverseCommand,options:{abortSignal:AbortSignal})=>Promise<ConverseCommandOutput>};
 export function converseInput(instructions:string,input:string,schema:Record<string,unknown>,name:string,maxTokens=1200):ConverseCommandInput{
-  return {modelId:BEDROCK_MODEL,system:[{text:instructions}],messages:[{role:'user',content:[{text:input}]}],inferenceConfig:{maxTokens},outputConfig:{textFormat:{type:'json_schema',structure:{jsonSchema:{name,schema:JSON.stringify(schema)}}}}};
+  return {modelId:BEDROCK_MODEL,system:[{text:instructions+'\nReturn only a JSON object matching this JSON Schema. No markdown or explanation. Schema '+name+': '+JSON.stringify(schema)}],messages:[{role:'user',content:[{text:input}]}],inferenceConfig:{maxTokens}};
 }
 export async function converseJSON(instructions:string,input:string,schema:Record<string,unknown>,name:string,maxTokens=1200,sender?:ConverseSender){
   const client=sender??createBedrockClient();
   try{
-  const result=await client.send(new ConverseCommand(converseInput(instructions,input,schema,name,maxTokens)),{abortSignal:AbortSignal.timeout(30000)});
-  if(result.stopReason!=='end_turn')throw Error('Incomplete or rejected Bedrock response');
+  const result=await client.send(new ConverseCommand(converseInput(instructions,input,schema,name,maxTokens)),{abortSignal:AbortSignal.timeout(60000)});
+  if(result.stopReason!=='end_turn')throw new BedrockReplyError(result.stopReason==='max_tokens'?'AI_OUTPUT_LIMIT':'AI_STOPPED');
   const blocks=result.output?.message?.content;
-  if(!blocks?.length||blocks.some(b=>typeof b.text!=='string'))throw Error('Bedrock text response missing');
-  const text=blocks.map(b=>b.text).join('');
-  if(Buffer.byteLength(text,'utf8')>32000)throw Error('Bedrock response too large');
-  return JSON.parse(text) as unknown;
+  if(!blocks?.length||blocks.some(b=>typeof b.text!=='string'&&!b.reasoningContent))throw new BedrockReplyError('AI_TEXT_MISSING');
+  let text=blocks.filter(b=>typeof b.text==='string').map(b=>b.text).join('').trim();
+  if(!text)throw new BedrockReplyError('AI_TEXT_MISSING');
+  const fenced=text.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);if(fenced)text=fenced[1];
+  if(Buffer.byteLength(text,'utf8')>32000)throw new BedrockReplyError('AI_REPLY_TOO_LARGE');
+  try{return JSON.parse(text) as unknown;}catch{throw new BedrockReplyError('AI_INVALID_JSON');}
   }finally{if(!sender)(client as BedrockRuntimeClient).destroy();}
 }
 export class BedrockProvider implements AIProvider{

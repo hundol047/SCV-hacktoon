@@ -18,6 +18,6 @@ test('five-field region search creates AI itinerary; failed response preserves s
  await expect(form.getByRole('alert')).toContainText('기존 일정 유지');expect(await page.evaluate(()=>localStorage.getItem('bopok:trip:v1'))).toBe(before);
  expect((await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa']).analyze()).violations).toEqual([]);
 });
-test('unconfigured Bedrock fails without rewriting the submitted itinerary',async({request})=>{
- const response=await request.post('/api/courses',{headers:{Origin:'http://127.0.0.1:3000'},data:{}});expect(response.status()).toBe(502);
+test('invalid course input is rejected before Bedrock with a specific error code',async({request})=>{
+ const response=await request.post('/api/courses',{headers:{Origin:'http://127.0.0.1:3000'},data:{}});expect(response.status()).toBe(400);expect((await response.json()).code).toBe('COURSE_INPUT');
 });

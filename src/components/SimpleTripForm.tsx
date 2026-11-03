@@ -22,7 +22,7 @@ export default function SimpleTripForm({onTrip,conditions:baseConditions,initial
    // Build every day in a temporary value. Failed/stale responses never replace a saved trip.
    for(let day=1;day<=days;day++){
      const r=await fetch('/api/courses',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({basics,conditions,catalog,day,consent:true})});
-     const raw=await r.json();if(!r.ok)throw Error(raw.error);if(current!==revision.current)return;
+     const raw=await r.json();if(!r.ok)throw Error(`${day}일차: ${raw.error}`);if(current!==revision.current)return;
      basics=savePlan(basics,regionalCourse(basics,conditions,catalog,day,raw).plan);
    }
    const result=generate(conditions,basics,[],[],catalog);if(result.blocked&&!result.items.length)throw Error(result.reasons.join(' '));

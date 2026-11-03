@@ -429,9 +429,10 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
           </button>
         </nav>
         <span className="header-caption">AI 기반 지역 맞춤형 여행코스 추천</span>
+        <div className="header-account"><AccountPanel/></div>
       </header>
       <main id="main">
-        <div className="top-account"><AccountPanel/></div>
+
         {error && (
           <div className="alert error no-print" role="alert">
             {error}
