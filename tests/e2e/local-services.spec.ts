@@ -12,6 +12,9 @@ test('events register, filter, bookmark, persist and become a travel draft',asyn
   await page.reload();await page.getByText('지역 축제·문화행사 찾아보기',{exact:true}).click();await expect(panel.getByRole('button',{name:'즐겨찾기 해제',exact:true})).toBeVisible();
   expect((await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze()).violations).toEqual([]);
   await panel.getByText('행사 자료 불러오기·보관',{exact:true}).click();await panel.getByLabel('행사 JSON 가져오기').setInputFiles({name:'bad.json',mimeType:'application/json',buffer:Buffer.from('{"version":1,"events":[{}]}')});await expect(panel.getByRole('status')).toContainText('기존 자료는 유지');await expect(panel).toContainText('검색 결과 1건');
+  const downloadPromise=page.waitForEvent('download');await panel.getByRole('button',{name:'행사 JSON 내보내기',exact:true}).click();const download=await downloadPromise;const stream=await download.createReadStream();const chunks:Buffer[]=[];for await(const chunk of stream!)chunks.push(Buffer.from(chunk));const backup=Buffer.concat(chunks);expect(JSON.parse(backup.toString()).bookmarks).toHaveLength(1);
+  await panel.getByRole('button',{name:'기기에서 행사 삭제',exact:true}).click();await expect(panel).toContainText('검색 결과 0건');
+  await panel.getByLabel('행사 JSON 가져오기').setInputFiles({name:'backup.json',mimeType:'application/json',buffer:backup});await expect(panel.getByRole('button',{name:'즐겨찾기 해제',exact:true})).toBeVisible();
   await panel.getByRole('button',{name:'이 행사로 여행 시작',exact:true}).click();await expect(page.locator('.timeline')).toContainText('검증용 지역 전시');
   const trip=await page.evaluate(()=>JSON.parse(localStorage.getItem('bopok:trip:v1')!));expect(trip.basics.date).toBe(start);expect(trip.catalog.places[0].hours.value).toBeNull();
 });

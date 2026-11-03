@@ -6,7 +6,7 @@ AI 기반 지역 맞춤형 여행코스 추천 서비스. 지역 자료를 불�
 
 홈의 ‘지역 축제·문화행사 찾아보기’에서 출처 있는 행사 등록/JSON 가져오기, 지역·기간·유형 검색, 즐겨찾기, 행사 방문 일정 생성을 지원합니다. 웹 공식 조회는 BOPok_TOURAPI_KEY 설정이 필요하며 Android에는 공식 행사 서버를 연결하지 않았습니다. ‘소상공인 홍보 콘텐츠 만들기’는 인스타그램·블로그·문자용 기본/AI 초안, 편집, 검토 후 복사, 기기 저장을 지원합니다. 자동 게시나 행사 운영 여부 인증 기능은 아닙니다.
 
-Next.js + TypeScript + Zod, Vitest, Playwright. Node 24, npm, `package-lock.json`을 사용합니다. 안드로이드 미리보기는 0.10.0입니다. [개선 결과와 남은 운영 연결](docs/RELEASE_READINESS.md)을 먼저 확인하세요.
+Next.js + TypeScript + Zod, Vitest, Playwright. Node 24, npm, `package-lock.json`을 사용합니다. 안드로이드 미리보기는 0.10.1입니다. [개선 결과와 남은 운영 연결](docs/RELEASE_READINESS.md)을 먼저 확인하세요.
 
 ```sh
 npm ci

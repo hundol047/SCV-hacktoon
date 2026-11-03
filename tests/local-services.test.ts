@@ -1,5 +1,5 @@
 import {expect,it} from 'vitest';
-import {eventSchema,eventFileSchema,eventTrip,filterEvents,mergeEvents,type LocalEvent} from '../src/domain/local-events';
+import {eventSchema,eventFileSchema,eventTrip,filterEvents,mergeEvents,eventBookmarks,type LocalEvent} from '../src/domain/local-events';
 import {tourEvents} from '../src/adapters/events';
 import {basicPromotion,promotionInputSchema,promotionReplySchema,promotionText} from '../src/domain/promotion';
 import {tripSchema} from '../src/domain/schema';
@@ -41,4 +41,11 @@ it('기본 홍보는 입력된 사실만 사용하고 채널별 형식을 구분
   expect(basicPromotion({...input,channel:'blog'}).body).toContain('상품·서비스 소개');
   expect(promotionInputSchema.safeParse({...input,business:''}).success).toBe(false);
   expect(promotionReplySchema.safeParse({headline:'제목',body:'',hashtags:[]}).success).toBe(false);
+});
+
+it('event backups preserve bookmarks while accepting legacy files and removing orphan IDs',()=>{
+  const file=eventFileSchema.parse(JSON.parse(JSON.stringify({version:1,events:[event],bookmarks:[event.id,'missing',event.id]})));
+  expect(eventBookmarks(file.events,file.bookmarks,['other'])).toEqual([event.id]);
+  expect(eventFileSchema.parse({version:1,events:[event]}).bookmarks).toEqual([]);
+  expect(eventFileSchema.safeParse({version:1,events:[event],bookmarks:[42]}).success).toBe(false);
 });

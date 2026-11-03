@@ -27,6 +27,8 @@ test('taxi choices recalculate fare, pin endpoints, include return and survive s
   await planner.getByLabel('마지막 도착 장소').selectOption(catalog.places[1].id);
   await planner.getByRole('button',{name:'택시 이동 순서 계산'}).click();
   await expect(planner.locator('.notice')).toContainText('19,200원');
+  await expect(planner.getByRole('link',{name:/지도에서 길찾기/})).toHaveCount(2);
+  await expect(planner.getByRole('link',{name:/지도에서 길찾기/}).first()).toHaveAttribute('href',/https:\/\/www.google.com\/maps\/dir\/.*travelmode=driving/);
   await expect(planner.locator('.notice li').last().locator('strong')).toHaveText('중간 박물관');
   await expect(planner.locator('.notice li').last()).toContainText('도로 이동 시간 미확인');
   await planner.getByRole('checkbox',{name:'마지막에 출발지로 복귀'}).check();
