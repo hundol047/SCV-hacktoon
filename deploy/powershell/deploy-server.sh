@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 port="${1:-8000}"
+mode="${2:-}"
+[[ "$mode" == "" || "$mode" == "--anonymous-ai" ]] || { echo "Unknown deployment option"; exit 1; }
 [[ "$port" =~ ^[0-9]+$ ]] && ((port >= 1024 && port <= 65535)) || { echo 'Invalid port'; exit 1; }
 cd "$(dirname "$0")"
 if ! command -v docker >/dev/null; then
@@ -23,6 +25,9 @@ if sudo -n grep -Eq '^(AWS_ACCESS_KEY_ID|AWS_SECRET_ACCESS_KEY|AWS_SESSION_TOKEN
   echo 'Remove static AWS/API credentials, profiles and metadata endpoint overrides. Only the EC2 instance role is supported.'; exit 1
 fi
 sudo -n grep -Eq '^(AWS_REGION|AWS_DEFAULT_REGION)=.+$' "$envfile" || { echo 'Set the existing server AWS region in server.env.'; exit 1; }
+if [[ "$mode" == "--anonymous-ai" ]]; then
+  sudo -n python3 scripts/configure-anonymous-ai.py "$envfile"
+fi
 image="yeohaengit-preview:$(date +%s)-$$"
 echo 'Building the Next.js web app. The first build can take several minutes.'
 sudo -n docker build -t "$image" .

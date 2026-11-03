@@ -431,6 +431,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
         <span className="header-caption">AI 기반 지역 맞춤형 여행코스 추천</span>
       </header>
       <main id="main">
+        <div className="top-account"><AccountPanel/></div>
         {error && (
           <div className="alert error no-print" role="alert">
             {error}
@@ -1001,7 +1002,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
               </button>
             </section>
           )}
-        <AccountPanel/><FamilySync key={identityRevision} trip={trip} onTrip={t=>{setTrip(t);if(proposal){setProposal(null);if(screen==='compare'){navigate('result');setNotice('공유 일정이 갱신되어 수정안을 다시 만들어 주세요.');}}}} onOpen={()=>{setDay(1);navigate('result');}} initialCloud={initialCloud} accessToken={accessToken} hidden={screen!=='home'&&screen!=='result'}/>
+        <FamilySync key={identityRevision} trip={trip} onTrip={t=>{setTrip(t);if(proposal){setProposal(null);if(screen==='compare'){navigate('result');setNotice('공유 일정이 갱신되어 수정안을 다시 만들어 주세요.');}}}} onOpen={()=>{setDay(1);navigate('result');}} initialCloud={initialCloud} accessToken={accessToken} hidden={screen!=='home'&&screen!=='result'}/>
       </main>
       <footer className="site-footer no-print">
         <div className="footer-brand">
