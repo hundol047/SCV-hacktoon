@@ -2,6 +2,8 @@
 import {useEffect,useRef,useState} from 'react';
 import {savePlan,removePlan,savedPlans} from '../domain/course-plans';
 import {weatherLabels,weatherGuidance,type Weather} from '../domain/weather';
+import LiveWeather from './LiveWeather';
+import {forecastWeather} from '../domain/live-weather';
 import {dayDate} from '../domain/schema';
 import type {Basics,Conditions} from '../domain/schema';
 import type {Catalog} from '../data/catalog';
@@ -55,10 +57,11 @@ function Course({basics,conditions,catalog,onChange,day,setDay}:Props&{day:numbe
   return <section className="cloud-panel regional-course" aria-label="지역 맞춤 코스 추천"><div className="panel-body">
     <h2>지역 맞춤 코스 추천</h2><p>{basics.region}의 관광지와 선택한 취향·보행 조건을 비교합니다. 먼저 2~3곳의 관광 코스를 확인하고 일정에 적용하세요. 조건에 맞는 식당이 있으면 식사를 넣고 관광 후 휴식을 배정합니다. 영업시간·실제 소요시간은 별도 확인이 필요합니다.</p>
     <label>추천할 여행일<select value={day} disabled={busy} onChange={e=>{setDay(Number(e.target.value));setResult(null);setMessage('');}}>{Array.from({length:basics.days},(_,i)=><option key={i} value={i+1}>{i+1}일차</option>)}</select></label>
-    <label>기준 출발 장소<select value={originId} disabled={busy} onChange={e=>preference({originId:e.target.value})}>{local.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label>
+    <label>기준 출발 장소<select value={originId} disabled={busy} onChange={e=>preference({originId:e.target.value,forecast:undefined,weather:pref?.forecast?'unknown':pref?.weather??'unknown'})}>{local.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label>
     <p>이 장소와의 직선거리를 후보 선정에 반영합니다. 출발지에서 첫 관광지까지의 이동은 별도이며, 코스 거리는 관광지 사이 거리입니다.</p>
-    <label>여행일 날씨 가정<select value={pref?.weather??'unknown'} disabled={busy} onChange={e=>preference({weather:e.target.value as Weather})}>{Object.entries(weatherLabels).map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></label>
-    <p>{dayDate(basics,day)} · 직접 선택한 날씨 가정이며 실시간 예보가 아닙니다. {weatherGuidance[pref?.weather??'unknown']}</p>
+    <label>여행일 날씨 가정<select value={pref?.weather??'unknown'} disabled={busy} onChange={e=>preference({weather:e.target.value as Weather,forecast:undefined})}>{Object.entries(weatherLabels).map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></label>
+    <p>{dayDate(basics,day)} · {pref?.forecast?'조회한 예보를 적용한 날씨 조건입니다. 최신 예보는 다시 조회하세요.':'직접 선택한 날씨 가정입니다.'} {weatherGuidance[pref?.weather??'unknown']}</p>
+    <LiveWeather key={day+originId} place={local.find(p=>p.id===originId)} date={dayDate(basics,day)} saved={pref?.forecast} onApply={forecast=>preference({weather:forecastWeather(forecast),forecast})}/>
     <a href="https://www.weather.go.kr/" target="_blank" rel="noreferrer">기상청 예보·특보 확인</a>
     <label>관광지당 체류 시간<select value={pref?.visitMinutes??60} disabled={busy} onChange={e=>preference({visitMinutes:Number(e.target.value)})}>{[30,45,60,90,120].map(m=><option key={m} value={m}>{m}분</option>)}</select></label>
     {bridge?.configureAI&&<details><summary>AI 연결 설정</summary><p>{configured?'키 등록됨 · 실제 연결은 요청 시 확인':'API 키 미등록 · 기본 추천은 바로 이용 가능'}</p><label>코스 추천 OpenAI API 키<input type="password" autoComplete="off" value={key} onChange={e=>setKey(e.target.value)}/></label><label>코스 추천 모델<input value={model} onChange={e=>setModel(e.target.value)}/></label><button type="button" disabled={busy||!key.trim()} onClick={()=>{try{bridge.configureAI(key.trim(),model.trim());setConfigured(JSON.parse(bridge.aiStatus()).configured);setKey('');setMessage('기기에 키를 암호화 저장했습니다.');}catch{setMessage('키·모델 또는 암호화 저장소를 확인하세요.');}}}>코스 추천 키 저장</button><button type="button" disabled={busy} onClick={()=>{try{bridge.configureAI('',model);setConfigured(false);setKey('');setMessage('API 키를 삭제했습니다.');}catch{setMessage('키 삭제에 실패했습니다.');}}}>코스 추천 키 삭제</button></details>}

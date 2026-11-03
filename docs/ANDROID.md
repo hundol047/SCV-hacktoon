@@ -1,6 +1,10 @@
 # 여행잇 안드로이드 미리보기
 
-앱 ID `kr.bopok.offline`, 버전 `0.10.1-yeohaengit`(versionCode 11), Android 8.0(API 26) 이상. 최신 Android System WebView를 사용하세요. 개인 AI 요청을 위한 인터넷 권한을 사용합니다. 위치·연락처·공용 저장소 권한을 요구하지 않으며 사용자가 선택한 문서에만 파일을 저장합니다. 이전 APK와 같은 로컬 서명키로 빌드해 업데이트 설치를 지원합니다.
+앱 ID `kr.bopok.offline`, 버전 `0.11.0-yeohaengit`(versionCode 12), Android 8.0(API 26) 이상. 최신 Android System WebView를 사용하세요. 개인 AI·도로 경로·날씨·지도 요청을 위한 인터넷 권한을 사용합니다. 위치·연락처·공용 저장소 권한을 요구하지 않으며 사용자가 선택한 문서에만 파일을 저장합니다. 이전 APK와 같은 로컬 서명키로 빌드해 업데이트 설치를 지원합니다.
+
+## 0.11.0 앱 내부 도로 지도·날씨
+
+API 키 없이 OSM 지도·OSRM 자동차 경로·Open-Meteo 예보를 조회하는 화면과 Android HTTPS 브리지를 추가했습니다. 사용법, HYUNDAI 원본과 검증 제한은 [LIVE_TRAVEL.md](LIVE_TRAVEL.md)를 확인하세요. 실제 외부 호출은 현재 개발 환경의 네트워크 정책 때문에 미검증입니다.
 
 ## 0.10.1 오프라인 사용성·자료 보존 개선
 

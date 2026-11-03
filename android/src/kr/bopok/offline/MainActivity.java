@@ -16,6 +16,7 @@ public class MainActivity extends Activity {
   private static final String ORIGIN="https://appassets.androidplatform.net";
   private WebView web;
   private PersonalAI ai;
+  private PublicTravel travel;
   private ValueCallback<Uri[]> chooser;
   private byte[] pendingJson;
   private boolean pendingDataset=false;
@@ -30,17 +31,20 @@ public class MainActivity extends Activity {
     web=new WebView(this);root.addView(web);setContentView(root);
     WebSettings settings=web.getSettings();settings.setJavaScriptEnabled(true);settings.setDomStorageEnabled(true);
     settings.setAllowFileAccess(false);settings.setAllowContentAccess(true);settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
+    settings.setUserAgentString(settings.getUserAgentString()+" Yeohaengit/0.11.0 (+https://github.com/hundol047/SCV-hacktoon)");
     settings.setJavaScriptCanOpenWindowsAutomatically(false);settings.setSupportMultipleWindows(false);
     WebView.setWebContentsDebuggingEnabled(false);
     ai=new PersonalAI(this,web);
+    travel=new PublicTravel(this,web);
     web.addJavascriptInterface(new Bridge(),"BopokAndroid");
     web.setWebViewClient(new WebViewClient(){
       @Override public WebResourceResponse shouldInterceptRequest(WebView view,WebResourceRequest request){
         Uri uri=request.getUrl();
+        if("GET".equals(request.getMethod())&&"https".equals(uri.getScheme())&&"tile.openstreetmap.org".equals(uri.getHost())&&uri.getPort()==-1&&uri.getPath()!=null&&uri.getPath().matches("/[0-9]{1,2}/[0-9]{1,7}/[0-9]{1,7}\\.png")&&uri.getQuery()==null)return null;
         if("https".equals(uri.getScheme())&&"appassets.androidplatform.net".equals(uri.getHost())){
           String path=uri.getPath();if(path==null||path.equals("/"))path="/index.html";
           if(!path.contains(".."))try{
-            String type=path.endsWith(".js")?"application/javascript":path.endsWith(".css")?"text/css":path.endsWith(".gz")?"application/gzip":path.endsWith(".html")?"text/html":"text/plain";
+            String type=path.endsWith(".js")?"application/javascript":path.endsWith(".css")?"text/css":path.endsWith(".gz")?"application/gzip":path.endsWith(".png")?"image/png":path.endsWith(".html")?"text/html":"text/plain";
             HashMap<String,String> headers=new HashMap<>();headers.put("X-Content-Type-Options","nosniff");
             return new WebResourceResponse(type,type.equals("application/gzip")?null:"UTF-8",200,"OK",headers,getAssets().open(path.substring(1)));
           }catch(IOException ignored){}
@@ -75,6 +79,7 @@ public class MainActivity extends Activity {
     });
   }
   public class Bridge {
+    @JavascriptInterface public void requestTravel(String id,String url){travel.request(id,url);}
     @JavascriptInterface public String aiStatus(){return ai.status();}
     @JavascriptInterface public void configureAI(String key,String model){try{ai.configure(key,model);}catch(Exception e){throw new IllegalArgumentException("AI configuration failed");}}
     @JavascriptInterface public void requestAI(String id,String input){ai.request(id,input);}

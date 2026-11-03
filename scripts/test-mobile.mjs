@@ -35,6 +35,16 @@ try{
   await services.close();console.log('PASS: APK promotion native bridge contract with synthetic text response; event offline availability is explicit.');
   const car=await browser.newPage({viewport:{width:393,height:852},isMobile:true,hasTouch:true});
   await car.addInitScript(()=>{window.BopokAndroid={aiStatus:()=>JSON.stringify({configured:true,model:'test-model'}),configureAI:()=>{},saveJson:()=>{},saveTourism:()=>{},printPage:()=>{},requestAI:(id,payload)=>{const request=JSON.parse(payload);setTimeout(()=>window.dispatchEvent(new CustomEvent('bopok:ai',{detail:{id,output:{candidateIds:request.candidateIds.slice(0,3)}}})),20);}};});
+  await car.addInitScript(()=>{window.BopokAndroid.requestTravel=(id,address)=>{
+    const url=new URL(address);let output;
+    if(url.hostname==='api.open-meteo.com'){
+      const date=new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Seoul'}).format(new Date());
+      output={timezone:'Asia/Seoul',daily:{time:[date],weather_code:[0],temperature_2m_max:[23],temperature_2m_min:[17],precipitation_probability_max:[0],wind_speed_10m_max:[10]},current:{temperature_2m:20,time:date+'T10:00'}};
+    }else if(url.hostname==='router.project-osrm.org')output={code:'Ok',routes:[{distance:1200,duration:360,geometry:{type:'LineString',coordinates:url.pathname.split('/').pop().split(';').map(p=>p.split(',').map(Number))}}]};
+    else throw Error('Unexpected public provider');
+    setTimeout(()=>window.dispatchEvent(new CustomEvent('bopok:travel',{detail:{id,output}})),20);
+  };});
+  await car.route('https://tile.openstreetmap.org/**',r=>r.fulfill({contentType:'image/png',body:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=','base64')}));
   await car.goto('http://127.0.0.1:'+server.address().port);
   await car.getByRole('button',{name:'자가용 여행 빠르게 만들기',exact:true}).click();
   assert.equal(await car.getByLabel('지역 내 이동 수단').inputValue(),'driving');
@@ -44,6 +54,9 @@ try{
   await car.getByRole('button',{name:'전국 자료 검색',exact:true}).click();
   await car.getByRole('status').filter({hasText:'전국 보관 166,427건'}).waitFor({timeout:60000});
   await car.getByRole('button',{name:'이 지역 후보를 일정에 사용'}).click();
+  await car.getByRole('button',{name:'현재 날씨·여행일 예보 조회',exact:true}).click();
+  await car.getByRole('button',{name:'이 예보를 코스 추천에 적용',exact:true}).click();
+  assert.equal(await car.getByLabel('여행일 날씨 가정').inputValue(),'sunny');
   await car.getByRole('button',{name:'API 키 없이 기본 코스 보기',exact:true}).click();
   await car.locator('.course-preview').waitFor();
   assert((await car.locator('.course-preview').innerText()).includes('기본 추천'));
@@ -76,6 +89,14 @@ try{
   assert(carTrip.items.filter(i=>i.kind==='move').every(i=>i.transport==='driving'));
   assert.equal(carTrip.basics.taxiPlan.estimatedFare,Math.ceil(carTrip.basics.taxiPlan.distanceKm/10*1700+5000));
   await car.reload();await car.getByRole('button',{name:'이어서 보기',exact:true}).click();await car.locator('.timeline').waitFor();
+  await car.getByRole('button',{name:'API 키 없이 도로 경로 조회',exact:true}).click();
+  await car.locator('.live-road-route').getByText(/도로 거리 1.20km/).waitFor();
+  await car.locator('.leaflet-container').waitFor();
+  await car.locator('.live-road-route').screenshot({path:'android/build/road-preview.png'});
+  await car.getByRole('button',{name:'도로 예상 시간을 일정 점검에 반영',exact:true}).click();
+  const roadTrip=await car.evaluate(()=>JSON.parse(localStorage.getItem('bopok:trip:v1')));
+  assert(roadTrip.catalog.routes.some(r=>r.duration.value===6&&r.cost.value===null));
+  console.log('PASS: synthetic Android public-provider bridge, forecast apply, in-app road map and time facts. Not live provider/device verification.');
   await car.getByRole('heading',{name:'지도에서 이동 경로 확인',exact:true}).waitFor();
   assert.equal(await car.getByRole('button',{name:'모든 이동 경로 다시 조회',exact:true}).count(),0);
   await car.getByText(/구간별 외부 지도 길찾기/).click();

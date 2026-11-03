@@ -1,3 +1,5 @@
+import {forecastFresh} from './live-weather';
+import {dayDate} from './schema';
 import {z} from 'zod';
 import type {Basics,Conditions} from './schema';
 import type {Catalog} from '../data/catalog';
@@ -14,6 +16,7 @@ export function courseInput(b:Basics,c:Conditions,catalog:Catalog,day:number){
   if(!Number.isInteger(day)||day<1||day>b.days||b.travelDays?.includes(day)||isTravelOnlyDay(b,day))throw Error('관광할 여행일을 확인하세요.');
   const region=b.destinations?.find(d=>d.startDay<=day&&d.endDay>=day)?.region??b.region;
   const preference=b.coursePreferences?.find(p=>p.day===day),weather=preference?.weather??'unknown';
+  if(preference?.forecast&&!forecastFresh(preference.forecast,dayDate(b,day)))throw Error('예보를 다시 조회하거나 날씨를 직접 선택해 주세요. 저장된 예보의 날짜 또는 유효 시간이 지났습니다.');
   if(weather==='storm')throw Error(weatherGuidance.storm);
   const local=catalog.places.filter(p=>(p.region??catalog.region)===region&&Number.isFinite(p.latitude)&&Number.isFinite(p.longitude));
   const origin=preference?.originId?local.find(p=>p.id===preference.originId):local.find(p=>p.kind==='visit');
@@ -21,7 +24,7 @@ export function courseInput(b:Basics,c:Conditions,catalog:Catalog,day:number){
   const used=new Set(savedPlans(b).filter(p=>(p.day??1)!==day).flatMap(p=>p.selectedPlaceIds));
   const candidates=rankVehiclePlaces(local.filter(p=>p.kind==='visit'&&!used.has(p.id)&&weatherAllowed(p,weather)),b,c,origin).sort((a,d)=>weatherScore(d.place,weather)-weatherScore(a.place,weather)).slice(0,20);
   if(candidates.length<2)throw Error('지역·날씨·조건에 맞는 새 관광지 2곳 이상이 필요합니다. 다른 날짜에 선택한 장소는 제외합니다. 지역 자료를 더 불러오거나 조건을 확인하세요.');
-  return {candidates,origin,weather,local,text:JSON.stringify({region,day,weather,weatherSource:'user scenario, not live forecast',origin:{id:origin.id,name:origin.name},transport:b.transport,priority:b.travelPriority,conditions:c,candidates:candidates.map(({place:p,distance})=>({id:p.id,name:p.name,experiences:p.experiences,distanceKm:distance,setting:p.setting?.value??'unknown',walkMin:p.walkMin.value,stairs:p.stairs.value,seat:p.seat.value}))})};
+  return {candidates,origin,weather,local,text:JSON.stringify({region,day,weather,weatherSource:preference?.forecast?{provider:'Open-Meteo',forecast:preference.forecast}:'user scenario, not live forecast',origin:{id:origin.id,name:origin.name},transport:b.transport,priority:b.travelPriority,conditions:c,candidates:candidates.map(({place:p,distance})=>({id:p.id,name:p.name,experiences:p.experiences,distanceKm:distance,setting:p.setting?.value??'unknown',walkMin:p.walkMin.value,stairs:p.stairs.value,seat:p.seat.value}))})};
 }
 export function regionalCourse(b:Basics,c:Conditions,catalog:Catalog,day:number,raw:unknown){
   const {candidateIds}=courseReplySchema.parse(raw),input=courseInput(b,c,catalog,day);

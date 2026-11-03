@@ -19,9 +19,11 @@
     "probe:providers": "node scripts/probe-providers.mjs",
     "test:storage-load": "node scripts/storage-load.mjs",
     "data:korea": "node scripts/collect-korea-tourism.mjs",
-    "data:korea:official": "node scripts/collect-tourapi.mjs"
+    "data:korea:official": "node scripts/collect-tourapi.mjs",
+    "probe:public-travel": "node scripts/probe-public-travel.mjs"
   },
   "dependencies": {
+    "leaflet": "^1.9.4",
     "lucide-react": "1.52.0",
     "next": "16.4.0",
     "react": "19.3.0",
@@ -34,6 +36,7 @@
     "@axe-core/playwright": "4.13.0",
     "@electric-sql/pglite": "^0.5.8",
     "@playwright/test": "1.64.0",
+    "@types/leaflet": "^1.9.21",
     "@types/node": "^24.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",

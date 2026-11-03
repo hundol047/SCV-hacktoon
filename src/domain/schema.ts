@@ -1,3 +1,4 @@
+import {forecastSchema} from './live-weather';
 import { z } from "zod";
 import {weatherSchema} from './weather';
 import { catalogSchema } from '../data/catalog';
@@ -83,7 +84,7 @@ const basicsBaseSchema = z.object({
   timezone:z.string().max(80).default('Asia/Seoul').refine(v=>{try{new Intl.DateTimeFormat('ko-KR',{timeZone:v});return true;}catch{return false;}},'IANA 시간대 이름을 확인해 주세요.'),
   taxiPlan: taxiPlanSchema.optional(),
   coursePlans:z.array(taxiPlanSchema).max(30).optional(),
-  coursePreferences:z.array(z.object({day:z.number().int().min(1).max(30),weather:weatherSchema,originId:z.string().max(100).optional(),visitMinutes:z.number().int().min(15).max(180).default(60)})).max(30).optional(),
+  coursePreferences:z.array(z.object({day:z.number().int().min(1).max(30),weather:weatherSchema,forecast:forecastSchema.optional(),originId:z.string().max(100).optional(),visitMinutes:z.number().int().min(15).max(180).default(60)})).max(30).optional(),
 }).refine(b=>b.mode!=='demo'||b.days<=2,'시연은 1~2일을 지원합니다.').superRefine((b,ctx)=>{if(b.destinations?.length){for(let day=1;day<=b.days;day++)if(b.destinations.filter(d=>d.startDay<=day&&d.endDay>=day).length!==1)ctx.addIssue({code:'custom',message:day+'일차 도시를 하나씩 지정해 주세요.'});for(const d of b.destinations)if(d.startDay>d.endDay||d.endDay>b.days)ctx.addIssue({code:'custom',message:'도시 날짜 범위를 확인해 주세요.'});}if(b.mode==='demo'&&(b.transport==='driving'||b.transport==='transit'))ctx.addIssue({code:'custom',message:'시연은 택시·도보 경로만 지원합니다.'});}).refine(b=>(b.mode==='demo')===(b.region==='가상 솔바다'),'지역과 데이터 모드가 일치하지 않습니다.').superRefine((b,ctx)=>{if(new Set(b.destinations?.map(d=>d.region)).size>10)ctx.addIssue({code:'custom',message:'도시는 10개까지 지원합니다.'});if(b.travelDays?.some(day=>day>b.days)||b.transfers?.some(t=>(t.departureDay??1)>b.days||(t.arrivalDay??1)>b.days||t.departureDay&&t.arrivalDay&&t.departureDay>t.arrivalDay))ctx.addIssue({code:'custom',message:'이동 기록의 여행일 범위를 확인해 주세요.'});});
 // A saved plan is only meaningful for a real taxi itinerary.
 export const basicsSchema = basicsBaseSchema.superRefine((b, ctx) => {

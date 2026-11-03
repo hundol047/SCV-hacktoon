@@ -6,7 +6,7 @@ AI 기반 지역 맞춤형 여행코스 추천 서비스. 지역 자료를 불�
 
 홈의 ‘지역 축제·문화행사 찾아보기’에서 출처 있는 행사 등록/JSON 가져오기, 지역·기간·유형 검색, 즐겨찾기, 행사 방문 일정 생성을 지원합니다. 웹 공식 조회는 BOPok_TOURAPI_KEY 설정이 필요하며 Android에는 공식 행사 서버를 연결하지 않았습니다. ‘소상공인 홍보 콘텐츠 만들기’는 인스타그램·블로그·문자용 기본/AI 초안, 편집, 검토 후 복사, 기기 저장을 지원합니다. 자동 게시나 행사 운영 여부 인증 기능은 아닙니다.
 
-Next.js + TypeScript + Zod, Vitest, Playwright. Node 24, npm, `package-lock.json`을 사용합니다. 안드로이드 미리보기는 0.10.1입니다. [개선 결과와 남은 운영 연결](docs/RELEASE_READINESS.md)을 먼저 확인하세요.
+Next.js + TypeScript + Zod, Vitest, Playwright. Node 24, npm, `package-lock.json`을 사용합니다. 안드로이드 미리보기는 0.11.0입니다. [개선 결과와 남은 운영 연결](docs/RELEASE_READINESS.md)을 먼저 확인하세요.
 
 ```sh
 npm ci
@@ -62,3 +62,5 @@ OpenAI Responses API의 구조화 출력으로 자연어 조건을 추출하고 
 `/api/health`는 DB 스키마 12·계정·도로/대중교통·AI·봇·장소·환율·정리·검토자·알림·복원 상태를 검사하고 누락 시 503을 반환합니다. 공급자 키가 있어도 최근 24시간 내 해당 설정의 연결 검사가 성공하지 않으면 준비 상태를 통과하지 못합니다. `/ops`에서 개인정보를 제외한 최근 15분의 오류·지연 지표를 확인합니다. 운영 도메인 전환 전후 검사와 실패 시 이전 배포 복구, 앱 밖의 5분 주기 감시, 계정 데이터를 포함한 암호화 백업·격리 복원을 제공합니다. 실제 서비스 연결은 운영 계정·키·담당자 설정 후 검증해야 합니다.
 
 [배포 및 연결 절차](docs/DEPLOYMENT.md), [실행 검증 결과](docs/VALIDATION.md), [시연 흐름](docs/DEMO.md)를 확인하세요.
+
+0.11.0에서 HYUNDAI의 OSM/OSRM 구성 기반 앱 내부 도로 지도와 Open-Meteo 예보 연결을 추가했습니다. [사용법과 검증 범위](docs/LIVE_TRAVEL.md)를 확인하세요.
