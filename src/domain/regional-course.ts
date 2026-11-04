@@ -23,7 +23,8 @@ export function courseInput(b:Basics,c:Conditions,catalog:Catalog,day:number){
   const origin=localOrigin&&day===1&&b.departureCoordinates?{...localOrigin,...b.departureCoordinates,name:b.departureRegion??localOrigin.name}:localOrigin;
   if(!origin)throw Error('이 지역의 기준 출발 장소를 선택하세요.');
   const used=new Set(savedPlans(b).filter(p=>(p.day??1)!==day).flatMap(p=>p.selectedPlaceIds));
-  const candidates=rankVehiclePlaces(local.filter(p=>p.kind==='visit'&&!used.has(p.id)&&weatherAllowed(p,weather)),b,c,origin).sort((a,d)=>weatherScore(d.place,weather)-weatherScore(a.place,weather)).slice(0,20);
+  const available=rankVehiclePlaces(local.filter(p=>p.kind==='visit'&&!used.has(p.id)&&weatherAllowed(p,weather)),b,c,origin).sort((a,d)=>weatherScore(d.place,weather)-weatherScore(a.place,weather));
+  const candidates=available.slice(0,available.length===2*(b.days-day+1)?2:20);
   if(candidates.length<2)throw Error('지역·날씨·조건에 맞는 새 관광지 2곳 이상이 필요합니다. 다른 날짜에 선택한 장소는 제외합니다. 지역 자료를 더 불러오거나 조건을 확인하세요.');
   return {candidates,origin,weather,local,text:JSON.stringify({region,day,departureRegion:b.departureRegion,departureCoordinates:b.departureCoordinates,travelers:b.travelers??1,vehicles:b.transport==='taxi'?Math.ceil((b.travelers??1)/4):undefined,weather,weatherSource:preference?.forecast?{provider:'Open-Meteo',forecast:preference.forecast}:'user scenario, not live forecast',origin:{id:origin.id,name:origin.name},transport:b.transport,priority:b.travelPriority,conditions:c,candidates:candidates.map(({place:p,distance})=>({id:p.id,name:p.name,experiences:p.experiences,distanceKm:distance,setting:p.setting?.value??'unknown',walkMin:p.walkMin.value,stairs:p.stairs.value,seat:p.seat.value}))})};
 }

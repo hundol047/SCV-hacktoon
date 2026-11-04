@@ -49,3 +49,11 @@ export function koreaCatalog(snapshot:KoreaSnapshot,province:string,query='',lim
   cities:[{region,latitude,longitude,timezone:'Asia/Seoul',countryCode:'KR',currency:'KRW',limit}],collectedAt:snapshot.coverage.find(c=>c.code===province)!.collectedAt,
   sourceNotice:`전국 OSM 수집 자료 · © OpenStreetMap 기여자 / ODbL · ${query.trim()?`검색어 «${query.trim()}» · `:''}이 지역 검색 ${matches.length}건 중 일정 후보 ${selected.length}건. 이름·좌표가 있는 관광·문화·역사·공원·음식점·카페·쉼터를 사용합니다. 숙박·쇼핑·레저는 별도 검색 목록입니다. 실제 시설·영업·보행·메뉴는 미확인입니다.`});
 }
+
+// Infer a province from all matching records, not the first substring hit
+// (e.g. 영주 must not resolve to 인천 because of 공영주차장).
+export function matchingProvince(snapshot:KoreaSnapshot,query:string){
+ const matches=searchKorea(snapshot,query,'','',1,snapshot.records.length).records;
+ const scores=new Map<string,number>();for(const r of matches){const exact=r.address.split(/[\s,]+/).some(word=>word===query||word===query+'시'||word===query+'군'||word===query+'구');for(const code of r.provinces)scores.set(code,(scores.get(code)??0)+(exact?20:1));}
+ return [...scores].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]))[0]?.[0];
+}

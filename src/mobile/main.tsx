@@ -3,7 +3,7 @@ import 'leaflet/dist/leaflet.css';
 import React from 'react';
 import {createRoot} from 'react-dom/client';
 import Bopok from '../components/Bopok';
-import {koreaCatalog,searchKorea,koreaStats} from '../data/korea-catalog';
+import {koreaCatalog,searchKorea,koreaStats,matchingProvince} from '../data/korea-catalog';
 import type {KoreaSnapshot} from '../data/korea-tourism';
 import '../app/globals.css';
 import './mobile.css';
@@ -39,7 +39,7 @@ window.fetch=async(input,init)=>{
   if(url.pathname==='/api/tourism'){
     try{
       const s=await readSnapshot(),p=url.searchParams,province=p.get('province')??'',q=p.get('q')??'';
-      if(p.get('action')==='catalog'){const code=province||searchKorea(s,q,'','',1,100).records.find(r=>r.nameKnown)?.provinces[0];if(!code)return json({error:'여행 지역을 입력해 주세요.'},400);return json(koreaCatalog(s,code,q,200));}
+      if(p.get('action')==='catalog'){const code=province||matchingProvince(s,q);if(!code)return json({error:'여행 지역을 입력해 주세요.'},400);return json(koreaCatalog(s,code,q,200));}
       return json({...searchKorea(s,q,province,p.get('category')??'',Math.max(1,Number(p.get('page'))||1),25),dataset:{total:s.records.length,collectedAt:s.collectedAt,coverage:s.coverage,stale:Date.now()-Date.parse(s.collectedAt)>7*86400000,...koreaStats(s),notice:'© OpenStreetMap 기여자 · 운영시간과 현장 정보는 방문 전 확인해 주세요.'}});
     }catch(e){return json({error:e instanceof Error?e.message:'내장 자료 검색 실패'},503);}
   }
