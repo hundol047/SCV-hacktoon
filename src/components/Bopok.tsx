@@ -1,4 +1,5 @@
 "use client";
+import BeforeDeparture from './BeforeDeparture';
 import {createId} from '../domain/id';
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -830,16 +831,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
                   })}
               </section>
             ))}
-            <section className="parent-check">
-              <h2>떠나기 전에 함께 확인해요</h2>
-              <p>{trip.basics.mode==='demo'?'이 일정은 가상 예시예요. 실제 여행에 사용하지 마세요.':'출발 전 미확인 시설·영업시간·동선을 직접 확인해 주세요.'}</p>
-              {report.issues.map((i, n) => (
-                <p key={n}>• {i.message}</p>
-              ))}
-              <p>
-                음식 선호만 확인하며, 알레르기나 의료 식단을 판단하지 않아요.
-              </p>
-            </section>
+            <BeforeDeparture issues={report.issues}/>
             <section className="parent-feedback no-print">
               <h2>이 여행, 어떠세요?</h2>
               <p>

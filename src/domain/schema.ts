@@ -70,6 +70,7 @@ const date = z
     return !Number.isNaN(+d) && d.toISOString().slice(0, 10) === v;
   }, "올바른 날짜를 입력해 주세요.");
 const basicsBaseSchema = z.object({
+  daySession:z.enum(['morning','afternoon']).optional(),
   departureRegion:z.string().trim().min(1).max(120).optional(),
   departureCoordinates:z.object({latitude:z.number().min(-90).max(90),longitude:z.number().min(-180).max(180)}).optional(),
   travelers:z.number().int().min(1).max(20).optional(),
@@ -108,6 +109,7 @@ export const itemSchema = z.object({
   day: z.number().int().min(1).max(30),
   start: z.number().int().min(0).max(1439),
   end: z.number().int().min(0).max(1440),
+  label:z.string().max(100).optional(),
   kind: z.enum(["move", "visit", "meal", "rest"]),
   placeId: z.string().max(100).nullable(),
   fromId: z.string().max(100).nullable(),

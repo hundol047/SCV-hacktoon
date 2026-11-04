@@ -275,7 +275,7 @@ export function validateSchedule(
                 [p.foods.evidenceId],
               );
           }
-          if (c.latestLunch !== null && i.start > c.latestLunch)
+          if (c.latestLunch !== null && i.start > c.latestLunch && !(i.label==='저녁 식사'&&i.start>=1020))
             add(
               "lunch",
               "violation",

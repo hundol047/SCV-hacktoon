@@ -17,7 +17,7 @@ export async function POST(request:Request){
     const gate=await reserveAI(request);if(!gate.allowed)return json({error:gate.message},429);
     const schema=z.toJSONSchema(allDays?batchReplySchema:courseReplySchema);delete schema.$schema;
     stage='model';
-    const raw=await converseJSON(allDays?courseInstructions.replace('Return candidateIds only.','')+' Plan all supplied days in one response as {days:[{day,candidateIds}]}. Choose two or three attractions per day; reserve at least two unused attractions for every remaining day. Never repeat an attraction across days. Respect the candidate list and weather for each day.':courseInstructions,input.text,schema,'course',1600);
+    const raw=await converseJSON(allDays?courseInstructions.replace('Return candidateIds only.','')+' Plan all supplied days in one response as {days:[{day,candidateIds}]}. Choose up to maxAttractions for each day, aiming for four in morning trips and three in afternoon trips; reserve at least two unused attractions for every remaining day. Never repeat an attraction across days. Respect the candidate list and weather for each day.':courseInstructions,input.text,schema,'course',1600);
     stage='validation';
     const result=allDays?validateBatch(basics,conditions,catalog,raw).reply:courseReplySchema.parse(raw);if(!allDays)regionalCourse(basics,conditions,catalog,day,result);
     const response=json(result);if(gate.cookie)response.headers.set('Set-Cookie',gate.cookie);return response;

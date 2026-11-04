@@ -5,12 +5,14 @@ import {useEffect,useRef,useState} from 'react';
 import {defaultBasics,type Conditions,type Trip,type Basics} from '../domain/schema';
 import {catalogSchema} from '../data/catalog';
 import {validateBatch} from '../domain/course-batch';
+import TravelBookings from './TravelBookings';
 import DepartureHubs from './DepartureHubs';
 import {generate} from '../domain/engine';
 import {koreaRegions} from '../data/korea-tourism';
 
 export default function SimpleTripForm({onTrip,conditions:baseConditions,initialTransport='taxi'}:{onTrip:(trip:Trip)=>void;conditions:Conditions;initialTransport?:'taxi'|'driving'}){
  const [region,setRegion]=useState(''),[date,setDate]=useState(()=>new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Seoul'}).format(new Date())),[days,setDays]=useState(1),[transport,setTransport]=useState<'taxi'|'driving'>(initialTransport),[interest,setInterest]=useState(baseConditions.experiences[0]??'자연 풍경');
+ const [daySession,setDaySession]=useState<'morning'|'afternoon'>('morning');
  const [departure,setDeparture]=useState(''),[travelers,setTravelers]=useState(2);
  const [locations,setLocations]=useState<LocationResult[]>([]),[selectedLocation,setSelectedLocation]=useState<LocationResult|null>(null);
  const [busy,setBusy]=useState(false),[error,setError]=useState('');const revision=useRef(0);useEffect(()=>()=>{revision.current++;},[]);
@@ -34,7 +36,7 @@ export default function SimpleTripForm({onTrip,conditions:baseConditions,initial
      origin=foundLocations[0];setSelectedLocation(origin);setLocations([]);
    }
    const departureCoordinates={latitude:origin.latitude,longitude:origin.longitude};
-   let basics:Basics={...defaultBasics,title:region.trim()+' 여행',departureRegion:departure.trim(),departureCoordinates,travelers,date,days,mode:'real',region:catalog.region,timezone:'Asia/Seoul',transport,travelPriority:'balanced'};
+   let basics:Basics={...defaultBasics,daySession,title:region.trim()+' 여행',departureRegion:departure.trim(),departureCoordinates,travelers,date,days,mode:'real',region:catalog.region,timezone:'Asia/Seoul',transport,travelPriority:'balanced'};
    const conditions={...baseConditions,experiences:interest?[interest]:[]};
    const r=await fetch('/api/courses',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({basics,conditions,catalog,day:1,allDays:true,consent:true})});
    const raw=await r.json();if(!r.ok)throw Error(raw.error);if(current!==revision.current)return;
@@ -49,8 +51,10 @@ export default function SimpleTripForm({onTrip,conditions:baseConditions,initial
  <label>여행 기간<select disabled={busy} value={days} onChange={e=>setDays(Number(e.target.value))}>{[1,2,3,4,5].map(d=><option key={d} value={d}>{d===1?'당일':`${d-1}박 ${d}일`}</option>)}</select></label>
  <label>여행 인원<select disabled={busy} value={travelers} onChange={e=>setTravelers(Number(e.target.value))}>{Array.from({length:20},(_,i)=><option key={i+1} value={i+1}>{i+1}명</option>)}</select></label>
  <label>이동 수단<select disabled={busy} value={transport} onChange={e=>setTransport(e.target.value as 'taxi'|'driving')}><option value="taxi">택시</option><option value="driving">자가용</option></select></label>
+ <label>여행 시간대<select disabled={busy} value={daySession} onChange={e=>setDaySession(e.target.value as 'morning'|'afternoon')}><option value="morning">오전부터 · 09:00~18:30</option><option value="afternoon">오후부터 · 13:00~19:00</option></select></label>
  <label>여행 취향<select disabled={busy} value={interest} onChange={e=>setInterest(e.target.value)}><option value="">골고루</option><option>자연 풍경</option><option>문화·전시</option><option>지역 음식</option><option>사진 찍기</option><option>바다 보기</option><option>조용한 카페</option></select></label>
  </div>
+ <TravelBookings destination={region}/>
  {locations.length>1&&<fieldset className="location-options"><legend>어느 출발지인가요?</legend>{locations.map(location=><button key={location.id} type="button" disabled={busy} onClick={()=>{setSelectedLocation(location);setLocations([]);setError('');}}><strong>{location.name}</strong><span>{location.address}</span></button>)}</fieldset>}
  {selectedLocation&&<><p className="selected-location">출발지: {selectedLocation.address}</p><DepartureHubs origin={selectedLocation} name={selectedLocation.name}/></>}
  <button type="button" className="primary" disabled={busy} onClick={create}>{busy?'AI 일정 생성 중…':'지역 검색하고 AI 일정 생성'}</button>{error&&<p role="alert">{error}</p>}</section>;

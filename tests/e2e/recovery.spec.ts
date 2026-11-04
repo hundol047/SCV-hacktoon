@@ -10,7 +10,7 @@ test('region search creates AI itinerary; failed response preserves saved trip',
  await page.route('**/api/courses',r=>r.fulfill(fail?{status:502,json:{error:'연결 실패. 기존 일정 유지'}}:{json:{days:[{day:1,candidateIds:catalog.places.slice(0,3).map(p=>p.id)}]}}));
  await page.goto('/');await page.getByRole('button',{name:'지역 맞춤 여행 시작'}).click();
  const form=page.getByRole('region',{name:'간편 AI 일정 입력'});
- await expect(form.locator('input,select')).toHaveCount(7);await form.getByLabel('출발 지역',{exact:true}).fill('서울');await form.getByLabel('여행 지역',{exact:true}).fill('서울');
+ await expect(form.locator('input,select')).toHaveCount(8);await form.getByLabel('출발 지역',{exact:true}).fill('서울');await form.getByLabel('여행 지역',{exact:true}).fill('서울');
  await form.getByRole('button',{name:'지역 검색하고 AI 일정 생성'}).click();
  await expect(page.getByRole('heading',{name:'서울 여행',exact:true})).toBeVisible();
  const before=await page.evaluate(()=>localStorage.getItem('bopok:trip:v1'));
