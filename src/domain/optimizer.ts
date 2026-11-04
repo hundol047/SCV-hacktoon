@@ -84,7 +84,7 @@ export function optimize(c:Conditions,b:Basics,original:Item[]=[],feedback:strin
     if (selected.some(place => !place)) return fail('저장한 방문 순서의 장소가 현재 자료에 없습니다. 장소를 다시 선택해 주세요.');
     const region = destinationFor(b,day)?.region;
     if (region && selected.some(place => (place!.region ?? catalog.region) !== region)) return fail('선택 여행일의 도시 밖 장소가 있습니다. 같은 도시의 장소를 선택해 주세요.');
-    if(b.daySession&&b.taxiPlan.courseOptions){
+    if(b.daySession){
       try{const planned=sessionDay(selected as Place[],b,c,catalog,day);const other=original.length?original.filter(i=>i.day!==day):b.days>1?optimize(c,{...b,taxiPlan:undefined,daySession:undefined},[],[],catalog).items.filter(i=>i.day!==day):[];const items=[...other,...planned];const report=validateSchedule(items,c,b,catalog);return {items,blocked:report.issues.some(i=>i.status==='violation'||i.status==='conflict'),searched:0,searchLimited:false,preserved:requested.filter(x=>selected.some(p=>p!.experiences.includes(x))),reasons:report.issues.some(i=>i.status==='violation'||i.status==='conflict')?report.issues.filter(i=>i.status==='violation'||i.status==='conflict').map(i=>i.message):[b.daySession==='morning'?'오전 9시부터 오후 6시 30분까지 일정입니다.':'오후 1시부터 오후 7시까지 일정입니다.']};}catch(e){return fail(e instanceof Error?e.message:'하루 일정을 만들지 못했습니다.');}
     }
     const items: Item[] = [];

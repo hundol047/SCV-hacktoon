@@ -52,3 +52,10 @@ it('indoor alternative is preview-only, keeps fixed items and collapses changes 
  expect(result.changes).toHaveLength(1);expect(JSON.stringify(t)).toBe(snapshot);expect(result.trip.items[0].placeId).toBe(catalog.places[3].id);expect(undo(result.trip).items).toEqual(t.items);
  t.items[0].locked=true;expect(indoorAlternative(t,1).changes).toHaveLength(0);
 });
+it('road recalculation preserves the full session without legacy course options',()=>{
+ const t=trip();t.basics.daySession='afternoon';const p=dayStops(t,1);const points=p.map(p=>({location:[p.longitude,p.latitude]}));
+ const road=parseDayRoad({code:'Ok',waypoints:points,routes:[{distance:2000,duration:1200,geometry:{type:'LineString',coordinates:points.map(p=>p.location)},legs:[{distance:1000,duration:600},{distance:1000,duration:600}]}]},p);
+ const result=roadDayProposal(t,1,roadBasePlan(t,1,p),p,road);
+ expect(Math.min(...result.trip.items.map(i=>i.start))).toBe(780);expect(Math.max(...result.trip.items.map(i=>i.end))).toBe(1140);
+ expect(result.trip.items.filter(i=>i.kind==='move').map(i=>i.end-i.start)).toEqual([10,10]);
+});

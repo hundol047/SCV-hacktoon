@@ -13,6 +13,7 @@ import {airOrSeaTrip} from '../domain/booking';
 import {placeMapLink} from '../domain/place-map';
 import DepartureHubs from './DepartureHubs';
 import TravelBookings from './TravelBookings';
+import TripEstimate from './TripEstimate';
 import TripShareActions from './TripShareActions';
 const clock=(n:number)=>`${String(Math.floor(n/60)).padStart(2,'0')}:${String(n%60).padStart(2,'0')}`;
 const duration=(n:number)=>n>=60?`${Math.floor(n/60)}시간${n%60?` ${n%60}분`:''}`:`${n}분`;
@@ -38,7 +39,7 @@ export default function CompactItinerary({trip}:{trip:Trip}){
  const route=new URLSearchParams({api:'1',origin,destination,travelmode:b.transport==='walk'?'walking':b.transport==='transit'?'transit':'driving'});
  return <section className="compact-itinerary" aria-label="여행 코스">
  <div className="trip-overview"><strong>{b.departureRegion?`${b.departureRegion} → `:''}{b.title.replace(/ 여행$/,'')}</strong><span>{b.travelers??1}명 · {b.transport==='taxi'?'택시':b.transport==='driving'?'자가용':b.transport==='walk'?'도보':'대중교통'}{b.transport==='taxi'?` ${Math.ceil((b.travelers??1)/4)}대 (4인승)`:''}</span></div>
- <TripShareActions trip={trip} day={day}/><TravelBookings destination={b.title}/>
+ <TripEstimate key={`${trip.id}:${trip.revision}`} trip={trip}/><TripShareActions trip={trip} day={day}/><TravelBookings destination={b.title}/>
  <div className="day-tabs">{Array.from({length:b.days},(_,i)=><button key={i} onClick={()=>setDay(i+1)} className={day===i+1?'active':''}>{i+1}일차 <span>{dayDate(b,i+1).slice(5)}</span></button>)}</div>
  {day===1&&(far||airSea)&&<aside className="arrival-guide"><strong>먼 거리 이동 안내</strong>{includeDeparture&&allLegs[0]&&<p>첫 장소까지 차량 약 {duration(Math.ceil(allLegs[0].duration/60))} · {(allLegs[0].distance/1000).toFixed(0)}km (교통상황 미반영)</p>}{airSea?<><p>{b.departureRegion??'출발지'} → 공항·항구 → {b.region} → {first?.name}</p><p>항공·배편을 먼저 예약하고 도착 시각에 맞춰 여행 시작 시간을 선택하세요.</p></>:<><DepartureHubs origin={b.departureCoordinates!} name={b.departureRegion??'출발지'}/><p>{b.departureRegion} → 출발 터미널 → {b.region} 방면 도착 터미널 → {first?.name}</p><p><a href="https://www.bustago.or.kr/" target="_blank" rel="noreferrer">버스타고</a> · <a href="https://txbus.t-money.co.kr/" target="_blank" rel="noreferrer">시외버스 티머니</a>에서 출발·도착 터미널과 인원 {b.travelers??1}명을 선택해 노선과 시간을 확인한 뒤 예약하세요. 예매표의 도착 터미널에서 내려 첫 장소까지 택시나 시내버스로 이동하세요.</p><div className="stop-links"><a href={'https://map.kakao.com/link/search/'+encodeURIComponent(b.title.replace(/ 여행$/, '')+' 버스터미널')} target="_blank" rel="noreferrer">도착 터미널 찾기</a><a href="https://www.letskorail.com/" target="_blank" rel="noreferrer">열차편 확인</a></div><ArrivalTerminals region={b.title.replace(/ 여행$/,'')} destination={destination}/></>}</aside>}
  <div className="compact-tools"><span>방문 예정 시간</span>{b.departureRegion&&day===1&&!airSea&&<a href={'https://www.google.com/maps/dir/?'+route} target="_blank" rel="noreferrer">출발지에서 길찾기</a>}</div>

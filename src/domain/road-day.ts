@@ -78,6 +78,6 @@ export function roadDayProposal(trip:Trip,day:number,base:TaxiPlan,order:Place[]
  const generated=optimize(trip.conditions,{...basics,coursePlans:undefined,taxiPlan:plan},trip.items,[],catalog);
  const items=generated.items.map(i=>i.day===day?{...i,id:`road:d${day}:${i.id}`} :i);
  const report=validateSchedule(items,trip.conditions,basics,catalog);
- if(generated.blocked||report.issues.some(i=>i.status==='violation'||i.status==='conflict'))throw Error('도로 시간을 반영하면 일정 조건을 충족하지 못합니다. '+report.issues.filter(i=>i.status==='violation'||i.status==='conflict').slice(0,2).map(i=>i.message).join(' '));
+ if(generated.blocked||report.issues.some(i=>i.status==='violation'||i.status==='conflict'))throw Error('이동 시간이 늘어 하루 일정에 여유가 필요합니다. 장소를 줄이거나 체류 시간을 조정해 주세요. '+(generated.blocked?generated.reasons.slice(0,1).join(' '):''));
  return {trip:{...applyProposal(trip,items),basics,catalog},plan,report};
 }
