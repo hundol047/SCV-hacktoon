@@ -86,6 +86,14 @@ public class MainActivity extends Activity {
     @JavascriptInterface public void cancelTravel(String id){travel.cancel(id);}
     @JavascriptInterface public void requestTravel(String id,String url){travel.request(id,url);}
     @JavascriptInterface public void requestServer(String id,String path,String body){api.request(id,path,body);}
+    @JavascriptInterface public void shareText(String title,String url){
+      if(url==null||url.length()>20000||!url.startsWith("http://52.65.9.104:8000/shared#"))return;
+      runOnUiThread(()->{try{startActivity(Intent.createChooser(new Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_SUBJECT,"여행잇 일정").putExtra(Intent.EXTRA_TEXT,url),"일정 공유"));}catch(Exception e){notice("공유할 앱을 열지 못했습니다.");}});
+    }
+    @JavascriptInterface public void saveCalendar(String content){
+      if(content==null||content.length()>1024*1024||!content.startsWith("BEGIN:VCALENDAR"))return;
+      save("yeohaengit-itinerary.ics","text/calendar",content.getBytes(StandardCharsets.UTF_8),false);
+    }
     @JavascriptInterface public void saveJson(String name,String data){
       if(data==null||data.length()>8*1024*1024){notice("파일이 너무 큽니다.");return;}
       byte[] bytes=data.getBytes(StandardCharsets.UTF_8);if(bytes.length>8*1024*1024){notice("8 MiB 이하 파일만 저장할 수 있습니다.");return;}

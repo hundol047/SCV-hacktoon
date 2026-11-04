@@ -1,0 +1,27 @@
+import {z} from 'zod';
+import type {Trip} from './schema';
+import {defaultBasics,defaultConditions} from './schema';
+const date=z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(v=>{const d=new Date(v+'T00:00:00Z');return Number.isFinite(+d)&&d.toISOString().slice(0,10)===v;});
+const point=z.object({latitude:z.number().min(-90).max(90),longitude:z.number().min(-180).max(180)});
+export const publicPlanSchema=z.object({version:z.literal(1),id:z.string().min(1).max(100),title:z.string().min(1).max(80),region:z.string().min(1).max(120),date,days:z.number().int().min(1).max(30),timezone:z.string().max(80).refine(v=>{try{new Intl.DateTimeFormat('ko',{timeZone:v});return true;}catch{return false;}}),transport:z.enum(['taxi','driving','walk','transit']),travelers:z.number().int().min(1).max(20),departureRegion:z.string().max(120).optional(),departureCoordinates:point.optional(),places:z.array(z.object({id:z.string().max(100),name:z.string().max(300),address:z.string().max(1000).optional(),latitude:point.shape.latitude.optional(),longitude:point.shape.longitude.optional()})).max(200),items:z.array(z.object({id:z.string().max(100),day:z.number().int().min(1).max(30),start:z.number().int().min(0).max(1439),end:z.number().int().min(1).max(1440),kind:z.enum(['visit','meal','rest']),placeId:z.string().max(100)})).max(300)}).superRefine((v,c)=>{const ids=new Set(v.places.map(p=>p.id));if(ids.size!==v.places.length||v.items.some(i=>i.day>v.days||i.end<=i.start||!ids.has(i.placeId)))c.addIssue({code:'custom',message:'Invalid shared schedule'});});
+export type PublicPlan=z.infer<typeof publicPlanSchema>;
+export function publicPlan(trip:Trip):PublicPlan{
+ const items=trip.items.filter(i=>i.kind!=='move'&&i.placeId&&trip.catalog?.places.some(p=>p.id===i.placeId)).map(i=>({id:i.id,day:i.day,start:i.start,end:i.end,kind:i.kind as 'visit'|'meal'|'rest',placeId:i.placeId!}));const ids=new Set(items.map(i=>i.placeId));const b=trip.basics;
+ return publicPlanSchema.parse({version:1,id:trip.id,title:b.title,region:b.region,date:b.date,days:b.days,timezone:b.timezone,transport:b.transport,travelers:b.travelers??1,departureRegion:b.departureRegion,departureCoordinates:b.departureCoordinates,places:trip.catalog?.places.filter(p=>ids.has(p.id)).map(p=>({id:p.id,name:p.name,address:p.visitorInfo?.address,latitude:p.latitude,longitude:p.longitude}))??[],items});
+}
+export function sharedTrip(raw:unknown):Trip{
+ const p=publicPlanSchema.parse(raw);const fact={value:null,evidenceId:'shared',source:'shared itinerary',nature:'real' as const,checked:'unknown' as const};
+ return {version:1,id:p.id,revision:0,basics:{...defaultBasics,title:p.title,region:p.region,mode:'real',date:p.date,days:p.days,timezone:p.timezone,transport:p.transport,travelers:p.travelers,departureRegion:p.departureRegion,departureCoordinates:p.departureCoordinates},conditions:defaultConditions,history:[],feedback:[],items:p.items.map(i=>({...i,fromId:null,toId:null,transport:null,locked:false,mode:'real'})),catalog:{collectedAt:p.date+'T00:00:00Z',mode:'real',region:p.region,routes:[],sourceNotice:'공유 일정',places:p.places.map(place=>({...place,visitorInfo:{address:place.address},kind:'visit',experiences:[],description:'',walkMin:fact,walkM:fact,stairs:fact,seat:fact,foods:fact,cost:fact,hours:fact,situations:fact}))}};
+}
+export async function encodePlan(plan:PublicPlan){
+ const bytes=new TextEncoder().encode(JSON.stringify(publicPlanSchema.parse(plan)));if(bytes.length>60000)throw Error('일정이 커서 링크로 공유할 수 없습니다. 캘린더 파일을 이용하세요.');
+ let payload=bytes,version='v0';if(typeof CompressionStream!=='undefined'){payload=new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer());version='v1';}
+ const encoded=btoa(Array.from(payload,b=>String.fromCharCode(b)).join('')).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');if(encoded.length>12000)throw Error('공유 링크가 너무 깁니다. 캘린더 파일을 이용하세요.');return version+'='+encoded;
+}
+export async function decodePlan(fragment:string){
+ const match=fragment.replace(/^#/,'').match(/^(v[01])=([A-Za-z0-9_-]{1,12000})$/);if(!match)throw Error('공유 링크가 올바르지 않습니다.');
+ const bytes=Uint8Array.from(atob(match[2].replace(/-/g,'+').replace(/_/g,'/')),c=>c.charCodeAt(0));let stream:ReadableStream<Uint8Array<ArrayBuffer>>=new Blob([bytes]).stream();
+ if(match[1]==='v1'){if(typeof DecompressionStream==='undefined')throw Error('브라우저를 업데이트한 뒤 다시 열어 주세요.');stream=stream.pipeThrough(new DecompressionStream('gzip'));}
+ const reader=stream.getReader();const chunks:Uint8Array[]=[];let size=0;try{for(;;){const {value,done}=await reader.read();if(done)break;size+=value.length;if(size>60000)throw Error('공유 일정 크기가 너무 큽니다.');chunks.push(value);}}finally{await reader.cancel();}
+ const combined=new Uint8Array(size);let at=0;for(const chunk of chunks){combined.set(chunk,at);at+=chunk.length;}return publicPlanSchema.parse(JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(combined)));
+}

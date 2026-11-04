@@ -1,16 +1,37 @@
 'use client';
-import {useState} from 'react';
+import {useEffect,useState} from 'react';
 import type {Trip} from '../domain/schema';
 import {dayDate} from '../domain/schema';
+import {itineraryStops} from '../domain/itinerary-stops';
+import {dayRoadURL,parseDayRoad,type DayRoad} from '../domain/road-day';
+import {publicTravelJSON} from '../adapters/public-travel';
+import {haversineKm} from '../domain/taxi-plan';
+import ArrivalTerminals from './ArrivalTerminals';
+import TripShareActions from './TripShareActions';
 const clock=(n:number)=>`${String(Math.floor(n/60)).padStart(2,'0')}:${String(n%60).padStart(2,'0')}`;
+const duration=(n:number)=>n>=60?`${Math.floor(n/60)}시간${n%60?` ${n%60}분`:''}`:`${n}분`;
+const cache=new Map<string,DayRoad>();
 export default function CompactItinerary({trip}:{trip:Trip}){
- const [day,setDay]=useState(1);const b=trip.basics;const places=new Map(trip.catalog?.places.map(p=>[p.id,p]));
- const stops=trip.items.filter(i=>i.day===day&&i.kind!=='move'&&i.placeId&&places.has(i.placeId));
- const route=new URLSearchParams({api:'1',origin:b.departureCoordinates?`${b.departureCoordinates.latitude},${b.departureCoordinates.longitude}`:b.departureRegion??b.region,destination:places.get(stops[0]?.placeId??'')?.name??b.region,travelmode:b.transport==='transit'?'transit':'driving'});
+ const [day,setDay]=useState(1);const b=trip.basics;const stops=itineraryStops(trip,day);
+ const vehicle=b.transport==='taxi'||b.transport==='driving';
+ const first=stops[0]?.place;
+ const far=!!b.departureCoordinates&&!!first&&(haversineKm(b.departureCoordinates,first)??0)>=60;
+ const includeDeparture=day===1&&far&&vehicle;
+ const coordinates=includeDeparture?[{...first!,...b.departureCoordinates!,id:'departure',name:b.departureRegion??'출발지'},...stops.map(s=>s.place)]:stops.map(s=>s.place);
+ let url='';try{if(vehicle)url=dayRoadURL(coordinates);}catch{}
+ const [road,setRoad]=useState<{url:string;data:DayRoad}|null>(null);
+ useEffect(()=>{if(!url)return;const controller=new AbortController();let active=true;const saved=cache.get(url);if(saved){setRoad({url,data:saved});return;}publicTravelJSON(url,controller.signal).then(raw=>{const data=parseDayRoad(raw,coordinates);if(active){if(cache.size>100)cache.clear();cache.set(url,data);setRoad({url,data});}}).catch(()=>{});return()=>{active=false;controller.abort();};},[url]); // Coordinates are encoded in the route URL.
+ const allLegs=road?.url===url?road.data.legs:[];
+ const legs=includeDeparture?allLegs.slice(1):allLegs;
+ const origin=b.departureCoordinates?`${b.departureCoordinates.latitude},${b.departureCoordinates.longitude}`:b.departureRegion??b.region;
+ const destination=first?.latitude!=null&&first.longitude!=null?`${first.latitude},${first.longitude}`:first?.name??b.region;
+ const route=new URLSearchParams({api:'1',origin,destination,travelmode:b.transport==='walk'?'walking':b.transport==='transit'?'transit':'driving'});
  return <section className="compact-itinerary" aria-label="여행 코스">
- <div className="trip-overview"><strong>{b.departureRegion?`${b.departureRegion} → `:''}{b.title.replace(/ 여행$/,'')}</strong><span>{b.travelers??1}명 · {b.transport==='taxi'?'택시':b.transport==='driving'?'자가용':'이동'}{b.transport==='taxi'?` ${Math.ceil((b.travelers??1)/4)}대 (4인승)`:''}</span></div>
+ <div className="trip-overview"><strong>{b.departureRegion?`${b.departureRegion} → `:''}{b.title.replace(/ 여행$/,'')}</strong><span>{b.travelers??1}명 · {b.transport==='taxi'?'택시':b.transport==='driving'?'자가용':b.transport==='walk'?'도보':'대중교통'}{b.transport==='taxi'?` ${Math.ceil((b.travelers??1)/4)}대 (4인승)`:''}</span></div>
+ <TripShareActions trip={trip} day={day}/>
  <div className="day-tabs">{Array.from({length:b.days},(_,i)=><button key={i} onClick={()=>setDay(i+1)} className={day===i+1?'active':''}>{i+1}일차 <span>{dayDate(b,i+1).slice(5)}</span></button>)}</div>
+ {day===1&&far&&<aside className="arrival-guide"><strong>먼 거리 이동 안내</strong>{includeDeparture&&allLegs[0]&&<p>첫 장소까지 차량 약 {duration(Math.ceil(allLegs[0].duration/60))} · {(allLegs[0].distance/1000).toFixed(0)}km (교통상황 미반영)</p>}<p>{b.departureRegion} → 출발 터미널 → {b.region} 방면 도착 터미널 → {first?.name}</p><p><a href="https://www.bustago.or.kr/" target="_blank" rel="noreferrer">버스타고</a> · <a href="https://txbus.t-money.co.kr/" target="_blank" rel="noreferrer">시외버스 티머니</a>에서 출발·도착 터미널과 인원 {b.travelers??1}명을 선택해 노선과 시간을 확인한 뒤 예약하세요. 예매표의 도착 터미널에서 내려 첫 장소까지 택시나 시내버스로 이동하세요.</p><div className="stop-links"><a href={'https://map.naver.com/p/search/'+encodeURIComponent(b.region+' 버스터미널')} target="_blank" rel="noreferrer">도착 터미널 찾기</a><a href="https://www.letskorail.com/" target="_blank" rel="noreferrer">열차편 확인</a></div><ArrivalTerminals region={b.title.replace(/ 여행$/,'')} destination={destination}/></aside>}
  <div className="compact-tools"><span>방문 예정 시간</span>{b.departureRegion&&day===1&&<a href={'https://www.google.com/maps/dir/?'+route} target="_blank" rel="noreferrer">출발지에서 길찾기</a>}</div>
- <ol className="compact-stops">{stops.map(i=>{const p=places.get(i.placeId!)!;const info=p.visitorInfo;return <li key={i.id}><time>{clock(i.start)}</time><div><h3>{p.name}</h3><p>{i.kind==='meal'?'식사':i.kind==='rest'?'휴식':'관광'} · {i.end-i.start}분{info?.address?` · ${info.address}`:''}</p><div className="stop-links"><a href={'https://map.naver.com/p/search/'+encodeURIComponent(p.name+' '+(info?.address??b.region))} target="_blank" rel="noreferrer">지도 보기</a>{info?.website&&/^https?:\/\//.test(info.website)&&<a href={info.website} target="_blank" rel="noreferrer">홈페이지</a>}</div>{(info?.hoursText||info?.phone||p.cost.value!=null)&&<details><summary>방문 정보</summary>{info?.hoursText&&<p>운영시간 {info.hoursText}</p>}{info?.phone&&<p>전화 {info.phone}</p>}{p.cost.value!=null&&<p>입장료 {p.cost.value.toLocaleString()}원</p>}</details>}</div></li>;})}</ol>
+ <ol className="compact-stops">{stops.map(({item:i,place:p,restMinutes},index)=>{const info=p.visitorInfo;const next=stops[index+1];const minutes=legs[index]?Math.max(1,Math.ceil(legs[index].duration/60)):null;const gap=next?Math.max(0,next.item.start-i.end):0;const directions=next?new URLSearchParams({api:'1',origin:p.latitude!=null&&p.longitude!=null?`${p.latitude},${p.longitude}`:p.name,destination:next.place.latitude!=null&&next.place.longitude!=null?`${next.place.latitude},${next.place.longitude}`:next.place.name,travelmode:b.transport==='walk'?'walking':b.transport==='transit'?'transit':'driving'}):null;return <li key={i.id}><time>{clock(i.start)}</time><div><h3>{p.name}</h3><p>{i.kind==='meal'?'식사':i.kind==='rest'?'휴식':'관광'} · {i.end-i.start-restMinutes}분{restMinutes?` + 휴식 ${restMinutes}분`:''}{info?.address?` · ${info.address}`:''}</p><div className="stop-links"><a href={'https://map.naver.com/p/search/'+encodeURIComponent(p.name+' '+(info?.address??b.region))} target="_blank" rel="noreferrer">지도 보기</a>{info?.website&&/^https?:\/\//.test(info.website)&&<a href={info.website} target="_blank" rel="noreferrer">홈페이지</a>}</div>{(info?.hoursText||info?.phone||p.cost.value!=null)&&<details><summary>방문 정보</summary>{info?.hoursText&&<p>운영시간 {info.hoursText}</p>}{info?.phone&&<p>전화 {info.phone}</p>}{p.cost.value!=null&&<p>입장료 {p.cost.value.toLocaleString()}원</p>}</details>}{next&&<div className="stop-transfer"><span aria-hidden="true">↓</span><div>{minutes!==null?<>차량 약 {duration(minutes)} · {(legs[index].distance/1000).toFixed(1)}km<small>교통상황 미반영{minutes>gap?` · 계획보다 ${minutes-gap}분 더 필요`:''}</small></>:<>이동 {duration(gap)} 배정<small>실제 소요 시간은 길찾기에서 확인</small></>}</div><a href={'https://www.google.com/maps/dir/?'+directions} target="_blank" rel="noreferrer">길찾기</a></div>}</div></li>;})}</ol>
  </section>;
 }
