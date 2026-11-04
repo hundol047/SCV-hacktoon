@@ -1,3 +1,4 @@
+import {batchInput,batchReplySchema,validateBatch} from '../../../domain/course-batch';
 import {bedrockConfigured,converseJSON,BedrockReplyError} from '../../../server/bedrock';
 import {z} from 'zod';
 import {basicsSchema,conditionsSchema} from '../../../domain/schema';
@@ -9,16 +10,16 @@ export async function POST(request:Request){
   if(!sameOrigin(request))return json({error:'잘못된 요청 출처입니다.'},403);
   let stage='request';
   try{
-    const {basics,conditions,catalog,day}=z.object({basics:basicsSchema,conditions:conditionsSchema,catalog:catalogSchema,day:z.number().int().min(1).max(30),consent:z.literal(true)}).parse(await readJSON(request));
+    const {basics,conditions,catalog,day,allDays}=z.object({basics:basicsSchema,conditions:conditionsSchema,catalog:catalogSchema,day:z.number().int().min(1).max(30),consent:z.literal(true),allDays:z.boolean().optional()}).parse(await readJSON(request));
     stage='candidates';
-    const input=courseInput(basics,conditions,catalog,day);
+    const input=allDays?{text:batchInput(basics,conditions,catalog)}:courseInput(basics,conditions,catalog,day);
     if(!bedrockConfigured())return json({error:'서버 AWS 리전과 EC2 IAM 역할 설정을 확인해 주세요.'},503);
     const gate=await reserveAI(request);if(!gate.allowed)return json({error:gate.message},429);
-    const schema=z.toJSONSchema(courseReplySchema);delete schema.$schema;
+    const schema=z.toJSONSchema(allDays?batchReplySchema:courseReplySchema);delete schema.$schema;
     stage='model';
-    const raw=await converseJSON(courseInstructions,input.text,schema,'course',1600);
+    const raw=await converseJSON(allDays?courseInstructions.replace('Return candidateIds only.','')+' Plan all supplied days in one response as {days:[{day,candidateIds}]}. Choose two or three attractions per day; reserve at least two unused attractions for every remaining day. Never repeat an attraction across days. Respect the candidate list and weather for each day.':courseInstructions,input.text,schema,'course',1600);
     stage='validation';
-    const result=courseReplySchema.parse(raw);regionalCourse(basics,conditions,catalog,day,result);
+    const result=allDays?validateBatch(basics,conditions,catalog,raw).reply:courseReplySchema.parse(raw);if(!allDays)regionalCourse(basics,conditions,catalog,day,result);
     const response=json(result);if(gate.cookie)response.headers.set('Set-Cookie',gate.cookie);return response;
   }catch(e){
     if(stage==='request')return json({error:'일정 입력 형식을 확인해 주세요.',code:'COURSE_INPUT'},400);

@@ -6,12 +6,12 @@ export function createOfficialCatalog(fetcher:typeof fetch=fetch){
  let quotaDay='',requests=0;
  const cache=new Map<string,{at:number;catalog:Catalog}>();
  return async(base:Catalog,province:string,query:string,key=process.env.BOPok_TOURAPI_KEY??''):Promise<Catalog>=>{
-  if(!key||!areas[province]||!query.trim())return base;const cacheKey=province+':'+query;const cached=cache.get(cacheKey);if(cached&&Date.now()-cached.at<6*3600000)return merge(base,cached.catalog);
+  if(!key||!areas[province])return base;const cacheKey=province+':'+query;const cached=cache.get(cacheKey);if(cached&&Date.now()-cached.at<6*3600000)return merge(base,cached.catalog);
   const deadline=AbortSignal.timeout(8000);
   async function get(op:string,params:Record<string,string>){const today=new Date().toISOString().slice(0,10);if(quotaDay!==today){quotaDay=today;requests=0;}if(requests>=2000)throw Error();requests++;const url='https://apis.data.go.kr/B551011/KorService2/'+op+'?'+new URLSearchParams({serviceKey:key,MobileOS:'ETC',MobileApp:'Yeohaengit',_type:'json',numOfRows:'100',pageNo:'1',...params});const r=await fetcher(url,{signal:deadline,redirect:'error'});if(!r.ok)throw Error();const text=await r.text();if(text.length>2000000)throw Error();const d=JSON.parse(text)?.response;if(!['00','0000'].includes(String(d?.header?.resultCode)))throw Error();const rows=d?.body?.items?.item;return (Array.isArray(rows)?rows:rows&&typeof rows==='object'?[rows]:[]) as Record<string,string>[];}
   try{
-   const districts=await get('areaCode2',{areaCode:areas[province]});const district=districts.filter(r=>clean(String(r.name))===clean(query));if(district.length!==1)return base;
-   const groups=await Promise.all(['12','14','39'].map(contentTypeId=>get('areaBasedList2',{areaCode:areas[province],sigunguCode:String(district[0].code),contentTypeId,arrange:'A'})));
+   let sigunguCode='';if(query.trim()){const districts=await get('areaCode2',{areaCode:areas[province]});const district=districts.filter(r=>clean(String(r.name))===clean(query));if(district.length!==1)return base;sigunguCode=String(district[0].code);}
+   const groups=await Promise.all(['12','14','39'].map(contentTypeId=>get('areaBasedList2',{areaCode:areas[province],...(sigunguCode?{sigunguCode}:{}),contentTypeId,arrange:'A'})));
    const at=new Date().toISOString();const places:Place[]=[];
    for(const r of groups.flat()){const lat=Number(r.mapy),lon=Number(r.mapx);if(!/^\d+$/.test(String(r.contentid))||!String(r.title??'').trim()||lat<33||lat>39||lon<124||lon>132||!Number.isFinite(lat)||!Number.isFinite(lon))continue;
     const id='tourapi:'+r.contentid;

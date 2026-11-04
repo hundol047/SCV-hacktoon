@@ -27,3 +27,10 @@ it('promotion route rejects malformed generated content and reports a controlled
  const response=await promotions(request('/api/promotions',{consent:true,input:{business:'여행카페',region:'서울',category:'카페',facts:'커피를 판매합니다.',offer:'',channel:'instagram',tone:'friendly'}}));
  expect(response.status).toBe(502);expect((await response.json()).error).toContain('초안');
 });
+it('three days use one budget reservation and one Converse call with full cross-day validation',async()=>{
+ configured();const multi=osmCatalog('서울',{elements:Array.from({length:6},(_,i)=>({type:'node',id:i+1,lat:37.57+i/10000,lon:126.98,tags:{name:'장소'+i,tourism:'museum'}}))},new Date().toISOString());
+ const days=[1,2,3].map(day=>({day,candidateIds:multi.places.slice((day-1)*2,day*2).map(p=>p.id)}));
+ const send=vi.spyOn(bedrock,'converseJSON').mockResolvedValue({days});const data={...payload,allDays:true,basics:{...basics,days:3},catalog:multi};
+ const response=await courses(request('/api/courses',data));expect(response.status).toBe(200);expect((await response.json()).days).toHaveLength(3);expect(send).toHaveBeenCalledOnce();expect(budget.reserveAI).toHaveBeenCalledOnce();
+ send.mockResolvedValue({days:[days[0],{...days[1],candidateIds:days[0].candidateIds},days[2]]});expect((await courses(request('/api/courses',data))).status).toBe(502);
+});

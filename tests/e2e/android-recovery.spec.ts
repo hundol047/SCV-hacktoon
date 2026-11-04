@@ -5,9 +5,10 @@ test('APK web assets search the bundled dataset and route AI to the server bridg
  let calls=0;
  await page.exposeFunction('syntheticServer',async(path:string,body:string)=>{
   if(path==='/api/location')return {locations:[{id:'1',name:'서울',address:'서울특별시',latitude:37.56,longitude:126.97}]};
+  if(path==='/api/departure-hubs')return {hubs:[]};
   if(path==='/api/place-details')return {places:{}};
   expect(path).toBe('/api/courses');const data=JSON.parse(body);expect(data.consent).toBe(true);expect(data.basics.region).toContain('서울');
-  const candidates=courseInput(data.basics,data.conditions,data.catalog,data.day).candidates;calls++;return {candidateIds:candidates.slice(0,3).map(p=>p.place.id)};
+  const candidates=courseInput(data.basics,data.conditions,data.catalog,data.day).candidates;calls++;return {days:[{day:1,candidateIds:candidates.slice(0,3).map(p=>p.place.id)}]};
  });
  await page.addInitScript(()=>{(window as any).BopokAndroid={requestServer:async(id:string,path:string,body:string)=>{const data=await (window as any).syntheticServer(path,body);window.dispatchEvent(new CustomEvent('bopok:server',{detail:{id,status:200,data}}));},printPage:()=>{},saveJson:()=>{},saveTourism:()=>{}};});
  await page.route('http://localhost:4173/**',async route=>{

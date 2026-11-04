@@ -1,0 +1,12 @@
+'use client';
+import {useEffect,useState} from 'react';
+import {z} from 'zod';
+import {placeMapLink} from '../domain/place-map';
+const schema=z.object({hubs:z.array(z.object({id:z.string(),name:z.string(),kind:z.enum(['bus','rail']),latitude:z.number(),longitude:z.number(),distanceKm:z.number().nonnegative()})).max(6)});
+const hubCache=new Map<string,{at:number;promise:Promise<z.infer<typeof schema>>}>();
+export default function DepartureHubs({origin,name}:{origin:{latitude:number;longitude:number};name:string}){
+ const [result,setResult]=useState<{key:string;data:z.infer<typeof schema>}|null>(null),[error,setError]=useState(''),[retry,setRetry]=useState(0);const key=origin.latitude+','+origin.longitude;
+ useEffect(()=>{let active=true;setError('');let cached=hubCache.get(key);if(cached&&Date.now()-cached.at>3600000){hubCache.delete(key);cached=undefined;}if(!cached){const promise=fetch('/api/departure-hubs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({latitude:origin.latitude,longitude:origin.longitude})}).then(async r=>{if(!r.ok)throw Error();return schema.parse(await r.json());});cached={at:Date.now(),promise};if(hubCache.size>=100)hubCache.delete(hubCache.keys().next().value!);hubCache.set(key,cached);promise.catch(()=>hubCache.delete(key));}cached.promise.then(data=>{if(active)setResult({key,data});}).catch(()=>{if(active)setError('주변 터미널·역을 불러오지 못했습니다.');});return()=>{active=false;};},[key,retry]);
+ const hubs=result?.key===key?result.data.hubs:null;
+ return <section className="departure-hubs" aria-label="출발지 주변 터미널과 기차역"><strong>{name} 주변 터미널·기차역</strong>{hubs?.length?<ul>{hubs.map(h=><li key={h.id}><span>{h.kind==='bus'?'버스터미널':'기차역'} · <strong>{h.name}</strong> · 직선 {h.distanceKm.toFixed(1)}km</span> <a href={placeMapLink(h)} target="_blank" rel="noreferrer">위치</a> · <a href={'https://www.google.com/maps/dir/?'+new URLSearchParams({api:'1',origin:key,destination:`${h.latitude},${h.longitude}`,travelmode:'transit'})} target="_blank" rel="noreferrer">가는 길</a></li>)}</ul>:<p>{error|| (hubs?'25km 안에서 확인한 터미널·기차역이 없습니다.':'주변 터미널·기차역 찾는 중…')}</p>}{error&&<button type="button" className="text-button" onClick={()=>{hubCache.delete(key);setRetry(n=>n+1);}}>다시 조회</button>}<p className="stop-links"><a href={'https://map.kakao.com/link/search/'+encodeURIComponent(name+' 버스터미널')} target="_blank" rel="noreferrer">주변 터미널 검색</a><a href={'https://map.kakao.com/link/search/'+encodeURIComponent(name+' 기차역')} target="_blank" rel="noreferrer">주변 역 검색</a></p></section>;
+}

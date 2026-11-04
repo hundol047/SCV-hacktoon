@@ -7,7 +7,7 @@ test('region search creates AI itinerary; failed response preserves saved trip',
  await page.route('**/api/place-details',r=>r.fulfill({json:{places:{}}}));
  await page.route('**/api/location',r=>r.fulfill({json:{locations:[{id:'1',name:'서울',address:'서울특별시',latitude:37.56,longitude:126.97}]}}));
  await page.route('**/api/tourism?**',r=>r.fulfill({json:catalog}));
- await page.route('**/api/courses',r=>r.fulfill(fail?{status:502,json:{error:'연결 실패. 기존 일정 유지'}}:{json:{candidateIds:catalog.places.slice(0,3).map(p=>p.id)}}));
+ await page.route('**/api/courses',r=>r.fulfill(fail?{status:502,json:{error:'연결 실패. 기존 일정 유지'}}:{json:{days:[{day:1,candidateIds:catalog.places.slice(0,3).map(p=>p.id)}]}}));
  await page.goto('/');await page.getByRole('button',{name:'지역 맞춤 여행 시작'}).click();
  const form=page.getByRole('region',{name:'간편 AI 일정 입력'});
  await expect(form.locator('input,select')).toHaveCount(7);await form.getByLabel('출발 지역',{exact:true}).fill('서울');await form.getByLabel('여행 지역',{exact:true}).fill('서울');

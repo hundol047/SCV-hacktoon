@@ -24,11 +24,11 @@ const json=(data:unknown,status=200)=>new Response(JSON.stringify(data),{status,
 window.fetch=async(input,init)=>{
   const url=new URL(input instanceof Request?input.url:String(input),location.href);
   if(url.origin!==location.origin)return json({error:'외부 연결은 휴대폰 브라우저에서 열어 주세요.'},503);
-  if(['/api/courses','/api/replacements','/api/promotions','/api/conditions','/api/advice','/api/place-details','/api/location'].includes(url.pathname)){
+  if(['/api/courses','/api/replacements','/api/promotions','/api/conditions','/api/advice','/api/place-details','/api/location','/api/departure-hubs'].includes(url.pathname)){
     if(!window.BopokAndroid?.requestServer)return json({error:'앱 서버 연결을 사용할 수 없습니다.'},503);
     return await new Promise<Response>((resolve)=>{
       const id=createId();
-      const timer=setTimeout(()=>{window.removeEventListener('bopok:server',receive);resolve(json({error:'AI 서버 응답 시간이 초과되었습니다. 기존 일정은 유지됩니다.'},504));},45000);
+      const timer=setTimeout(()=>{window.removeEventListener('bopok:server',receive);resolve(json({error:'AI 서버 응답 시간이 초과되었습니다. 기존 일정은 유지됩니다.'},504));},70000);
       function receive(event:Event){const d=(event as CustomEvent).detail;if(d.id!==id)return;clearTimeout(timer);window.removeEventListener('bopok:server',receive);resolve(json(d.data??{error:d.error},d.status));}
       window.addEventListener('bopok:server',receive);
       try{window.BopokAndroid!.requestServer(id,url.pathname,String(init?.body??''));}catch{clearTimeout(timer);window.removeEventListener('bopok:server',receive);resolve(json({error:'서버 연결 실패'},503));}
