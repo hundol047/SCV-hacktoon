@@ -5,6 +5,7 @@ test('three-day AI trip is generated and saved when randomUUID is unavailable',a
  await page.addInitScript(()=>Object.defineProperty(window.crypto,'randomUUID',{value:undefined,configurable:true}));
  let calls=0;
  await page.route('**/api/place-details',r=>r.fulfill({json:{places:{}}}));
+ await page.route('**/api/location',r=>r.fulfill({json:{locations:[{id:'1',name:'서울',address:'서울특별시',latitude:37.56,longitude:126.97}]}}));
  await page.route('**/api/tourism?**',r=>r.fulfill({json:catalog}));
  await page.route('**/api/courses',r=>{const body=r.request().postDataJSON();expect(body.basics.departureRegion).toBe('서울');expect(body.basics.travelers).toBe(5);const day=body.day;calls++;return r.fulfill({json:{candidateIds:catalog.places.slice((day-1)*3,day*3).map(p=>p.id)}});});
  await page.goto('/');expect(await page.evaluate(()=>typeof crypto.randomUUID)).toBe('undefined');

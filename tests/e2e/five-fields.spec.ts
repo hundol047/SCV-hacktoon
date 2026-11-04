@@ -17,7 +17,7 @@ test('three Korean tourism photographs have specific source and license attribut
  await expect(gallery.locator('figure')).toHaveCount(3);
  for(const name of ['해운대','불국사','성산일출봉'])await expect(gallery.getByRole('heading',{name,exact:true})).toBeVisible();
  for(const image of await gallery.locator('img').all())expect(await image.getAttribute('src')).toMatch(/^https:\/\/(upload|thumb)\.wikimedia\.org\//);
- await expect(gallery.locator('a')).toHaveCount(0);await page.locator('.credits summary').click();await expect(page.locator('.credits a[href*="creativecommons.org"]')).toHaveCount(3);
+ await expect(gallery.locator('a')).toHaveCount(0);await page.getByRole('button',{name:'사진·지도 저작권'}).click();await expect(page.locator('.credits a[href*="creativecommons.org"]')).toHaveCount(3);
  // Network policy blocks image binaries here; this test verifies wiring and
  // attribution, not remote image loading.
 });

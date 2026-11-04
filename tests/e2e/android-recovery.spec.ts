@@ -4,6 +4,7 @@ import {courseInput} from '../../src/domain/regional-course';
 test('APK web assets search the bundled dataset and route AI to the server bridge',async({page})=>{
  let calls=0;
  await page.exposeFunction('syntheticServer',async(path:string,body:string)=>{
+  if(path==='/api/location')return {locations:[{id:'1',name:'서울',address:'서울특별시',latitude:37.56,longitude:126.97}]};
   if(path==='/api/place-details')return {places:{}};
   expect(path).toBe('/api/courses');const data=JSON.parse(body);expect(data.consent).toBe(true);expect(data.basics.region).toContain('서울');
   const candidates=courseInput(data.basics,data.conditions,data.catalog,data.day).candidates;calls++;return {candidateIds:candidates.slice(0,3).map(p=>p.place.id)};

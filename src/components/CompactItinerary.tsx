@@ -6,7 +6,7 @@ const clock=(n:number)=>`${String(Math.floor(n/60)).padStart(2,'0')}:${String(n%
 export default function CompactItinerary({trip}:{trip:Trip}){
  const [day,setDay]=useState(1);const b=trip.basics;const places=new Map(trip.catalog?.places.map(p=>[p.id,p]));
  const stops=trip.items.filter(i=>i.day===day&&i.kind!=='move'&&i.placeId&&places.has(i.placeId));
- const route=new URLSearchParams({api:'1',origin:b.departureRegion??b.region,destination:places.get(stops[0]?.placeId??'')?.name??b.region,travelmode:b.transport==='transit'?'transit':'driving'});
+ const route=new URLSearchParams({api:'1',origin:b.departureCoordinates?`${b.departureCoordinates.latitude},${b.departureCoordinates.longitude}`:b.departureRegion??b.region,destination:places.get(stops[0]?.placeId??'')?.name??b.region,travelmode:b.transport==='transit'?'transit':'driving'});
  return <section className="compact-itinerary" aria-label="여행 코스">
  <div className="trip-overview"><strong>{b.departureRegion?`${b.departureRegion} → `:''}{b.title.replace(/ 여행$/,'')}</strong><span>{b.travelers??1}명 · {b.transport==='taxi'?'택시':b.transport==='driving'?'자가용':'이동'}{b.transport==='taxi'?` ${Math.ceil((b.travelers??1)/4)}대 (4인승)`:''}</span></div>
  <div className="day-tabs">{Array.from({length:b.days},(_,i)=><button key={i} onClick={()=>setDay(i+1)} className={day===i+1?'active':''}>{i+1}일차 <span>{dayDate(b,i+1).slice(5)}</span></button>)}</div>

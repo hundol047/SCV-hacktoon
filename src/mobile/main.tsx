@@ -24,7 +24,7 @@ const json=(data:unknown,status=200)=>new Response(JSON.stringify(data),{status,
 window.fetch=async(input,init)=>{
   const url=new URL(input instanceof Request?input.url:String(input),location.href);
   if(url.origin!==location.origin)return json({error:'외부 연결은 휴대폰 브라우저에서 열어 주세요.'},503);
-  if(['/api/courses','/api/replacements','/api/promotions','/api/conditions','/api/advice','/api/place-details'].includes(url.pathname)){
+  if(['/api/courses','/api/replacements','/api/promotions','/api/conditions','/api/advice','/api/place-details','/api/location'].includes(url.pathname)){
     if(!window.BopokAndroid?.requestServer)return json({error:'앱 서버 연결을 사용할 수 없습니다.'},503);
     return await new Promise<Response>((resolve)=>{
       const id=createId();

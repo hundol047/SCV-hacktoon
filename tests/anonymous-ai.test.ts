@@ -26,3 +26,11 @@ it('anonymous browsers share the persistent cost limit and reject foreign origin
  expect((await reserveAI(request('', 'https://foreign.example'))).allowed).toBe(false);
  expect((await reserveAI(request())).allowed).toBe(true);expect((await reserveAI(request())).allowed).toBe(false);
 });
+it('raising experiment limits allows more trials without clearing existing global usage',async()=>{
+ vi.stubEnv('BOPok_AI_ALLOW_ANONYMOUS','true');
+ for(let i=0;i<4;i++)expect((await reserveAI(request())).allowed).toBe(true);
+ expect((await reserveAI(request())).allowed).toBe(false);
+ vi.stubEnv('BOPok_AI_DAILY_USD_LIMIT','10');vi.stubEnv('BOPok_AI_DAILY_TOKEN_LIMIT','1000000');vi.stubEnv('BOPok_AI_DAILY_REQUEST_LIMIT','100');
+ for(let i=0;i<4;i++)expect((await reserveAI(request())).allowed).toBe(true);
+ const rows=await db.query("select requests,cost from public.bopok_quotas where bucket like 'daily:ai:%'");expect(rows.rows[0].requests).toBe(8);expect(Number(rows.rows[0].cost)).toBeGreaterThan(1);
+});

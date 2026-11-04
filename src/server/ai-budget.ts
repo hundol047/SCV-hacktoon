@@ -17,6 +17,6 @@ export async function reserveAI(request:Request):Promise<AIGate>{
   const reservedCostUsd=(inputTokens*inputPrice+outputTokens*outputPrice)/1000000;
   const dailyCost=Number(process.env.BOPok_AI_DAILY_USD_LIMIT??1),dailyTokens=Number(process.env.BOPok_AI_DAILY_TOKEN_LIMIT??200000),dailyRequests=Number(process.env.BOPok_AI_DAILY_REQUEST_LIMIT??30);
   if(!Number.isFinite(dailyCost)||dailyCost<=0||dailyCost>100||!Number.isSafeInteger(dailyTokens)||dailyTokens<1||!Number.isSafeInteger(dailyRequests)||dailyRequests<1)return {allowed:false,message:'AI 비용·토큰·횟수 한도 설정을 확인해 주세요.'};
-  try{const reservation=await new TripStore(rpc).reserve(subject,{scope:'ai',tokens:reservedTokens,cost:reservedCostUsd,dailyRequests,dailyTokens,dailyCost});return {allowed:reservation.allowed,message:reservation.allowed?'AI 사용량을 예약했습니다.':'AI 요청·토큰·일일 비용 한도에 도달했습니다. 규칙 기반으로 계속합니다.',cookie,usage:{reservedTokens,reservedCostUsd}};}
-  catch{return {allowed:false,message:'사용량 저장소에 연결하지 못해 AI 요청을 보내지 않았습니다. 규칙 기반으로 계속합니다.',cookie};}
+  try{const reservation=await new TripStore(rpc).reserve(subject,{scope:'ai',tokens:reservedTokens,cost:reservedCostUsd,dailyRequests,dailyTokens,dailyCost});return {allowed:reservation.allowed,message:reservation.allowed?'AI 사용량을 예약했습니다.':'오늘의 AI 사용량 한도에 도달했습니다. 내일 다시 시도하거나 실험용 한도로 배포해 주세요.',cookie,usage:{reservedTokens,reservedCostUsd}};}
+  catch{return {allowed:false,message:'AI 사용량을 확인하지 못했습니다. 잠시 후 다시 시도해 주세요.',cookie};}
 }
