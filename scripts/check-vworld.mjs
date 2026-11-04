@@ -1,3 +1,4 @@
+import https from 'node:https';
 // Read-only diagnostic: never print keys, request URLs or raw provider errors.
 const key=process.env.BOPok_VWORLD_KEY?.trim();
 if(!key){console.error('KEY_MISSING: 현재 앱 컨테이너에 VWorld 키가 없습니다.');process.exit(1);}
@@ -6,10 +7,24 @@ console.log('KEY_PRESENT: YES');
 console.log('DOMAIN_SETTING: '+(domain?'PRESENT':'MISSING'));
 const safeCodes=new Set(['ENOTFOUND','EAI_AGAIN','ENETUNREACH','EHOSTUNREACH','ECONNREFUSED','ECONNRESET','ETIMEDOUT','UND_ERR_CONNECT_TIMEOUT','UND_ERR_HEADERS_TIMEOUT','UND_ERR_SOCKET','CERT_HAS_EXPIRED','CERT_NOT_YET_VALID','DEPTH_ZERO_SELF_SIGNED_CERT','SELF_SIGNED_CERT_IN_CHAIN','UNABLE_TO_VERIFY_LEAF_SIGNATURE','UNABLE_TO_GET_ISSUER_CERT_LOCALLY','ERR_TLS_CERT_ALTNAME_INVALID']);
 function codes(error){const found=new Set();const walk=(e,depth=0)=>{if(!e||depth>5)return;if(safeCodes.has(e.code))found.add(e.code);if(e.name==='TimeoutError'||e.name==='AbortError')found.add('REQUEST_TIMEOUT');walk(e.cause,depth+1);if(Array.isArray(e.errors))for(const child of e.errors)walk(child,depth+1);};walk(error);return [...found];}
+// Retry only an abrupt socket close using a fresh IPv4 / HTTP/1.1 TLS 1.2 connection.
+// Certificate verification remains enabled. Credentials never follow redirects.
+function compatibilityRequest(url){return new Promise((resolve,reject)=>{
+ const request=https.get(url,{agent:false,family:4,minVersion:'TLSv1.2',maxVersion:'TLSv1.2',rejectUnauthorized:true,headers:{Connection:'close',Accept:'application/json','User-Agent':'Yeohaengit/0.18'}},response=>{
+  const chunks=[];let size=0;
+  response.on('data',chunk=>{size+=chunk.length;if(size>100000){request.destroy(new Error('Response limit'));return;}chunks.push(chunk);});
+  response.on('error',reject);response.on('aborted',()=>reject(Object.assign(new Error('Closed'),{code:'ECONNRESET'})));
+  response.on('end',()=>{clearTimeout(timer);try{resolve(new Response(Buffer.concat(chunks),{status:response.statusCode??502}));}catch(error){reject(error);}});
+ });
+ const timer=setTimeout(()=>request.destroy(Object.assign(new Error('Timeout'),{code:'ETIMEDOUT'})),12000);
+ request.on('error',error=>{clearTimeout(timer);reject(error);});
+});}
 const started=Date.now();
 try{
  const params=new URLSearchParams({service:'search',request:'search',version:'2.0',crs:'EPSG:4326',size:'5',page:'1',query:'태원고등학교',type:'place',format:'json',errorformat:'json',key,...(domain?{domain}:{})});
- const response=await fetch('https://api.vworld.kr/req/search?'+params,{signal:AbortSignal.timeout(12000),redirect:'manual'});
+ let response;const url='https://api.vworld.kr/req/search?'+params;
+ try{response=await fetch(url,{signal:AbortSignal.timeout(12000),redirect:'manual'});console.log('TRANSPORT: DEFAULT');}
+ catch(error){const primary=codes(error);console.log('DEFAULT_CONNECTION: '+(primary.join(', ')||'UNKNOWN_NETWORK_ERROR'));if(!primary.some(code=>['UND_ERR_SOCKET','ECONNRESET','ENETUNREACH'].includes(code)))throw error;console.log('TRANSPORT: IPV4_HTTP1_TLS12_CERT_VERIFIED');response=await compatibilityRequest(url);}
  console.log('HTTP_STATUS: '+response.status);
  if(response.status>=300&&response.status<400){console.error('REDIRECT: API 주소가 다른 주소로 이동을 요구합니다. 인증키 보호를 위해 따라가지 않았습니다.');process.exitCode=1;}
  else{
