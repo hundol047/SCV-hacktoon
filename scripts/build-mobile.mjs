@@ -9,6 +9,7 @@ const manifest=JSON.parse(await readFile('data/korea-tourism/manifest.json','utf
 if(createHash('sha256').update(data).digest('hex')!==manifest.sha256)throw Error('Snapshot digest mismatch');
 await build({entryPoints:['src/mobile/main.tsx'],outfile:out+'/app.js',bundle:true,minify:true,loader:{'.png':'dataurl'},platform:'browser',target:'chrome109',jsx:'automatic',define:{'process.env.NODE_ENV':'"production"'},alias:{'next/script':resolve('src/mobile/disabled-script.tsx')}});
 await cp('public/images',out+'/images',{recursive:true});
+await cp('public/videos',out+'/videos',{recursive:true});
 await copyFile('src/mobile/index.html',out+'/index.html');
 await copyFile('data/korea-tourism/snapshot.json.gz',out+'/snapshot.json.gz');
 await copyFile('data/korea-tourism/LICENSE.md',out+'/DATA-LICENSE.txt');

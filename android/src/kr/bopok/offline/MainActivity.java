@@ -45,9 +45,25 @@ public class MainActivity extends Activity {
         if("https".equals(uri.getScheme())&&"appassets.androidplatform.net".equals(uri.getHost())){
           String path=uri.getPath();if(path==null||path.equals("/"))path="/index.html";
           if(!path.contains(".."))try{
-            String type=path.endsWith(".js")?"application/javascript":path.endsWith(".css")?"text/css":path.endsWith(".gz")?"application/gzip":path.endsWith(".png")?"image/png":path.endsWith(".jpg")?"image/jpeg":path.endsWith(".html")?"text/html":"text/plain";
+            String type=path.endsWith(".js")?"application/javascript":path.endsWith(".css")?"text/css":path.endsWith(".gz")?"application/gzip":path.endsWith(".png")?"image/png":path.endsWith(".jpg")?"image/jpeg":path.endsWith(".mp4")?"video/mp4":path.endsWith(".vtt")?"text/vtt":path.endsWith(".html")?"text/html":"text/plain";
             HashMap<String,String> headers=new HashMap<>();headers.put("X-Content-Type-Options","nosniff");
-            return new WebResourceResponse(type,(type.equals("application/gzip")||type.startsWith("image/"))?null:"UTF-8",200,"OK",headers,getAssets().open(path.substring(1)));
+            InputStream asset=getAssets().open(path.substring(1));
+            if(type.equals("video/mp4")){
+              long total=asset.available();headers.put("Accept-Ranges","bytes");
+              String range=request.getRequestHeaders().get("Range");if(range==null)range=request.getRequestHeaders().get("range");
+              if(range!=null&&range.matches("bytes=[0-9]+-[0-9]*")){
+                try{
+                  String[] bounds=range.substring(6).split("-",-1);long start=Long.parseLong(bounds[0]),end=bounds[1].isEmpty()?total-1:Math.min(Long.parseLong(bounds[1]),total-1);
+                  if(start>end||start>=total){asset.close();headers.put("Content-Range","bytes */"+total);return new WebResourceResponse(type,null,416,"Range Not Satisfiable",headers,new ByteArrayInputStream(new byte[0]));}
+                  long skipped=0;while(skipped<start){long n=asset.skip(start-skipped);if(n<=0){if(asset.read()==-1)throw new IOException("Short video");n=1;}skipped+=n;}
+                  final long length=end-start+1;headers.put("Content-Range","bytes "+start+"-"+end+"/"+total);headers.put("Content-Length",Long.toString(length));
+                  InputStream limited=new FilterInputStream(asset){long remaining=length;@Override public int read()throws IOException{if(remaining<=0)return -1;int value=super.read();if(value>=0)remaining--;return value;}@Override public int read(byte[] b,int off,int len)throws IOException{if(remaining<=0)return -1;int n=in.read(b,off,(int)Math.min(len,remaining));if(n>0)remaining-=n;return n;}};
+                  return new WebResourceResponse(type,null,206,"Partial Content",headers,limited);
+                }catch(NumberFormatException ignored){}
+              }
+              headers.put("Content-Length",Long.toString(total));
+            }
+            return new WebResourceResponse(type,(type.equals("application/gzip")||type.startsWith("image/")||type.startsWith("video/"))?null:"UTF-8",200,"OK",headers,asset);
           }catch(IOException ignored){}
         }
         return new WebResourceResponse("text/plain","UTF-8",404,"Not Found",null,new ByteArrayInputStream(new byte[0]));

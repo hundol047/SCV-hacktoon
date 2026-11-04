@@ -1,4 +1,5 @@
 "use client";
+import UsageVideo from './UsageVideo';
 import BeforeDeparture from './BeforeDeparture';
 import {createId} from '../domain/id';
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -428,9 +429,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
         <nav aria-label="주요 메뉴">
           <button onClick={() => start(false)}>여행 만들기</button>
 
-          <button className="nav-demo" onClick={demo}>
-            예시 체험 <ArrowUpRight size={16} />
-          </button>
+
         </nav>
         <span className="header-caption">AI 기반 지역 맞춤형 여행코스 추천</span>
         <div className="header-account"><AccountPanel/></div>
@@ -514,6 +513,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
                 </div>
               </div>
             </section>
+            <UsageVideo/>
             {ready && savedDraft && (
               <section className="resume">
                 <div>
