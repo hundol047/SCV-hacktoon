@@ -1,9 +1,15 @@
+import {vworldLocation} from './vworld-location';
 import {z} from 'zod';
 import {locationsSchema} from '../domain/location';
 import {hash} from './security';
 import type {RPC} from './store';
 export class LocationSearchError extends Error{constructor(public code:'BUSY'|'PROVIDER'|'STORAGE'){super(code);}}
 export async function searchLocation(query:string,rpc:RPC,fetcher:typeof fetch=fetch){
+ if(process.env.BOPok_VWORLD_KEY?.trim()){
+  const officialKey='location:vworld-v1:'+hash(query.normalize('NFKC').trim().replace(/\s+/g,' '));
+  const cachedOfficial=await rpc.call('bopok_cache',{p_key:officialKey});if(cachedOfficial)return locationsSchema.parse(cachedOfficial);
+  const official=await vworldLocation(query,fetcher);if(official.length){await rpc.call('bopok_cache',{p_key:officialKey,p_value:official});return official;}
+ }
  const key='location:'+hash(query.normalize('NFKC').trim().replace(/\s+/g,' '));
  const cached=await rpc.call('bopok_cache',{p_key:key});if(cached)return locationsSchema.parse(cached);
  if(!(await rpc.call('bopok_geo_guard',{p_provider:'nominatim'})).allowed)throw new LocationSearchError('BUSY');
