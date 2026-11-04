@@ -16,7 +16,7 @@ final class ServerAPI {
   synchronized void request(String id,String path,String body){
     if(id==null||!id.matches("[A-Za-z0-9-]{1,80}"))return;
     if(busy){send(id,503,null,"다른 AI 요청이 진행 중입니다.");return;}
-    if(path==null||!path.matches("/api/(courses|replacements|promotions|conditions|advice)")||body==null||body.getBytes(StandardCharsets.UTF_8).length>8388608){send(id,400,null,"잘못된 요청입니다.");return;}
+    if(path==null||!path.matches("/api/(courses|replacements|promotions|conditions|advice|place-details)")||body==null||body.getBytes(StandardCharsets.UTF_8).length>8388608){send(id,400,null,"잘못된 요청입니다.");return;}
     busy=true;
     new Thread(()->{HttpURLConnection c=null;try{
       c=(HttpURLConnection)new URL(BASE+path).openConnection();c.setInstanceFollowRedirects(false);c.setConnectTimeout(10000);c.setReadTimeout(40000);c.setRequestMethod("POST");c.setDoOutput(true);

@@ -57,6 +57,8 @@ import {clearPhotos} from '../adapters/photo-storage';
 import LibraryPanel from './LibraryPanel';
 import FamilySync from './FamilySync';
 import AccountPanel from './AccountPanel';
+import CompactItinerary from './CompactItinerary';
+import Credits from './Credits';
 import VenueFacts from './VenueFacts';
 import RouteLookup from './RouteLookup';
 import LiveRoadRoute from './LiveRoadRoute';
@@ -624,7 +626,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
         ) : null}
         {(screen === "conditions" || screen === "basics") && (
           <section className="workspace form-workspace">
-            <div className="form-heading"><button className="back" onClick={()=>navigate('home')}><ArrowLeft size={18}/> 홈으로</button><span className="eyebrow">나만의 한국 여행</span><h1 tabIndex={-1}>다섯 가지만 고르면 여행 준비 끝</h1><p>지역부터 취향까지, 한 화면에서 코스를 만들어 보세요.</p></div>
+            <div className="form-heading"><button className="back" onClick={()=>navigate('home')}><ArrowLeft size={18}/> 홈으로</button><span className="eyebrow">나만의 한국 여행</span><h1 tabIndex={-1}>나에게 맞는 여행을 만들어 보세요</h1><p>출발지와 목적지, 함께 떠날 인원을 알려주세요.</p></div>
             <div className="form-body"><SimpleTripForm initialTransport={b.transport==='driving'?'driving':'taxi'} conditions={defaultConditions} onTrip={t=>{setTrip(t);setDay(1);setProposal(null);setSavedDraft(null);try{localStorage.removeItem(FORM_KEY);}catch{}navigate('result');}}/></div>
           </section>
         )}
@@ -636,142 +638,20 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
                 <h1 tabIndex={-1}>{trip.basics.title}</h1>
                 <p>
                   {trip.basics.region} · {trip.basics.date}부터{" "}
-                  {trip.basics.days}일 · 도시별 현지 시간
+                  {trip.basics.days}일
                 </p>
               </div>
               <button className="secondary" onClick={() => navigate("parent")}>
                 <Heart size={18} /> 일정 한눈에
               </button>
             </div>
-            <DemoBanner />
-            <DayRoadPlanner trip={trip} onTrip={t=>{setTrip(t);setProposal(null);}}/><WeatherAlternatives trip={trip} onTrip={t=>{setTrip(t);setProposal(null);}}/><VisitChecks trip={trip} onTrip={t=>{setTrip(t);setProposal(null);}}/>
-            <AIReplacement key={`replacement:${trip.id}:${trip.revision}`} trip={trip} onTrip={t=>{setTrip(t);setProposal(null);}}/>
-            <VenueFacts trip={trip} onTrip={t=>{setTrip(t);setProposal(null);}}/><AIAdvice key={`${trip.id}:${trip.revision}`} trip={trip}/><details className="cloud-panel"><summary>한 구간만 자세히 보기</summary><LiveRoadRoute trip={trip} onTrip={t=>{setTrip(t);setProposal(null);}}/></details><RouteLookup trip={trip} onTrip={t=>{setTrip(t);setProposal(null);}} cloudId={initialCloud?.id} accessToken={accessToken}/>
-            <LibraryPanel trips={library} current={trip} onSelect={t=>{setTrip(t);setDay(1);setProposal(null);}}/>
-            <div className="result-layout">
-              <div className="schedule">
-                <div className="timeline-toolbar">
-                  <div className="day-tabs">
-                    {Array.from({ length: trip.basics.days }, (_, i) => (
-                      <button
-                        key={i}
-                        className={day === i + 1 ? "active" : ""}
-                        onClick={() => setDay(i + 1)}
-                      >
-                        {i + 1}일차{" "}
-                        <span>
-                          {dayDate(trip.basics, i + 1)
-                            .slice(5)
-                            .replace("-", ".")}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                  <button
-                    className="text-button"
-                    onClick={() => setEdit(!edit)}
-                  >
-                    <NotebookPen size={16} />
-                    {edit ? "편집 마치기" : "직접 수정"}
-                  </button>
-                </div>
-                <p className="helper">{destinationFor(trip.basics,day)?.region??trip.basics.region} · {destinationFor(trip.basics,day)?.timezone??trip.basics.timezone} 현지 시간</p>
-                {edit ? (
-                  <Editor
-                    items={trip.items}
-                    days={trip.basics.days}
-                    onChange={manualEdit}
-                  />
-                ) : (
-                  <><TravelSummary basics={trip.basics} day={day}/><Timeline basics={trip.basics}
-                    items={trip.items.filter((i) => i.day === day)}
-                    report={report}
-                  /></>
-                )}
-                <div className="schedule-actions">
-                  <button
-                    className="secondary"
-                    onClick={() =>
-                      setNotice(
-                        `일정을 다시 점검했어요. ${statusLabels[report.status]} · ${report.issues.length}개 확인 항목`,
-                      )
-                    }
-                  >
-                    일정 점검하기
-                  </button>
-                  <button
-                    className="text-button"
-                    disabled={!trip.history.length}
-                    onClick={() => {
-                      setTrip(undo(trip));
-                      setProposal(null);
-                      setNotice(
-                        "이전 일정으로 되돌렸습니다. 조건을 다시 점검했습니다.",
-                      );
-                    }}
-                  >
-                    <Undo2 size={16} /> 이전 일정으로 되돌리기
-                  </button>
-                </div>
-                {trip.feedback.length > 0 && (
-                  <div className="feedback-summary">
-                    <h2>여행 메모</h2>
-                    {trip.feedback.map((f) => (
-                      <p key={f.id}>
-                        <Heart size={16} /> {f.text}
-                      </p>
-                    ))}
-                    <p className="helper">
-                      기존 일정을 바로 바꾸지 않습니다. 새 수정안에서 반영
-                      결과를 확인하세요.
-                    </p>
-                    <button className="secondary" onClick={propose}>
-                      의견을 반영한 수정안 보기
-                    </button>
-                  </div>
-                )}
-                <details className="conditions-detail">
-                  <summary>입력한 조건 확인 및 변경</summary>
-                  <ConditionCard c={trip.conditions} />
-                  <button
-                    className="secondary"
-                    onClick={() => {
-                      setC(trip.conditions);
-                      setB(trip.basics);
-                      setStep(0);
-                      setExisting(true);
-                      setImportItems(trip.items);
-                      navigate("basics");
-                    }}
-                  >
-                    조건 수정 후 재점검
-                  </button>
-                </details>
-              </div>
-              <aside className="assessment">
-                <span className="eyebrow">선택한 여행 조건으로 살펴봤어요</span>
-                <ReportView report={report} />
-                <button className="primary full" onClick={propose}>
-                  여행 취향에 맞게 수정하기 <ArrowRight size={18} />
-                </button>
-                <p className="helper">
-                  규칙 기반 점검 · 조건을 완화하지 않고 후보를 다시
-                  조합합니다.
-                </p>
-                <div className="source-note">
-                  <strong>판정의 범위를 확인해 주세요.</strong>
-                  <p>
-                    {trip.basics.mode==='demo'?'모든 수치와 시설 정보는 가상입니다.':'실제 자료의 시설·메뉴·내부 보행 정보는 미확인일 수 있습니다.'} 정보 부족은 충족으로
-                    계산하지 않습니다. 실제 여행의 안전·편안함을 보증하지
-                    않습니다.
-                  </p>
-                  <p>
-                    확인된 전체 비용 {money(report.cost,trip.basics.currency)}<br />
-                    숙박·지역 도착 비용 제외
-                  </p>
-                </div>
-              </aside>
-            </div>
+            <CompactItinerary key={trip.id} trip={trip}/>
+            <details className="trip-tools"><summary>일정 수정·추가 기능</summary>
+              <AIReplacement key={`replacement:${trip.id}:${trip.revision}`} trip={trip} onTrip={t=>{setTrip(t);setProposal(null);}}/>
+              <DayRoadPlanner trip={trip} onTrip={t=>{setTrip(t);setProposal(null);}}/>
+              <details><summary>시간·장소 직접 수정</summary><Editor items={trip.items} days={trip.basics.days} onChange={manualEdit}/></details>
+              <button className="secondary" disabled={!trip.history.length} onClick={()=>setTrip(undo(trip))}>이전 일정으로 되돌리기</button>
+            </details>
           </section>
         )}
         {screen === "compare" && trip && proposal && (
@@ -1012,10 +892,10 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
           <strong>여행잇.</strong>
           <span>함께 떠나는 여행, 서로의 속도로.</span>
         </div>
-        <div className="footer-meta">
+        <div className="footer-meta"><Credits trip={trip??undefined}/>
 
           <span>
-            여행 기록은 이 기기에 저장됩니다.
+
           </span>
           <button className="text-button" onClick={remove}>
             <Trash2 size={14} /> 내 여행 데이터 삭제
@@ -1027,7 +907,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
 }
 
 function DemoBanner() {
-  const {catalog}=useCatalog();if(catalog.mode==='real')return <div className="demo-banner"><Leaf size={18}/><div><strong>{catalog.sourceNotice}</strong><span>수집 {catalog.collectedAt??'미확인'} · 실제 소요 시간·계단·메뉴 확인이 필요합니다.</span><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap 기여자 · ODbL</a></div></div>;
+  const {catalog}=useCatalog();if(catalog.mode==='real')return null;
   return (
     <div className="demo-banner">
       <Leaf size={18} />

@@ -31,7 +31,7 @@ public class MainActivity extends Activity {
     web=new WebView(this);root.addView(web);setContentView(root);
     WebSettings settings=web.getSettings();settings.setJavaScriptEnabled(true);settings.setDomStorageEnabled(true);
     settings.setAllowFileAccess(false);settings.setAllowContentAccess(true);settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
-    settings.setUserAgentString(settings.getUserAgentString()+" Yeohaengit/0.15.1 (+https://github.com/hundol047/SCV-hacktoon)");
+    settings.setUserAgentString(settings.getUserAgentString()+" Yeohaengit/0.16.0 (+https://github.com/hundol047/SCV-hacktoon)");
     settings.setJavaScriptCanOpenWindowsAutomatically(false);settings.setSupportMultipleWindows(false);
     WebView.setWebContentsDebuggingEnabled(false);
     api=new ServerAPI(this,web);

@@ -70,6 +70,9 @@ const date = z
     return !Number.isNaN(+d) && d.toISOString().slice(0, 10) === v;
   }, "올바른 날짜를 입력해 주세요.");
 const basicsBaseSchema = z.object({
+  departureRegion:z.string().trim().min(1).max(120).optional(),
+  departureCoordinates:z.object({latitude:z.number().min(-90).max(90),longitude:z.number().min(-180).max(180)}).optional(),
+  travelers:z.number().int().min(1).max(20).optional(),
   title: z.string().trim().min(1).max(80),
   region: z.string().min(1).max(120),
   date,

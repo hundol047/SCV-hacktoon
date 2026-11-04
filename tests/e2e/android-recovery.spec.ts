@@ -4,6 +4,7 @@ import {courseInput} from '../../src/domain/regional-course';
 test('APK web assets search the bundled dataset and route AI to the server bridge',async({page})=>{
  let calls=0;
  await page.exposeFunction('syntheticServer',async(path:string,body:string)=>{
+  if(path==='/api/place-details')return {places:{}};
   expect(path).toBe('/api/courses');const data=JSON.parse(body);expect(data.consent).toBe(true);expect(data.basics.region).toContain('서울');
   const candidates=courseInput(data.basics,data.conditions,data.catalog,data.day).candidates;calls++;return {candidateIds:candidates.slice(0,3).map(p=>p.place.id)};
  });
@@ -13,8 +14,8 @@ test('APK web assets search the bundled dataset and route AI to the server bridg
   try{const body=await readFile('android/build/assets'+(path==='/'?'/index.html':path));const type=path.endsWith('.js')?'application/javascript':path.endsWith('.css')?'text/css':path.endsWith('.gz')?'application/gzip':path.endsWith('.jpg')?'image/jpeg':'text/html';await route.fulfill({body,contentType:type});}catch{await route.fulfill({status:404});}
  });
  await page.goto('http://localhost:4173/');await page.getByRole('button',{name:'지역 맞춤 여행 시작'}).click();
- const form=page.getByRole('region',{name:'간편 AI 일정 입력'});await expect(form.locator('input,select')).toHaveCount(5);
- await form.getByLabel('여행 지역',{exact:true}).fill('서울 종로구');await form.getByRole('button',{name:'지역 검색하고 AI 일정 생성'}).click();
+ const form=page.getByRole('region',{name:'간편 AI 일정 입력'});await expect(form.locator('input,select')).toHaveCount(7);
+ await form.getByLabel('출발 지역',{exact:true}).fill('서울');await form.getByLabel('여행 지역',{exact:true}).fill('서울 종로구');await form.getByRole('button',{name:'지역 검색하고 AI 일정 생성'}).click();
  await expect(page.getByRole('heading',{name:'서울 종로구 여행',exact:true})).toBeVisible({timeout:20000});expect(calls).toBe(1);
  expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('bopok:trip:v1')!).catalog.places.length)).toBeGreaterThan(2);
 });

@@ -16,6 +16,7 @@ const fact = <T>(id: string, field: string, value: T | null): Fact<T> => ({
   checked: "simulated",
 });
 export type Place = {
+  visitorInfo?:{address?:string;hoursText?:string;phone?:string;website?:string};
   facilities?:Partial<Record<Facility,Fact<boolean>>>;
   opening?:Fact<OpeningInfo>;
   id: string;

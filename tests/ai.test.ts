@@ -115,7 +115,7 @@ it("AI 요청 타임아웃 후 대체한다 (외부 API 미호출)", async () =>
   const p = provider(fetcher,5);
   expect((await extractWithFallback("바다 보기", p)).status).toBe("fallback");
 });
-it("Bedrock Converse 구조화 출력 요청을 만들고 검증한다 (모의 응답)", async () => {
+it("Bedrock Converse JSON 지시와 응답 검증을 사용한다 (모의 응답)", async () => {
   const output = await new RulesProvider().extract("한 번에 20분");
   let requestBody: any;
   const fetcher = vi.fn(async (_url: unknown, init: RequestInit) => {
@@ -133,6 +133,6 @@ it("Bedrock Converse 구조화 출력 요청을 만들고 검증한다 (모의 �
     "connected",
   );
   expect(requestBody.modelId).toBe(BEDROCK_MODEL);
-  expect(requestBody.outputConfig.textFormat.type).toBe("json_schema");
-  expect(JSON.parse(requestBody.outputConfig.textFormat.structure.jsonSchema.schema).type).toBe('object');
+  expect(requestBody.outputConfig).toBeUndefined();
+  expect(JSON.parse(requestBody.system[0].text.split('Schema travel_conditions: ')[1]).type).toBe('object');
 });

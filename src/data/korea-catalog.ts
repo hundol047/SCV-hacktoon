@@ -24,10 +24,11 @@ export function koreaPlace(record:KoreaRecord,snapshot:KoreaSnapshot,region:stri
  const source='https://www.openstreetmap.org/'+record.id.replace('osm:','').replace(':','/');
  const collectedAt=snapshot.coverage.filter(c=>record.provinces.includes(c.code)).map(c=>c.collectedAt).sort()[0];
  const fact=<T>(field:string,value:T|null):Fact<T>=>({value,evidenceId:record.id+':'+field,source,nature:'real',checked:value===null?'unknown':'source',collectedAt});
- return {id:record.id,name:record.name,kind:record.category==='food'?'meal':['cafe','rest'].includes(record.category)?'rest':'visit',
+ const website=record.tags.website??record.tags['contact:website'];
+ return {visitorInfo:{address:record.address||undefined,hoursText:record.tags.opening_hours,phone:record.tags.phone??record.tags['contact:phone'],website:website&&/^https?:\/\//.test(website)?website:undefined},id:record.id,name:record.name,kind:record.category==='food'?'meal':['cafe','rest'].includes(record.category)?'rest':'visit',
   experiences:record.category==='culture'||record.category==='heritage'?['문화·전시']:record.category==='nature'?['자연 풍경']:[],
   setting:fact('setting',settingFromTags(record.tags)),
-  description:`${koreaCategories[record.category]} · ${record.address||'상세 주소 확인 필요'} · 전국 OSM 수집 자료. 운영·시설·메뉴는 별도 확인이 필요합니다.`,
+  description:koreaCategories[record.category],
   walkMin:fact<number>('walkMin',null),walkM:fact<number>('walkM',null),stairs:fact<boolean>('stairs',record.tags.highway==='steps'?true:record.tags.step_count==='0'?false:null),
   seat:fact<boolean>('seat',/^\d+$/.test(record.tags.seats??'')&&Number(record.tags.seats)>0||record.tags.bench==='yes'?true:null),
   foods:fact<string[]>('foods',null),cost:fact<number>('cost',null),hours:fact<[number,number]>('hours',null),situations:fact<string[]>('situations',null),

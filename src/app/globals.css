@@ -1901,3 +1901,11 @@ input[hidden] { display: none !important; }
 
 .header-account summary:hover{text-decoration:underline}
 .header-account summary:focus-visible{outline:2px solid var(--green);outline-offset:3px}
+
+.header-account{transform:translateY(3px)}
+.compact-itinerary{max-width:850px;margin:16px auto 28px}
+.trip-overview,.compact-tools{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;padding:16px 0}
+.trip-overview strong{font-size:22px}.trip-overview span,.compact-tools{font-size:14px;color:#52665b}
+.compact-stops{list-style:none;margin:0;padding:0}.compact-stops>li{display:grid;grid-template-columns:64px 1fr;gap:16px;padding:20px 0;border-bottom:1px solid var(--line)}
+.compact-stops time{font-weight:700;color:var(--green);padding-top:4px}.compact-stops h3{font-size:20px;margin:0 0 8px}.compact-stops p{margin:6px 0;font-size:14px;line-height:1.6}.stop-links{display:flex;gap:18px;font-size:14px;margin:10px 0}.compact-stops details{font-size:14px}.trip-tools{max-width:850px;margin:20px auto;border-top:1px solid var(--line);padding:16px 0}.trip-tools summary,.credits summary{cursor:pointer}.credits{font-size:12px;max-width:800px}.credits>div{padding:16px;background:var(--cream,#faf9f5);line-height:1.7}
+@media(max-width:600px){.compact-stops>li{grid-template-columns:48px 1fr;gap:10px}.compact-stops h3{font-size:18px}}
