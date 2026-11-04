@@ -456,8 +456,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
               <button className="primary" onClick={()=>startTaxi('taxi')}>택시 여행 빠르게 만들기 <ArrowRight size={18}/></button><button className="secondary" onClick={()=>startTaxi('driving')}>자가용 여행 빠르게 만들기 <ArrowRight size={18}/></button>
 
             </section>
-            <DeferredPanel title="지역 축제·문화행사 찾아보기"><LocalEvents onTrip={t=>{setTrip(t);setDay(1);setProposal(null);navigate('result');}}/></DeferredPanel>
-            <DeferredPanel title="소상공인 홍보 콘텐츠 만들기"><PromotionStudio/></DeferredPanel>
+            <UsageVideo/>
             <section className="hero">
               <div className="hero-copy">
                 <div className="eyebrow">
@@ -513,7 +512,8 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
                 </div>
               </div>
             </section>
-            <UsageVideo/>
+            <DeferredPanel title="지역 축제·문화행사 찾아보기"><LocalEvents onTrip={t=>{setTrip(t);setDay(1);setProposal(null);navigate('result');}}/></DeferredPanel>
+            <DeferredPanel title="소상공인 홍보 콘텐츠 만들기"><PromotionStudio/></DeferredPanel>
             {ready && savedDraft && (
               <section className="resume">
                 <div>
