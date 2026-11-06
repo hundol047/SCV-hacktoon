@@ -72,6 +72,14 @@ const date = z
 export const travelHoursSchema=z.object({start:z.number().int().min(0).max(1409),end:z.number().int().min(30).max(1439)}).refine(v=>v.end-v.start>=30,'종료 시간은 시작 시간보다 30분 이상 늦게 선택해 주세요.');
 const basicsBaseSchema = z.object({
   travelHours:travelHoursSchema.optional(),
+  startMode:z.enum(['home','destination']).optional(),
+  returnBy:z.number().int().min(0).max(1439).optional(),
+  tripBudget:z.number().int().min(0).max(10000000).optional(),
+  groupToken:z.string().regex(/^[a-f0-9]{64}$/).optional(),
+  roadCheckedAt:z.string().datetime().optional(),
+  dayWindows:z.array(z.object({day:z.number().int().min(1).max(30),start:z.number().int().min(0).max(1439),end:z.number().int().min(1).max(1439)}).refine(v=>v.start<v.end)).max(30).optional(),
+  commutes:z.array(z.object({day:z.number().int().min(1).max(30),kind:z.enum(['outbound','homebound']),minutes:z.number().int().nonnegative(),distanceKm:z.number().nonnegative(),depart:z.number().int().min(0).max(1439),arrive:z.number().int().min(0).max(1439)})).max(2).optional(),
+
   daySession:z.enum(['morning','afternoon']).optional(),
   departureRegion:z.string().trim().min(1).max(120).optional(),
   departureCoordinates:z.object({latitude:z.number().min(-90).max(90),longitude:z.number().min(-180).max(180)}).optional(),

@@ -2,7 +2,7 @@
 import {locationResultSchema,locationsSchema,type LocationResult} from '../domain/location';
 import {createId} from '../domain/id';
 import {useEffect,useRef,useState} from 'react';
-import {defaultBasics,type Conditions,type Trip,type Basics} from '../domain/schema';
+import {defaultBasics,tripSchema,type Conditions,type Trip,type Basics} from '../domain/schema';
 import {catalogSchema} from '../data/catalog';
 import {validateBatch} from '../domain/course-batch';
 import TravelBookings from './TravelBookings';
@@ -13,6 +13,7 @@ import {koreaRegions} from '../data/korea-tourism';
 export default function SimpleTripForm({onTrip,conditions:baseConditions,initialTransport='taxi'}:{onTrip:(trip:Trip)=>void;conditions:Conditions;initialTransport?:'taxi'|'driving'}){
  const [region,setRegion]=useState(''),[date,setDate]=useState(()=>new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Seoul'}).format(new Date())),[days,setDays]=useState(1),[transport,setTransport]=useState<'taxi'|'driving'>(initialTransport),[interests,setInterests]=useState<string[]>(baseConditions.experiences.length?[...baseConditions.experiences]:['자연 풍경']);
  const [startTime,setStartTime]=useState('09:00'),[endTime,setEndTime]=useState('18:30');
+ const [startMode,setStartMode]=useState<'home'|'destination'>('destination'),[returnHome,setReturnHome]=useState(false),[returnTime,setReturnTime]=useState('20:00'),[budget,setBudget]=useState('');
  const [departure,setDeparture]=useState(''),[travelers,setTravelers]=useState(2);
  const [locations,setLocations]=useState<LocationResult[]>([]),[selectedLocation,setSelectedLocation]=useState<LocationResult|null>(null);
  const [busy,setBusy]=useState(false),[error,setError]=useState('');const revision=useRef(0);useEffect(()=>()=>{revision.current++;},[]);
@@ -58,13 +59,13 @@ export default function SimpleTripForm({onTrip,conditions:baseConditions,initial
      origin=foundLocations[0];setSelectedLocation(origin);setLocations([]);
    }
    const departureCoordinates={latitude:origin.latitude,longitude:origin.longitude};
-   let basics:Basics={...defaultBasics,travelHours,title:region.trim()+' 여행',departureRegion:departure.trim(),departureCoordinates,travelers,date,days,mode:'real',region:catalog.region,timezone:'Asia/Seoul',transport,travelPriority:'balanced'};
+   let basics:Basics={...defaultBasics,travelHours,startMode,...(returnHome?{returnBy:minutes(returnTime)}:{}),...(budget?{budget:Number(budget),tripBudget:Number(budget)}:{}),title:region.trim()+' 여행',departureRegion:departure.trim(),departureCoordinates,travelers,date,days,mode:'real',region:catalog.region,timezone:'Asia/Seoul',transport,travelPriority:'balanced'};
    const conditions={...baseConditions,experiences:[...interests]};
    const r=await fetch('/api/courses',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({basics,conditions,catalog,day:1,allDays:true,consent:true})});
    const raw=await r.json();if(!r.ok)throw Error(raw.error);if(current!==revision.current)return;
    basics=validateBatch(basics,conditions,catalog,raw).basics;
-   const result=generate(conditions,basics,[],[],catalog);if(result.blocked&&!result.items.length)throw Error(result.reasons.join(' '));
-   if(current===revision.current)onTrip({version:1,id:createId(),revision:0,conditions,basics,items:result.items,history:[],feedback:[],catalog});
+   const prepared=await fetch('/api/prepare-trip',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({basics,conditions,catalog})});const ready=await prepared.json();if(!prepared.ok)throw Error(ready.error);
+   if(current===revision.current)onTrip({...tripSchema.parse(ready.trip),id:createId()});
  }catch(e){if(current===revision.current)setError(e instanceof Error?e.message:'일정을 만들지 못했습니다.');}finally{if(current===revision.current)setBusy(false);}}
  return <section className="simple-trip" aria-label="간편 AI 일정 입력"><h2>어디로 떠날까요?</h2><div className="field-grid">
  <div className="departure-field"><div className="departure-heading"><label htmlFor="departure-region">출발 지역</label><button type="button" disabled={busy||locating} onClick={previewDeparture}>주소 검색</button><button type="button" disabled={busy||locating} onClick={locateDeparture}>{locating?'위치 확인 중…':'현재 위치'}</button></div><input id="departure-region" disabled={busy} value={departure} onBlur={previewDeparture} maxLength={120} placeholder="판교고, 분당중, 성남시 판교역로 235" onChange={e=>{locationRevision.current++;setLocating(false);setLocationMessage('');latestDeparture.current=e.target.value;setDeparture(e.target.value);setSelectedLocation(null);setLocations([]);}}/>{locationMessage&&<p role="status" className="location-status">{locationMessage}</p>}</div>
@@ -74,6 +75,9 @@ export default function SimpleTripForm({onTrip,conditions:baseConditions,initial
  <label>여행 인원<select disabled={busy} value={travelers} onChange={e=>setTravelers(Number(e.target.value))}>{Array.from({length:20},(_,i)=><option key={i+1} value={i+1}>{i+1}명</option>)}</select></label>
  <label>이동 수단<select disabled={busy} value={transport} onChange={e=>setTransport(e.target.value as 'taxi'|'driving')}><option value="taxi">택시</option><option value="driving">자가용</option></select></label>
  {([{label:'여행 시작',value:startTime,set:setStartTime},{label:'여행 종료',value:endTime,set:setEndTime}]).map(({label,value,set})=><fieldset className="travel-time" key={label} disabled={busy}><legend>{label} 시간</legend><div><select aria-label={label+' 시'} value={value.split(':')[0]} onChange={e=>set(e.target.value+':'+value.split(':')[1])}>{Array.from({length:24},(_,h)=>String(h).padStart(2,'0')).map(h=><option key={h} value={h}>{h}시</option>)}</select><select aria-label={label+' 분'} value={value.split(':')[1]} onChange={e=>set(value.split(':')[0]+':'+e.target.value)}>{['00','10','20','30','40','50'].map(m=><option key={m} value={m}>{m}분</option>)}</select></div></fieldset>)}<p className="travel-hours-help">매일 선택한 시간 안에서 관광·이동·휴식을 배치해요. 종료는 같은 날, 시작보다 30분 이상 늦게 선택해 주세요.</p>
+ <label>시작 시간 기준<select disabled={busy} value={startMode} onChange={e=>setStartMode(e.target.value as 'home'|'destination')}><option value="destination">첫 여행지에서 시작</option><option value="home">출발지에서 출발 · 차량 이동 포함</option></select></label>
+ <label>여행 전체 예산 (원)<input disabled={busy} type="number" min="0" max="10000000" step="10000" placeholder="전체 인원 합계 · 선택 사항" value={budget} onChange={e=>setBudget(e.target.value)}/></label>
+ <div className="return-home"><label className="check-row"><input type="checkbox" disabled={busy} checked={returnHome} onChange={e=>setReturnHome(e.target.checked)}/>마지막 날 출발지로 돌아올 시간 지정</label>{returnHome&&<label>귀가 완료 시간<select disabled={busy} value={returnTime} onChange={e=>setReturnTime(e.target.value)}>{Array.from({length:144},(_,n)=>`${String(Math.floor(n/6)).padStart(2,'0')}:${n%6}0`).map(t=><option key={t}>{t}</option>)}</select></label>}</div>
  <fieldset className="interest-options" disabled={busy}><legend>여행 취향 <small>여러 개 선택할 수 있어요</small></legend><div><button type="button" aria-pressed={interests.length===0} onClick={()=>setInterests([])}>골고루</button>{[...new Set(['자연 풍경','문화·전시','지역 음식','사진 찍기','바다 보기','조용한 카페',...baseConditions.experiences])].map(value=><button type="button" key={value} aria-pressed={interests.includes(value)} onClick={()=>setInterests(current=>current.includes(value)?current.filter(v=>v!==value):current.length<12?[...current,value]:current)}>{value}</button>)}</div></fieldset>
  </div>
  <TravelBookings destination={region}/>

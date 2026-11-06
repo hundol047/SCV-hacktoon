@@ -59,6 +59,7 @@ import {clearPhotos} from '../adapters/photo-storage';
 import LibraryPanel from './LibraryPanel';
 import FamilySync from './FamilySync';
 import AccountPanel from './AccountPanel';
+import RemainingTrip from './RemainingTrip';
 import CompactItinerary from './CompactItinerary';
 import Credits from './Credits';
 import VenueFacts from './VenueFacts';
@@ -646,7 +647,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
                 <Heart size={18} /> 일정 한눈에
               </button>
             </div>
-            <CompactItinerary key={trip.id} trip={trip}/>
+            <CompactItinerary key={trip.id} trip={trip}/><details className="trip-tools"><summary>동행자 의견·남은 일정 재추천</summary><RemainingTrip key={trip.id+':'+trip.revision} trip={trip} onTrip={t=>{setTrip(t);setProposal(null);}}/></details>
             <details className="trip-tools"><summary>일정 수정·추가 기능</summary>
               <AIReplacement key={`replacement:${trip.id}:${trip.revision}`} trip={trip} onTrip={t=>{setTrip(t);setProposal(null);}}/>
               <DayRoadPlanner trip={trip} onTrip={t=>{setTrip(t);setProposal(null);}}/>

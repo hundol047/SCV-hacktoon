@@ -29,6 +29,7 @@ with tempfile.TemporaryDirectory() as tmp:
     with zipfile.ZipFile(output, 'w', zipfile.ZIP_DEFLATED) as zipped:
         zipped.write(archive, 'yeohaengit-powershell/yeohaengit-source.tar.gz')
         zipped.write(root / '.env.example', 'yeohaengit-powershell/server.env.example')
+        zipped.write(root / 'supabase/migrations/013_group_votes.sql', 'yeohaengit-powershell/013_group_votes.sql')
         for name in ['Deploy-Yeohaengit.ps1', 'deploy-server.sh', 'README.txt']:
             zipped.write(root / 'deploy/powershell' / name, 'yeohaengit-powershell/' + name)
     with zipfile.ZipFile(output) as zipped:

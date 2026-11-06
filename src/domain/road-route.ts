@@ -14,7 +14,7 @@ export function parseRoadRoute(raw:unknown,from:Place,to:Place):RoadRoute{
   if(fromAccess>1000||toAccess>1000)throw Error('장소에서 1km 이내에 연결되는 자동차 도로가 없습니다. 승하차 지점을 확인하세요.');
   return {distance:r.distance,seconds:r.duration,points,fromAccess,toAccess,fetchedAt:new Date().toISOString()};
 }
-export function roadFact(r:RoadRoute,from:Place,to:Place,transport:'taxi'|'driving'):Route{
+export function roadFact(r:RoadRoute,from:Pick<Place,'id'>,to:Pick<Place,'id'>,transport:'taxi'|'driving'):Route{
   const id=`r:${from.id}:${to.id}:${transport}`;
   const fact=<T>(field:string,value:T|null):Fact<T>=>({value,evidenceId:`${id}:${field}`,source:'https://router.project-osrm.org',nature:'real',checked:value===null?'unknown':'source',collectedAt:r.fetchedAt});
   return {id,fromId:from.id,toId:to.id,transport,mode:'real',distanceM:fact('distanceM',r.distance),duration:fact('duration',Math.ceil(r.seconds/60)),walkMin:fact<number>('walkMin',null),walkM:fact<number>('walkM',null),cost:fact<number>('cost',null),stairs:fact<boolean>('stairs',null)};

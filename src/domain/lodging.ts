@@ -1,0 +1,3 @@
+import {z} from 'zod';
+export const lodgingSchema=z.object({id:z.string(),name:z.string(),address:z.string(),latitude:z.number(),longitude:z.number(),distanceKm:z.number().nonnegative()});
+export function lodgingLinks(name:string,checkIn:string,checkOut:string,adults:number,rooms:number){return {booking:'https://www.booking.com/searchresults.ko.html?'+new URLSearchParams({ss:name,checkin:checkIn,checkout:checkOut,group_adults:String(adults),no_rooms:String(rooms),group_children:'0'}),compare:'https://www.google.com/travel/search?'+new URLSearchParams({q:`${name} ${checkIn} ${checkOut} 성인 ${adults}명 객실 ${rooms}개 숙소 가격 비교`})};}

@@ -1,8 +1,9 @@
+import {realisticDay} from './realistic-day';
 import type {Basics,Conditions,Item} from './schema';
 import type {Place} from '../data/demo';
 import {indexCatalog,type Catalog} from '../data/catalog';
 export function sessionDay(selected:Place[],basics:Basics,conditions:Conditions,catalog:Catalog,day:number):Item[]{
- if(!selected.length)return [];if(basics.travelHours)return customDay(selected,basics,conditions,catalog,day);const morning=basics.daySession==='morning';let cursor=morning?540:780;const end=morning?1110:1140;const rest=conditions.restMin??15;
+ if(!selected.length)return [];if(basics.roadCheckedAt&&basics.travelHours)return realisticDay(selected,basics,conditions,catalog,day);if(basics.travelHours)return customDay(selected,basics,conditions,catalog,day);const morning=basics.daySession==='morning';let cursor=morning?540:780;const end=morning?1110:1140;const rest=conditions.restMin??15;
  const moves=selected.map((p,i)=>i===0?0:Math.max(1,Math.ceil(indexCatalog(catalog).getRoute(selected[i-1].id,p.id,basics.transport)?.duration.value??20)));
  if(moves.some(n=>!Number.isFinite(n)))throw Error('이동 시간을 확인해 주세요.');
  const items:Item[]=[];let mealNumber=0;
