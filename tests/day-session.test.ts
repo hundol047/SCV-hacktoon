@@ -14,3 +14,18 @@ it('limited source data uses explicit free time, not fabricated venues or visits
 import {airOrSeaTrip} from '../src/domain/booking';
 it('Jeju and overseas trips use flight/ferry guidance while local Jeju travel stays local',()=>{expect(airOrSeaTrip({...b,region:'제주특별자치도'})).toBe(true);expect(airOrSeaTrip({...b,region:'도쿄',timezone:'Asia/Tokyo',currency:'JPY'})).toBe(true);expect(airOrSeaTrip({...b,region:'제주특별자치도',departureCoordinates:{latitude:33.5,longitude:126.5}})).toBe(false);expect(airOrSeaTrip({...b,region:'부산광역시',departureCoordinates:{latitude:33.5,longitude:126.5}})).toBe(true);});
 it('combines three full days before final validation rather than rejecting missing sibling days',()=>{let basics={...b,days:3,daySession:'morning' as const};for(let day=1;day<=3;day++){const result=regionalCourse(basics,defaultConditions,catalog,day,{candidateIds:catalog.places.filter(p=>p.kind==='visit').slice((day-1)*2,day*2).map(p=>p.id)});basics=savePlan(basics,result.plan) as typeof basics;}const result=generate(defaultConditions,basics,[],[],catalog);expect(result.blocked).toBe(false);for(let day=1;day<=3;day++){const items=result.items.filter(i=>i.day===day);expect(Math.min(...items.map(i=>i.start))).toBe(540);expect(Math.max(...items.map(i=>i.end))).toBe(1110);}});
+import {travelHoursSchema} from '../src/domain/schema';
+for(const [start,end,count] of [[600,1020,3],[900,1080,1],[1200,1230,1]])it(`custom hours ${start}–${end} determine actual itinerary and survive sharing`,()=>{
+ const basics={...b,travelHours:{start,end}};const chosen=catalog.places.filter(p=>p.kind==='visit').slice(0,count);
+ const course=regionalCourse(basics,defaultConditions,catalog,1,{candidateIds:chosen.map(p=>p.id)});
+ const saved=savePlan(basics,course.plan);const result=generate(defaultConditions,saved,[],[],catalog);
+ expect(result.blocked).toBe(false);expect(result.items[0].start).toBe(start);expect(result.items.at(-1)?.end).toBe(end);expect(result.items.every(i=>i.start>=start&&i.end<=end)).toBe(true);
+ const trip={version:1 as const,id:'custom',revision:0,basics:saved,conditions:defaultConditions,items:result.items,history:[],feedback:[],catalog};expect(sharedTrip(publicPlan(trip)).basics.travelHours).toEqual({start,end});
+});
+it('rejects overnight, invalid and under 30 minute windows',()=>{for(const hours of [{start:900,end:800},{start:600,end:610},{start:600,end:1500}])expect(travelHoursSchema.safeParse(hours).success).toBe(false);});
+it('applies custom hours to every day of a multi-day course',()=>{
+ let basics={...b,days:3,travelHours:{start:900,end:1080}};
+ for(let day=1;day<=3;day++){const place=catalog.places.filter(p=>p.kind==='visit')[day-1];basics=savePlan(basics,regionalCourse(basics,defaultConditions,catalog,day,{candidateIds:[place.id]}).plan) as typeof basics;}
+ const result=generate(defaultConditions,basics,[],[],catalog);expect(result.blocked).toBe(false);
+ for(let day=1;day<=3;day++){const rows=result.items.filter(i=>i.day===day);expect(Math.min(...rows.map(i=>i.start))).toBe(900);expect(Math.max(...rows.map(i=>i.end))).toBe(1080);}
+});

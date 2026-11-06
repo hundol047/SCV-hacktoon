@@ -11,7 +11,7 @@ let day='',calls=0;
 export async function vworldLocation(query:string,fetcher:typeof fetch=fetch):Promise<LocationResult[]>{
  const key=process.env.BOPok_VWORLD_KEY?.trim();if(!key)return [];
  const domain=process.env.BOPok_VWORLD_DOMAIN?.trim()||process.env.BOPok_APP_URL?.trim();
- const isAddress=/\d/.test(query)&&/(?:로|길|동|리|읍|면)\s*\d|(?:로|길)\d/.test(query);
+ const isAddress=/(?:로|길)(?:\s|\d|$)|(?:동|리|읍|면)\s*\d/.test(query);
  const types=isAddress?['road','parcel','place']:['place','road','parcel'];const deadline=Date.now()+6000;
  for(const type of types){const today=new Date().toISOString().slice(0,10);if(day!==today){day=today;calls=0;}if(calls>=1000||Date.now()>=deadline)return [];calls++;
   const params=new URLSearchParams({service:'search',request:'search',version:'2.0',crs:'EPSG:4326',size:'5',page:'1',query,type:type==='place'?'place':'address',format:'json',errorformat:'json',key,...(type==='place'?{}:{category:type}),...(domain?{domain}:{})});

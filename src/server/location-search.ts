@@ -1,3 +1,4 @@
+import {locationQuery} from '../domain/location-query';
 import {vworldLocation} from './vworld-location';
 import {z} from 'zod';
 import {locationsSchema} from '../domain/location';
@@ -5,6 +6,7 @@ import {hash} from './security';
 import type {RPC} from './store';
 export class LocationSearchError extends Error{constructor(public code:'BUSY'|'PROVIDER'|'STORAGE'){super(code);}}
 export async function searchLocation(query:string,rpc:RPC,fetcher:typeof fetch=fetch){
+ query=locationQuery(query);
  if(process.env.BOPok_VWORLD_KEY?.trim()){
   const officialKey='location:vworld-v1:'+hash(query.normalize('NFKC').trim().replace(/\s+/g,' '));
   const cachedOfficial=await rpc.call('bopok_cache',{p_key:officialKey});if(cachedOfficial)return locationsSchema.parse(cachedOfficial);

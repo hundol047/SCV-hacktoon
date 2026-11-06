@@ -18,3 +18,12 @@ it('returns zero matches without substituting a city center and reports provider
  const rpc:RPC={call:async(name)=>name==='bopok_geo_guard'?{allowed:true}:null};expect(await searchLocation('없는 주소',rpc,async()=>Response.json([]))).toEqual([]);
  await expect(searchLocation('주소',rpc,async()=>new Response('',{status:503}))).rejects.toThrow('PROVIDER');
 });
+import {locationQuery} from '../src/domain/location-query';
+it('expands school abbreviations across names and normalizes road numbers',()=>{
+ expect(locationQuery('판교고')).toBe('판교고등학교');expect(locationQuery('수원공고')).toBe('수원공업고등학교');expect(locationQuery('서울여고')).toBe('서울여자고등학교');expect(locationQuery('교보문고')).toBe('교보문고');expect(locationQuery('성남 분당중')).toBe('성남 분당중학교');expect(locationQuery('서울 대치초')).toBe('서울 대치초등학교');expect(locationQuery('서초')).toBe('서초');expect(locationQuery('판교역로235')).toBe('판교역로 235');expect(locationQuery('불정로77번길3')).toBe('불정로 77번길 3');
+});
+it('uses expanded school name and normalized road address for provider requests',async()=>{
+ const rpc:RPC={call:async(name)=>name==='bopok_geo_guard'?{allowed:true}:null};const fetcher=vi.fn(async()=>Response.json([row]));
+ await searchLocation('판교고',rpc,fetcher);expect(new URL(String((fetcher.mock.calls[0] as unknown[])[0])).searchParams.get('q')).toBe('판교고등학교');
+ await searchLocation('성남시 판교역로235',rpc,fetcher);expect(new URL(String((fetcher.mock.calls[1] as unknown[])[0])).searchParams.get('q')).toBe('성남시 판교역로 235');
+});

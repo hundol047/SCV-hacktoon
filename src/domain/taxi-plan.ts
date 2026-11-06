@@ -27,10 +27,10 @@ function routeDistance(ids: string[], byId: Map<string, Place>): number | null {
 export function optimizeTaxiOrder(
   places: Place[], selectedPlaceIds: string[], startPlaceId: string, travelers: number,
   baseFare: number | null, perKmFare: number | null, createdAt = new Date().toISOString(),
-  options: {endPlaceId?: string; returnToStart?: boolean; day?: number; taxiCapacity?: number;transport?:'taxi'|'driving';drivingCosts?:TaxiPlan['drivingCosts']} = {},
+  options: {allowSingle?:boolean;endPlaceId?: string; returnToStart?: boolean; day?: number; taxiCapacity?: number;transport?:'taxi'|'driving';drivingCosts?:TaxiPlan['drivingCosts']} = {},
 ): TaxiOrderResult | { error: string } {
   const ids = [...new Set(selectedPlaceIds)];
-  if (ids.length < 2 || ids.length > 20) return { error: '장소를 2~20곳 선택해 주세요.' };
+  if (ids.length < (options.allowSingle?1:2) || ids.length > 20) return { error: '장소를 2~20곳 선택해 주세요.' };
   if (!ids.includes(startPlaceId)) return { error: '출발 장소를 선택 목록에서 골라 주세요.' };
   if (!Number.isInteger(travelers) || travelers < 1 || travelers > 20) return { error: '여행 인원은 1~20명으로 입력해 주세요.' };
   if ((baseFare === null) !== (perKmFare === null)) return { error: '요금 가정은 기본요금과 km당 요금을 함께 입력해 주세요.' };

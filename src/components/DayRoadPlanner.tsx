@@ -17,7 +17,7 @@ export default function DayRoadPlanner({trip,onTrip}:{trip:Trip;onTrip:(t:Trip)=
    const places=dayStops(trip,day),base=roadBasePlan(trip,day,places),ids=places.map(p=>p.id);
    const table=parseRoadTable(await publicTravelJSON(tableURL(places),c.signal),places);
    const improved=improveRoadOrder(table,ids,base.startPlaceId,base.endPlaceId,base.returnToStart??false,trip.basics.travelPriority==='budget'?'distance':'time');
-   const order=(trip.basics.daySession?ids:improved.order).map(id=>places.find(p=>p.id===id)!);const stops=base.returnToStart?[...order,order[0]]:order;
+   const order=((trip.basics.daySession||trip.basics.travelHours)?ids:improved.order).map(id=>places.find(p=>p.id===id)!);const stops=base.returnToStart?[...order,order[0]]:order;
    const road=parseDayRoad(await publicTravelJSON(dayRoadURL(stops),c.signal),stops);
    const proposal=roadDayProposal(trip,day,base,order,road);
    const current=base.returnToStart?[...ids,ids[0]]:ids;

@@ -7,8 +7,8 @@ export const taxiPlanSchema = z.object({
   transport:z.enum(['taxi','driving']).optional(),
   courseOptions:z.object({weather:weatherSchema,visitMinutes:z.number().int().min(15).max(180),restMinutes:z.number().int().min(5).max(120)}).optional(),
   drivingCosts:z.object({kmPerLiter:z.number().min(1).max(50),fuelPrice:z.number().int().min(0).max(10000),parking:z.number().int().min(0).max(1000000),tolls:z.number().int().min(0).max(1000000)}).optional(),
-  selectedPlaceIds: z.array(z.string().min(1).max(100)).min(2).max(20),
-  orderedPlaceIds: z.array(z.string().min(1).max(100)).min(2).max(20),
+  selectedPlaceIds: z.array(z.string().min(1).max(100)).min(1).max(20),
+  orderedPlaceIds: z.array(z.string().min(1).max(100)).min(1).max(20),
   startPlaceId: z.string().min(1).max(100),
   endPlaceId: z.string().min(1).max(100).optional(),
   returnToStart: z.boolean().optional(),
@@ -69,7 +69,9 @@ const date = z
     const d = new Date(v + "T00:00:00Z");
     return !Number.isNaN(+d) && d.toISOString().slice(0, 10) === v;
   }, "올바른 날짜를 입력해 주세요.");
+export const travelHoursSchema=z.object({start:z.number().int().min(0).max(1409),end:z.number().int().min(30).max(1439)}).refine(v=>v.end-v.start>=30,'종료 시간은 시작 시간보다 30분 이상 늦게 선택해 주세요.');
 const basicsBaseSchema = z.object({
+  travelHours:travelHoursSchema.optional(),
   daySession:z.enum(['morning','afternoon']).optional(),
   departureRegion:z.string().trim().min(1).max(120).optional(),
   departureCoordinates:z.object({latitude:z.number().min(-90).max(90),longitude:z.number().min(-180).max(180)}).optional(),

@@ -11,7 +11,7 @@ export function estimateTrip(trip:Trip,rates:EstimateRates){
  const n=trip.basics.travelers??1,days=trip.basics.days,rooms=Math.ceil(n/2),vehicles=Math.ceil(n/4);
  const safe=(x:number)=>Number.isFinite(x)?Math.max(0,Math.min(10000000,x)):0;
  const r=Object.fromEntries(Object.entries(rates).map(([k,v])=>[k,safe(v)])) as EstimateRates;
- const meals=trip.items.filter(i=>i.kind==='meal').length||days*(trip.basics.daySession==='afternoon'?1:2);
+ const meals=trip.items.filter(i=>i.kind==='meal').length||(trip.basics.travelHours?0:days*(trip.basics.daySession==='afternoon'?1:2));
  // A visit followed by a rest is one admission, not two tickets.
  const visits=trip.items.filter(i=>i.kind==='visit');
  const admission=visits.reduce((sum,i)=>{const p=trip.catalog?.places.find(p=>p.id===i.placeId);const known=trip.basics.currency==='KRW'||!trip.basics.currency?p?.cost.value:null;return sum+(known!=null?safe(known):r.admission)*n;},0);
