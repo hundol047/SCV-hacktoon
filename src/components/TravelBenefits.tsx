@@ -3,11 +3,12 @@ import {useEffect,useState} from 'react';
 import type {Trip} from '../domain/schema';
 import {dayDate} from '../domain/schema';
 import {benefitsReviewedAt} from '../data/travel-benefits';
-import {benefitRegionAliases,koreaToday,selectBenefits} from '../domain/travel-benefits';
+import {benefitRegionAliases,selectBenefits} from '../domain/travel-benefits';
+import {useKoreaToday} from './useKoreaToday';
 const kinds={discount:'조건부 할인',resident:'무료 주민증 발급',pass:'유료 관광패스',directory:'공식 혜택 목록'};
 export default function TravelBenefits({trip,day}:{trip:Trip;day:number}){
- const [region,setRegion]=useState(''),[expanded,setExpanded]=useState(false),[today,setToday]=useState('');
- useEffect(()=>{const update=()=>setToday(koreaToday());update();const t=setInterval(update,60000);window.addEventListener('focus',update);return()=>{clearInterval(t);window.removeEventListener('focus',update);};},[]);
+ const [region,setRegion]=useState(''),[expanded,setExpanded]=useState(false);const today=useKoreaToday();
+
  useEffect(()=>{setRegion('');setExpanded(false);},[trip.id,trip.revision,day]);
  const all=today?selectBenefits(trip,day,region,today):[];const shown=expanded?all:all.slice(0,3);
  return <section className="travel-benefits" aria-label="지역 할인·쿠폰"><details className="benefit-panel"><summary>지역 할인·쿠폰 보기{all.length?` · ${all.length}개`:""}</summary><div className="benefit-heading"><div><h3>여행 혜택 챙기기</h3><p>{dayDate(trip.basics,day)} 방문 기준 · 발급·구매는 제공처에서</p></div><label>혜택 지역<select value={region} onChange={e=>{setRegion(e.target.value);setExpanded(false);}}><option value="">내 일정 지역</option>{Object.keys(benefitRegionAliases).map(r=><option key={r} value={r}>{r}</option>)}</select></label></div>

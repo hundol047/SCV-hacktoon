@@ -23,3 +23,6 @@ export function selectBenefits(trip:Trip,day:number,regionOverride='',today=kore
  .map(b=>({...b,inItinerary:!regionOverride&&!!b.venues?.some(n=>venueNames.some(p=>p.includes(norm(n))))}))
  .sort((a,b)=>Number(b.inItinerary)-Number(a.inItinerary)||(a.kind==='discount'?0:a.kind==='resident'?1:a.kind==='pass'?2:3)-(b.kind==='discount'?0:b.kind==='resident'?1:b.kind==='pass'?2:3));
 }
+
+// Match the actual facility, not just its city or a similarly named business.
+export function benefitsForPlace(benefits:Benefit[],name:string){return benefits.filter(b=>b.venues?.some(v=>norm(v)===norm(name)));}

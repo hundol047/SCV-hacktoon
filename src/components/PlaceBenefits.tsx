@@ -1,0 +1,2 @@
+import type {Benefit} from '../data/travel-benefits';
+export default function PlaceBenefits({benefits}:{benefits:Benefit[]}){if(!benefits.length)return null;return <div className="place-benefits" aria-label="이 장소의 할인 혜택">{benefits.map(b=><div key={b.id}><strong>{b.summary}{b.audience==='foreign'?' · 외국인 전용':b.audience==='resident'?' · 거주자 한정':''}</strong><p>{b.conditions}</p><div>{b.until&&<small>{b.from} ~ {b.until}</small>}<a href={b.url} target="_blank" rel="noreferrer">혜택 자세히 보기 ↗</a></div></div>)}</div>;}
