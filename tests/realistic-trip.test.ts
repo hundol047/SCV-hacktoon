@@ -32,3 +32,21 @@ it('an explicit empty completed list does not pretend a delayed traveler visited
 it('explicitly completed stops stay locked and in the saved day plan',async()=>{
  const trip=await prepareTrip(basics,defaultConditions,catalog,fetcher as typeof fetch);const first=catalog.places[0].id;const cutoff=Math.max(...trip.items.filter(i=>i.placeId===first).map(i=>i.end));const revised=await replanTrip(trip,1,cutoff,'unknown',{},fetcher as typeof fetch,[first]);expect(revised.items.find(i=>i.id===trip.items[0].id)?.locked).toBe(true);expect(revised.basics.coursePlans?.[0].orderedPlaceIds).toContain(first);
 });
+it('connects hotel check-in, next-day departure, individual hours and room totals',async()=>{
+ const p2={...plan.plan,day:2};
+ const stay={night:1,id:'hotel-1',name:'테스트 숙소',address:'강릉',latitude:37.751,longitude:128.9,rooms:2,totalPrice:180000,checkIn:900,checkOut:600};
+ const trip=await prepareTrip({...basics,days:2,lodgings:[stay],dailyHours:[{day:2,hours:{start:600,end:1140}}],coursePlans:[plan.plan,p2]},defaultConditions,catalog,fetcher as typeof fetch);
+ expect(trip.items.find(i=>i.day===1&&i.label==='체크인')?.start).toBeGreaterThanOrEqual(900);
+ const checkOut=trip.items.find(i=>i.day===2&&i.label==='체크아웃')!;expect(checkOut.end).toBe(600);
+ expect(trip.items.find(i=>i.day===2&&i.kind==='visit')?.start).toBeGreaterThanOrEqual(630);
+ expect(trip.items.some(i=>i.kind==='move'&&i.toId?.startsWith('stay:'))).toBe(true);
+ const {estimateTrip,estimateDefaults}=await import('../src/domain/trip-estimate');expect(estimateTrip(trip,estimateDefaults(trip)).rows.find(r=>r.name==='숙박')?.amount).toBe(180000);
+ const {publicPlan,sharedTrip}=await import('../src/domain/shared-plan');const shared=sharedTrip(publicPlan({...trip,basics:{...trip.basics,pricing:{rates:{meal:12000},eligible:{'seorak-resident':1}}}}));expect(shared.basics.lodgings).toEqual([stay]);expect(shared.basics.pricing?.rates.meal).toBe(12000);const {planMetrics}=await import('../src/domain/plan-metrics');expect(planMetrics(shared).travel).toBe(planMetrics(trip).travel);
+});
+it('rejects a hotel check-in later than that day’s end',async()=>{await expect(prepareTrip({...basics,days:2,coursePlans:[plan.plan,{...plan.plan,day:2}],lodgings:[{night:1,id:'late',name:'늦은 숙소',address:'강릉',latitude:37.75,longitude:128.9,rooms:1,checkIn:1200,checkOut:600}]},defaultConditions,catalog,fetcher as typeof fetch)).rejects.toThrow('체크인');});
+it('remaining-day replanning retains the hotel and measures its new incoming road',async()=>{
+ const stay={night:1,id:'hotel-r',name:'남은 일정 숙소',address:'강릉',latitude:37.752,longitude:128.9,rooms:1,checkIn:900,checkOut:600};
+ const two=await prepareTrip({...basics,days:2,lodgings:[stay],coursePlans:[plan.plan,{...plan.plan,day:2}]},defaultConditions,catalog,fetcher as typeof fetch);
+ const f=async(url:any,init?:any)=>{const u=String(url);if(u.includes('/route/')){const coordinates=u.split('/driving/')[1].split('?')[0].split(';').map(p=>p.split(',').map(Number));return Response.json({code:'Ok',routes:[{distance:1000,duration:600,geometry:{type:'LineString',coordinates}}]});}return fetcher(url);};
+ const result=await replanTrip(two,1,660,'unknown',{},f as typeof fetch,[catalog.places[0].id]);expect(result.items.some(i=>i.day===1&&i.label==='체크인')).toBe(true);expect(result.items.some(i=>i.day===1&&i.kind==='move'&&i.toId===`stay:1:hotel-r`)).toBe(true);expect(result.items.filter(i=>i.day===2)).toEqual(two.items.filter(i=>i.day===2));
+});

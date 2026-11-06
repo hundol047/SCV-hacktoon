@@ -13,6 +13,7 @@ import {koreaRegions} from '../data/korea-tourism';
 export default function SimpleTripForm({onTrip,conditions:baseConditions,initialTransport='taxi'}:{onTrip:(trip:Trip)=>void;conditions:Conditions;initialTransport?:'taxi'|'driving'}){
  const [region,setRegion]=useState(''),[date,setDate]=useState(()=>new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Seoul'}).format(new Date())),[days,setDays]=useState(1),[transport,setTransport]=useState<'taxi'|'driving'>(initialTransport),[interests,setInterests]=useState<string[]>(baseConditions.experiences.length?[...baseConditions.experiences]:['자연 풍경']);
  const [startTime,setStartTime]=useState('09:00'),[endTime,setEndTime]=useState('18:30');
+ const [dailyTimes,setDailyTimes]=useState<Record<number,{start:string;end:string}>>({});
  const [startMode,setStartMode]=useState<'home'|'destination'>('destination'),[returnHome,setReturnHome]=useState(false),[returnTime,setReturnTime]=useState('20:00'),[budget,setBudget]=useState('');
  const [departure,setDeparture]=useState(''),[travelers,setTravelers]=useState(2);
  const [locations,setLocations]=useState<LocationResult[]>([]),[selectedLocation,setSelectedLocation]=useState<LocationResult|null>(null);
@@ -44,6 +45,7 @@ export default function SimpleTripForm({onTrip,conditions:baseConditions,initial
  async function create(){const current=++revision.current;setBusy(true);setError('');try{
    const minutes=(value:string)=>{const [h,m]=value.split(':').map(Number);return h*60+m;};const travelHours={start:minutes(startTime),end:minutes(endTime)};
    if(!startTime||!endTime||travelHours.end-travelHours.start<30)throw Error('같은 날 안에서 종료 시간을 시작보다 30분 이상 늦게 선택해 주세요.');
+   if(Object.entries(dailyTimes).some(([day,t])=>Number(day)<=days&&minutes(t.end)-minutes(t.start)<30))throw Error('날짜별 종료 시각은 시작보다 30분 이상 늦게 선택하세요.');
    if(!region.trim())throw Error('여행 지역을 입력해 주세요.');
    if(!departure.trim())throw Error('출발 지역을 입력해 주세요.');
    const found=koreaRegions.find(p=>region.includes(p.name)||region.includes(p.name.slice(0,2)));
@@ -59,7 +61,7 @@ export default function SimpleTripForm({onTrip,conditions:baseConditions,initial
      origin=foundLocations[0];setSelectedLocation(origin);setLocations([]);
    }
    const departureCoordinates={latitude:origin.latitude,longitude:origin.longitude};
-   let basics:Basics={...defaultBasics,travelHours,startMode,...(returnHome?{returnBy:minutes(returnTime)}:{}),...(budget?{budget:Number(budget),tripBudget:Number(budget)}:{}),title:region.trim()+' 여행',departureRegion:departure.trim(),departureCoordinates,travelers,date,days,mode:'real',region:catalog.region,timezone:'Asia/Seoul',transport,travelPriority:'balanced'};
+   let basics:Basics={...defaultBasics,travelHours,dailyHours:Object.entries(dailyTimes).filter(([day])=>Number(day)<=days).map(([day,t])=>({day:Number(day),hours:{start:minutes(t.start),end:minutes(t.end)}})),startMode,...(returnHome?{returnBy:minutes(returnTime)}:{}),...(budget?{budget:Number(budget),tripBudget:Number(budget)}:{}),title:region.trim()+' 여행',departureRegion:departure.trim(),departureCoordinates,travelers,date,days,mode:'real',region:catalog.region,timezone:'Asia/Seoul',transport,travelPriority:'balanced'};
    const conditions={...baseConditions,experiences:[...interests]};
    const r=await fetch('/api/courses',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({basics,conditions,catalog,day:1,allDays:true,consent:true})});
    const raw=await r.json();if(!r.ok)throw Error(raw.error);if(current!==revision.current)return;
@@ -80,6 +82,7 @@ export default function SimpleTripForm({onTrip,conditions:baseConditions,initial
  <div className="return-home"><label className="check-row"><input type="checkbox" disabled={busy} checked={returnHome} onChange={e=>setReturnHome(e.target.checked)}/>마지막 날 출발지로 돌아올 시간 지정</label>{returnHome&&<label>귀가 완료 시간<select disabled={busy} value={returnTime} onChange={e=>setReturnTime(e.target.value)}>{Array.from({length:144},(_,n)=>`${String(Math.floor(n/6)).padStart(2,'0')}:${n%6}0`).map(t=><option key={t}>{t}</option>)}</select></label>}</div>
  <fieldset className="interest-options" disabled={busy}><legend>여행 취향 <small>여러 개 선택할 수 있어요</small></legend><div><button type="button" aria-pressed={interests.length===0} onClick={()=>setInterests([])}>골고루</button>{[...new Set(['자연 풍경','문화·전시','지역 음식','사진 찍기','바다 보기','조용한 카페',...baseConditions.experiences])].map(value=><button type="button" key={value} aria-pressed={interests.includes(value)} onClick={()=>setInterests(current=>current.includes(value)?current.filter(v=>v!==value):current.length<12?[...current,value]:current)}>{value}</button>)}</div></fieldset>
  </div>
+ {days>1&&<details className="travel-panel"><summary>날짜마다 다른 시간 선택</summary><p>첫날 도착 후 시작하거나 마지막 날 일찍 떠나는 일정에 맞춰 조정하세요.</p>{Array.from({length:days},(_,i)=>i+1).map(day=><div className="field-grid" key={day}>{(['start','end'] as const).map(k=><label key={k}>{day}일차 {k==='start'?'시작':'종료'}<select disabled={busy} value={dailyTimes[day]?.[k]??(k==='start'?startTime:endTime)} onChange={e=>setDailyTimes(v=>({...v,[day]:{...(v[day]??{start:startTime,end:endTime}),[k]:e.target.value}}))}>{Array.from({length:144},(_,n)=>`${String(Math.floor(n/6)).padStart(2,'0')}:${n%6}0`).map(t=><option key={t}>{t}</option>)}</select></label>)}</div>)}</details>}
  <TravelBookings destination={region}/>
  {locations.length>1&&<fieldset className="location-options"><legend>어느 출발지인가요?</legend>{locations.map(location=><button key={location.id} type="button" disabled={busy} onClick={()=>{setSelectedLocation(location);setLocations([]);setError('');}}><strong>{location.name}</strong><span>{location.address}</span></button>)}</fieldset>}
  {selectedLocation&&<><p className="selected-location">출발지: {selectedLocation.address}</p><DepartureHubs origin={selectedLocation} name={selectedLocation.name}/></>}

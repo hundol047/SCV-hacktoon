@@ -71,6 +71,12 @@ const date = z
   }, "올바른 날짜를 입력해 주세요.");
 export const travelHoursSchema=z.object({start:z.number().int().min(0).max(1409),end:z.number().int().min(30).max(1439)}).refine(v=>v.end-v.start>=30,'종료 시간은 시작 시간보다 30분 이상 늦게 선택해 주세요.');
 const basicsBaseSchema = z.object({
+  dailyHours:z.array(z.object({day:z.number().int().min(1).max(30),hours:travelHoursSchema})).max(30).refine(v=>new Set(v.map(x=>x.day)).size===v.length).optional(),
+  coupons:z.array(z.object({id:z.string().min(1).max(100),placeId:z.string().max(100),day:z.number().int().min(1).max(30),title:z.string().trim().min(1).max(100),conditions:z.string().trim().min(1).max(300),url:z.string().url().max(1000).refine(v=>v.startsWith('https://')),until:date,amount:z.number().int().min(0).max(10000000)})).max(100).optional(),
+  liveRevision:z.number().int().nonnegative().optional(),
+  liveToken:z.string().regex(/^[a-f0-9]{64}$/).optional(),
+  pricing:z.object({rates:z.object({meal:z.number().min(0).max(10000000),admission:z.number().min(0).max(10000000),cafe:z.number().min(0).max(10000000),room:z.number().min(0).max(10000000),local:z.number().min(0).max(10000000),roundTrip:z.number().min(0).max(10000000)}).partial(),eligible:z.record(z.string().max(100),z.number().int().min(0).max(20))}).optional(),
+  lodgings:z.array(z.object({night:z.number().int().min(1).max(29),id:z.string().min(1).max(100),name:z.string().min(1).max(300),address:z.string().max(1000),latitude:z.number().min(-90).max(90),longitude:z.number().min(-180).max(180),rooms:z.number().int().min(1).max(20),totalPrice:z.number().min(0).max(10000000).optional(),checkIn:z.number().int().min(0).max(1409),checkOut:z.number().int().min(30).max(1439)})).max(29).refine(v=>new Set(v.map(x=>x.night)).size===v.length).optional(),
   travelHours:travelHoursSchema.optional(),
   startMode:z.enum(['home','destination']).optional(),
   returnBy:z.number().int().min(0).max(1439).optional(),

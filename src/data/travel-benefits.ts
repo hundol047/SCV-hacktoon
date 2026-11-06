@@ -1,6 +1,6 @@
 // Official sources reviewed 2026-11-06. This is a curated directory, not a live coupon API.
 export const benefitsReviewedAt='2026-11-06';
-export type Benefit={id:string;title:string;regions:string[];cities?:string[];venues?:string[];kind:'discount'|'pass'|'resident'|'directory';summary:string;conditions:string;url:string;provider:string;from?:string;until?:string;reviewBy?:string;audience?:'resident'|'foreign';};
+export type Benefit={discountRate?:number;id:string;title:string;regions:string[];cities?:string[];venues?:string[];kind:'discount'|'pass'|'resident'|'directory';summary:string;conditions:string;url:string;provider:string;from?:string;until?:string;reviewBy?:string;audience?:'resident'|'foreign';};
 const month='https://korean.visitkorea.or.kr/travelmonth/local/';
 export const benefitAreas=[
  {id:'seoul-area',name:'수도권',regions:['서울','인천','경기'],url:month+'seoul-area.do'},
@@ -16,13 +16,13 @@ export const residentAreas:Record<string,string[]>={
 const gw=month+'gangwon.do';
 const seasonal=(id:string,title:string,city:string,summary:string,conditions:string):Benefit=>({id,title,regions:['강원'],cities:[city],venues:[title],kind:'discount',summary,conditions,url:gw,provider:'한국관광공사 여행가는 달',from:'2026-11-01',until:'2026-11-30',reviewBy:'2026-12-06'});
 export const travelBenefits:Benefit[]=[
- {id:'seorak-resident',title:'설악 케이블카 시민 할인',regions:['강원'],cities:['속초'],venues:['설악케이블카','설악산케이블카'],kind:'discount',summary:'속초시민 정상요금 50% 할인',conditions:'속초 거주 신분증 지참 · 국내인 본인 1인 1매 · 중복 할인 불가 · 당일 현장 구매',url:'https://www.sorakcablecar.co.kr/guide',provider:'설악 케이블카',audience:'resident',reviewBy:'2026-12-06'},
+ {id:'seorak-resident',discountRate:.5,title:'설악 케이블카 시민 할인',regions:['강원'],cities:['속초'],venues:['설악케이블카','설악산케이블카'],kind:'discount',summary:'속초시민 정상요금 50% 할인',conditions:'속초 거주 신분증 지참 · 국내인 본인 1인 1매 · 중복 할인 불가 · 당일 현장 구매',url:'https://www.sorakcablecar.co.kr/guide',provider:'설악 케이블카',audience:'resident',reviewBy:'2026-12-06'},
  seasonal('sokcho-yoga','여로요가','속초','2인 동반 상품 할인','네이버 지정 상품 예약 후 캠페인 화면을 현장에서 제시'),
  seasonal('jeongdongjin-rail','정동진레일바이크','강릉','현장 발권 10% 할인','11월 현장 구매 대상 · 온라인 예약 적용 여부는 제공처에서 확인'),
  seasonal('jeongseon-rail','정선레일바이크','정선','현장 발권 10% 할인','레일바이크 1대 기준 · 현장 구매 대상'),
  seasonal('taebaek-safe','365세이프타운','태백','사진 인증 시 케이블카 혜택','사진 게시와 지정 해시태그 조건 충족 후 현장 확인'),
- seasonal('donghae-sky','도째비골 스카이밸리','동해','입장료 50% 할인','행사 기간 방문객 대상 · 시설별 추가 체험료는 별도 확인'),
- seasonal('donghae-mureung','무릉별유천지','동해','입장료 20% 할인','입장 할인 · 개별 체험과 중복 적용 여부는 제공처 확인'),
+ {...seasonal('donghae-sky','도째비골 스카이밸리','동해','입장료 50% 할인','행사 기간 방문객 대상 · 시설별 추가 체험료는 별도 확인'),discountRate:.5},
+ {...seasonal('donghae-mureung','무릉별유천지','동해','입장료 20% 할인','입장 할인 · 개별 체험과 중복 적용 여부는 제공처 확인'),discountRate:.2},
  {id:'gyeonggi-pass',title:'경기투어패스',regions:['경기'],kind:'pass',summary:'관광·체험·카페 통합 이용권',conditions:'유료 패스 · 상품별 사용 시간과 가맹점 확인 후 구매',url:'https://www.ggtourpass.kr/',provider:'경기투어패스'},
  {id:'bayvalley-pass',title:'베이밸리투어패스',regions:['경기','충남'],kind:'pass',summary:'경기·충남 지정 시설 패키지',conditions:'유료 상품 · 방문할 시설이 포함된 상품을 선택',url:'https://www.ggtourpass.kr/',provider:'경기투어패스'},
  {id:'jeonbuk-pass',title:'전북투어패스',regions:['전북'],kind:'pass',summary:'제휴 관광지와 가맹점 혜택',conditions:'유료 패스 · 권종별 시설·사용 시간·추가요금 확인',url:'https://www.jbtourpass.kr/',provider:'전북투어패스'},

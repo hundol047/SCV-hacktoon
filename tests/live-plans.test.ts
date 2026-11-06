@@ -1,0 +1,21 @@
+import {beforeAll,afterAll,it,expect} from 'vitest';
+import {database,rpc} from '../scripts/test-store.mjs';
+let db:Awaited<ReturnType<typeof database>>;
+beforeAll(async()=>{db=await database();},30000);afterAll(async()=>{await db?.close();});
+const token='a'.repeat(64),owner='b'.repeat(64),guest='c'.repeat(64);
+const call=(action:string,who=owner,expected=0,payload:object={})=>rpc(db,'bopok_live',{p_action:action,p_token:token,p_owner:who,p_expected:expected,p_payload:payload});
+it('keeps private history private and requires owner, current revision, and majority approval',async()=>{
+ const document={id:'trip',travelers:3,title:'old'};
+ await call('create',owner,0,{document,private:{revision:0,history:['private']}});
+ expect((await call('read',guest)).private).toBeNull();
+ expect((await call('publish',guest,0,{document,private:{revision:1}})).error).toBe('forbidden');
+ const proposed=await call('propose',owner,0,{document:{...document,title:'new'},private:{revision:1}});
+ expect((await call('confirm',owner,0,{proposalId:proposed.proposalId})).error).toBe('votes_needed');
+ expect((await call('vote',guest,0,{name:'친구',approve:true,proposalId:0})).error).toBe('stale_proposal');
+ await call('vote',guest,0,{name:'친구',approve:true,proposalId:proposed.proposalId});
+ const approved=await call('confirm',owner,0,{proposalId:proposed.proposalId});expect(approved.revision).toBe(1);expect(approved.document.title).toBe('new');
+ expect((await call('publish',owner,0,{document,private:{revision:2}})).error).toBe('conflict');
+ const published=await call('publish',owner,1,{document:{...document,title:'cost changed'},private:{revision:2}});expect(published.revision).toBe(2);
+ expect((await call('read',guest)).document.title).toBe('cost changed');
+});
+it('rejects expired invitation links',async()=>{await db.exec(`update public.bopok_live_plans set expires_at=now()-interval '1 day'`);expect((await call('read',guest)).error).toBe('expired');});
