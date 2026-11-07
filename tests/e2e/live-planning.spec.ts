@@ -9,7 +9,7 @@ test('saved hotel and prices survive reload; shared updates and majority confirm
  await page.route('**/api/adjust-trip',async r=>{const {trip,basics}=r.request().postDataJSON();await r.fulfill({json:{trip:{...trip,revision:trip.revision+1,basics:basics??trip.basics}}});});
  await page.goto('/');await page.getByRole('button',{name:'이어서 보기',exact:true}).click();
  await page.getByText('항목별 비용과 계산 기준',{exact:true}).click();await page.getByLabel('한 끼 / 1인 (원)',{exact:true}).fill('11000');await page.getByLabel('한 끼 / 1인 (원)',{exact:true}).blur();
- await page.getByLabel('이번 1박 전체 객실 합계 (선택·원)').fill('170000');await page.getByRole('button',{name:'이 숙소로 동선·비용 비교'}).click();await expect(page.getByLabel('일정 변경 미리보기')).toBeVisible();await page.getByRole('button',{name:'변경 일정 적용'}).click();
+ await page.getByText('숙박 예산·체크인 시간 설정',{exact:true}).click();await page.getByLabel('이번 1박 전체 객실 합계 (선택·원)').fill('170000');await page.getByRole('button',{name:'동선·비용 비교'}).click();await expect(page.getByLabel('일정 변경 미리보기')).toBeVisible();await page.getByRole('button',{name:'변경 일정 적용'}).click();
  await page.reload();await page.getByRole('button',{name:'이어서 보기',exact:true}).click();await page.getByText('항목별 비용과 계산 기준',{exact:true}).click();await expect(page.getByLabel('한 끼 / 1인 (원)',{exact:true})).toHaveValue('11000');await expect(page.getByText('선택한 숙소:',{exact:false})).toContainText('강릉 테스트 호텔');
  await page.getByRole('button',{name:'일정 공유',exact:true}).click();const link=await page.locator('.share-link input').inputValue();expect(link).toContain('#live=');
  const guest=await browser.newContext();const other=await guest.newPage();await mock(other);await other.goto(link);await expect(other.getByText('선택한 숙소:',{exact:false})).toContainText('강릉 테스트 호텔');
