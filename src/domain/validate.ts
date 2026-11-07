@@ -223,7 +223,7 @@ export function validateSchedule(
             );
         }
         if(b.mode==='real'){
-          if(!confirmedFacilities(p,b.requiredFacilities))add('facility-required','unknown',[i.id],'필수 시설의 최근 확인 기록이 없는 장소입니다.');
+          if(!confirmedFacilities(p,b.requiredFacilities))add('facility-required','violation',[i.id],'필수 시설의 최근 확인 기록이 없는 장소입니다.');
           const visitDate=dayDate(b,i.day),reserved=b.reservations?.some(r=>r.placeId===p.id&&r.date===visitDate)??false;
           for(const issue of availability(p,visitDate,i.start,i.end,reserved))add('opening',issue.status,[i.id],issue.message,p.opening?[p.opening.evidenceId]:[]);
           if(p.hours.value===null)add('hours-unknown','unknown',[i.id],'운영 시간·휴무일을 확인해 주세요.',[p.hours.evidenceId]);

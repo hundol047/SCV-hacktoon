@@ -1,4 +1,5 @@
 'use client';
+import {facilityNames,type Facility} from '../domain/venue-details';
 import {locationResultSchema,locationsSchema,type LocationResult} from '../domain/location';
 import {createId} from '../domain/id';
 import {useEffect,useRef,useState} from 'react';
@@ -12,6 +13,8 @@ import {koreaRegions} from '../data/korea-tourism';
 
 export default function SimpleTripForm({onTrip,conditions:baseConditions,initialTransport='taxi'}:{onTrip:(trip:Trip)=>void;conditions:Conditions;initialTransport?:'taxi'|'driving'}){
  const [region,setRegion]=useState(''),[date,setDate]=useState(()=>new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Seoul'}).format(new Date())),[days,setDays]=useState(1),[transport,setTransport]=useState<'taxi'|'driving'>(initialTransport),[interests,setInterests]=useState<string[]>(baseConditions.experiences.length?[...baseConditions.experiences]:['자연 풍경']);
+ const [access,setAccess]=useState<Facility[]>([]);
+ const [walkLimit,setWalkLimit]=useState(''),[restMinutes,setRestMinutes]=useState('');
  const [startTime,setStartTime]=useState('09:00'),[endTime,setEndTime]=useState('18:30');
  const [dailyTimes,setDailyTimes]=useState<Record<number,{start:string;end:string}>>({});
  const [startMode,setStartMode]=useState<'home'|'destination'>('destination'),[returnHome,setReturnHome]=useState(false),[returnTime,setReturnTime]=useState('20:00'),[budget,setBudget]=useState('');
@@ -50,7 +53,7 @@ export default function SimpleTripForm({onTrip,conditions:baseConditions,initial
    if(!departure.trim())throw Error('출발 지역을 입력해 주세요.');
    const found=koreaRegions.find(p=>region.includes(p.name)||region.includes(p.name.slice(0,2)));
    const q=found?region.replace(found.name,'').replace(found.name.slice(0,2),'').trim():region.trim();
-   const [response,foundLocations]=await Promise.all([fetch('/api/tourism?'+new URLSearchParams({action:'catalog',province:found?.code??'',q,limit:'200'})),selectedLocation?Promise.resolve([selectedLocation]):lookupDeparture(departure.trim())]);
+   const [response,foundLocations]=await Promise.all([fetch('/api/tourism?'+new URLSearchParams({action:'catalog',province:found?.code??'',q,limit:'200',accessibility:access.length?'true':'false'})),selectedLocation?Promise.resolve([selectedLocation]):lookupDeparture(departure.trim())]);
    const data=await response.json();if(!response.ok)throw Error(data.error);let catalog=catalogSchema.parse(data);
    if(!catalog.places.length)throw Error('관광지를 찾지 못했습니다. 시·군·구 또는 관광지 이름으로 검색하세요.');
    let origin=selectedLocation;
@@ -61,8 +64,8 @@ export default function SimpleTripForm({onTrip,conditions:baseConditions,initial
      origin=foundLocations[0];setSelectedLocation(origin);setLocations([]);
    }
    const departureCoordinates={latitude:origin.latitude,longitude:origin.longitude};
-   let basics:Basics={...defaultBasics,travelHours,dailyHours:Object.entries(dailyTimes).filter(([day])=>Number(day)<=days).map(([day,t])=>({day:Number(day),hours:{start:minutes(t.start),end:minutes(t.end)}})),startMode,...(returnHome?{returnBy:minutes(returnTime)}:{}),...(budget?{budget:Number(budget),tripBudget:Number(budget)}:{}),title:region.trim()+' 여행',departureRegion:departure.trim(),departureCoordinates,travelers,date,days,mode:'real',region:catalog.region,timezone:'Asia/Seoul',transport,travelPriority:'balanced'};
-   const conditions={...baseConditions,experiences:[...interests]};
+   let basics:Basics={...defaultBasics,travelHours,dailyHours:Object.entries(dailyTimes).filter(([day])=>Number(day)<=days).map(([day,t])=>({day:Number(day),hours:{start:minutes(t.start),end:minutes(t.end)}})),startMode,...(returnHome?{returnBy:minutes(returnTime)}:{}),...(budget?{budget:Number(budget),tripBudget:Number(budget)}:{}),title:region.trim()+' 여행',departureRegion:departure.trim(),departureCoordinates,travelers,date,days,mode:'real',region:catalog.region,timezone:'Asia/Seoul',transport,travelPriority:access.length?'comfort':'balanced',requiredFacilities:access};
+   const conditions={...baseConditions,experiences:[...interests],...(walkLimit?{maxWalkMin:Number(walkLimit)}:{}),...(restMinutes?{restMin:Number(restMinutes)}:{})};
    const r=await fetch('/api/courses',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({basics,conditions,catalog,day:1,allDays:true,consent:true})});
    const raw=await r.json();if(!r.ok)throw Error(raw.error);if(current!==revision.current)return;
    basics=validateBatch(basics,conditions,catalog,raw).basics;
@@ -80,6 +83,7 @@ export default function SimpleTripForm({onTrip,conditions:baseConditions,initial
  <label>시작 시간 기준<select disabled={busy} value={startMode} onChange={e=>setStartMode(e.target.value as 'home'|'destination')}><option value="destination">첫 여행지에서 시작</option><option value="home">출발지에서 출발 · 차량 이동 포함</option></select></label>
  <label>여행 전체 예산 (원)<input disabled={busy} type="number" min="0" max="10000000" step="10000" placeholder="전체 인원 합계 · 선택 사항" value={budget} onChange={e=>setBudget(e.target.value)}/></label>
  <div className="return-home"><label className="check-row"><input type="checkbox" disabled={busy} checked={returnHome} onChange={e=>setReturnHome(e.target.checked)}/>마지막 날 출발지로 돌아올 시간 지정</label>{returnHome&&<label>귀가 완료 시간<select disabled={busy} value={returnTime} onChange={e=>setReturnTime(e.target.value)}>{Array.from({length:144},(_,n)=>`${String(Math.floor(n/6)).padStart(2,'0')}:${n%6}0`).map(t=><option key={t}>{t}</option>)}</select></label>}</div>
+ <fieldset className="mobility-options" disabled={busy}><legend>이동·접근성 조건 <small>필요한 항목만 선택하세요</small></legend><div className="mobility-checks">{(['stepFree','wheelchair','ramp','gentleSlope','elevator','accessibleToilet'] as const).map(key=><label className="check-row" key={key}><input type="checkbox" checked={access.includes(key)} onChange={e=>setAccess(current=>e.target.checked?[...current,key]:current.filter(k=>k!==key))}/>{facilityNames[key]}</label>)}</div><p>선택한 시설이 최근 자료에서 확인된 장소만 추천해요. 경사로가 있다고 휠체어 이용이 가능한 것은 아니므로, 필요한 조건을 함께 선택하세요.</p><div className="field-grid"><label>연속 보행 시간 한도<select value={walkLimit} onChange={e=>setWalkLimit(e.target.value)}><option value="">지정 안 함</option>{[5,10,15,20,30].map(n=><option key={n} value={n}>{n}분</option>)}</select></label><label>관광 후 휴식<select value={restMinutes} onChange={e=>setRestMinutes(e.target.value)}><option value="">기본 설정</option>{[10,15,20,30].map(n=><option key={n} value={n}>{n}분</option>)}</select></label></div>{access.length>0&&<p>차량 길찾기는 휠체어 경로 안내가 아닙니다. 주차장부터 입구까지의 동선과 현장 상태는 방문 전에 확인하세요.</p>}</fieldset>
  <fieldset className="interest-options" disabled={busy}><legend>여행 취향 <small>여러 개 선택할 수 있어요</small></legend><div><button type="button" aria-pressed={interests.length===0} onClick={()=>setInterests([])}>골고루</button>{[...new Set(['자연 풍경','문화·전시','지역 음식','사진 찍기','바다 보기','조용한 카페',...baseConditions.experiences])].map(value=><button type="button" key={value} aria-pressed={interests.includes(value)} onClick={()=>setInterests(current=>current.includes(value)?current.filter(v=>v!==value):current.length<12?[...current,value]:current)}>{value}</button>)}</div></fieldset>
  </div>
  {days>1&&<details className="travel-panel"><summary>날짜마다 다른 시간 선택</summary><p>첫날 도착 후 시작하거나 마지막 날 일찍 떠나는 일정에 맞춰 조정하세요.</p>{Array.from({length:days},(_,i)=>i+1).map(day=><div className="field-grid" key={day}>{(['start','end'] as const).map(k=><label key={k}>{day}일차 {k==='start'?'시작':'종료'}<select disabled={busy} value={dailyTimes[day]?.[k]??(k==='start'?startTime:endTime)} onChange={e=>setDailyTimes(v=>({...v,[day]:{...(v[day]??{start:startTime,end:endTime}),[k]:e.target.value}}))}>{Array.from({length:144},(_,n)=>`${String(Math.floor(n/6)).padStart(2,'0')}:${n%6}0`).map(t=><option key={t}>{t}</option>)}</select></label>)}</div>)}</details>}

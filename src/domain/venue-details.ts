@@ -1,6 +1,6 @@
 import {z} from 'zod';
 import type {Place} from '../data/demo';
-export const facilityNames={parking:'주차장',dropoff:'승하차 공간',toilet:'화장실',elevator:'엘리베이터'} as const;
+export const facilityNames={parking:'주차장',dropoff:'승하차 공간',toilet:'화장실',elevator:'엘리베이터',wheelchair:'휠체어 진입',ramp:'경사로',stepFree:'계단 없는 진입 동선',gentleSlope:'완만한 진입로',accessibleToilet:'장애인 화장실'} as const;
 export const facilityKeys=Object.keys(facilityNames) as (keyof typeof facilityNames)[];
 export type Facility=keyof typeof facilityNames;
 const date=z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(v=>{const d=new Date(v+'T00:00:00Z');return Number.isFinite(+d)&&d.toISOString().slice(0,10)===v;});

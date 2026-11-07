@@ -1,3 +1,4 @@
+import {confirmedFacilities} from './venue-details';
 import {sessionDay} from './session-day';
 import {dayWeather} from './day-weather';
 import {weatherAllowed} from './weather';
@@ -137,7 +138,7 @@ export function optimize(c:Conditions,b:Basics,original:Item[]=[],feedback:strin
       ],
     };
   }
-  const eligible=(p:Place)=>p.walkMin.value!==null&&p.walkM.value!==null&&p.seat.value===true&&
+  const eligible=(p:Place)=>confirmedFacilities(p,b.requiredFacilities)&&p.walkMin.value!==null&&p.walkM.value!==null&&p.seat.value===true&&
     (c.maxWalkMin===null||p.walkMin.value<=c.maxWalkMin)&&(c.maxWalkM===null||p.walkM.value<=c.maxWalkM)&&
     (!c.avoidStairs||p.stairs.value===false)&&!c.avoidSituations.some(s=>p.situations.value?.includes(s));
   const visits=catalog.places.filter(p=>p.kind==='visit'&&eligible(p));
@@ -145,7 +146,7 @@ export function optimize(c:Conditions,b:Basics,original:Item[]=[],feedback:strin
   const meals=catalog.places.filter(p=>p.kind==='meal'&&eligible(p)&&p.foods.value!==null&&!c.foodAvoids.some(f=>!supported.includes(f)||p.foods.value!.includes(f))&&! (feedback.includes('식사를 바꾸고 싶어요')&&original.some(i=>i.kind==='meal'&&i.placeId===p.id)));
   const locked=original.filter(i=>i.locked);
   if(catalog.mode==='real'&&(!visits.length||!meals.length)&&!locked.length){
-    const safe=catalog.places.filter(p=>(!c.avoidStairs||p.stairs.value!==true)&&!c.avoidSituations.some(x=>p.situations.value?.includes(x))&&!c.foodAvoids.some(x=>p.foods.value?.includes(x)));
+    const safe=catalog.places.filter(p=>confirmedFacilities(p,b.requiredFacilities)&&(!c.avoidStairs||p.stairs.value!==true)&&!c.avoidSituations.some(x=>p.situations.value?.includes(x))&&!c.foodAvoids.some(x=>p.foods.value?.includes(x)));
     const availableVisits=safe.filter(p=>p.kind==='visit'),availableMeals=safe.filter(p=>p.kind==='meal');
     const items:Item[]=[],used=new Set<string>(),covered=new Set<string>(),notes=new Set<string>();
     const fewer=feedback.includes('걷는 구간을 줄여 주세요'),restMin=(c.restMin??20)+(feedback.includes('쉬는 시간을 늘려 주세요')?10:0);

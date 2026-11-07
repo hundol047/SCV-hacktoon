@@ -1,3 +1,4 @@
+import {osmAccessibility} from '../domain/accessibility';
 import {settingFromTags} from '../domain/weather';
 import {koreaCategories,koreaRegions,type KoreaSnapshot,type KoreaRecord} from './korea-tourism';
 import {catalogSchema,type Catalog} from './catalog';
@@ -28,6 +29,7 @@ export function koreaPlace(record:KoreaRecord,snapshot:KoreaSnapshot,region:stri
  return {visitorInfo:{address:record.address||undefined,hoursText:record.tags.opening_hours,phone:record.tags.phone??record.tags['contact:phone'],website:website&&/^https?:\/\//.test(website)?website:undefined},id:record.id,name:record.name,kind:record.category==='food'?'meal':['cafe','rest'].includes(record.category)?'rest':'visit',
   experiences:record.category==='culture'||record.category==='heritage'?['문화·전시']:record.category==='nature'?['자연 풍경']:[],
   setting:fact('setting',settingFromTags(record.tags)),
+  facilities:osmAccessibility(record.tags,record.id,source,collectedAt),
   description:koreaCategories[record.category],
   walkMin:fact<number>('walkMin',null),walkM:fact<number>('walkM',null),stairs:fact<boolean>('stairs',record.tags.highway==='steps'?true:record.tags.step_count==='0'?false:null),
   seat:fact<boolean>('seat',/^\d+$/.test(record.tags.seats??'')&&Number(record.tags.seats)>0||record.tags.bench==='yes'?true:null),

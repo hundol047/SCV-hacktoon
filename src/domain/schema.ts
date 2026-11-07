@@ -96,7 +96,7 @@ const basicsBaseSchema = z.object({
   days: z.number().int().min(1).max(30),
   budget: z.number().int().min(0).max(10000000),
   transport: z.enum(["taxi", "walk", "driving", "transit"]),
-  requiredFacilities:z.array(z.enum(['parking','dropoff','toilet','elevator'])).max(4).optional(),
+  requiredFacilities:z.array(z.enum(['parking','dropoff','toilet','elevator','wheelchair','ramp','stepFree','gentleSlope','accessibleToilet'])).max(9).optional(),
   reservations:z.array(z.object({placeId:z.string().max(100),date,confirmedAt:z.string().datetime()})).max(600).optional(),
   travelPriority:z.enum(['balanced','budget','comfort']).optional(),
   mode: z.enum(['demo','real']),
