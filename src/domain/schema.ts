@@ -1,3 +1,4 @@
+import {toolkitSchema} from './travel-toolkit';
 import {forecastSchema} from './live-weather';
 import { z } from "zod";
 import {weatherSchema} from './weather';
@@ -71,6 +72,7 @@ const date = z
   }, "올바른 날짜를 입력해 주세요.");
 export const travelHoursSchema=z.object({start:z.number().int().min(0).max(1409),end:z.number().int().min(30).max(1439)}).refine(v=>v.end-v.start>=30,'종료 시간은 시작 시간보다 30분 이상 늦게 선택해 주세요.');
 const basicsBaseSchema = z.object({
+  toolkit:toolkitSchema.optional(),
   dailyHours:z.array(z.object({day:z.number().int().min(1).max(30),hours:travelHoursSchema})).max(30).refine(v=>new Set(v.map(x=>x.day)).size===v.length).optional(),
   coupons:z.array(z.object({id:z.string().min(1).max(100),placeId:z.string().max(100),day:z.number().int().min(1).max(30),title:z.string().trim().min(1).max(100),conditions:z.string().trim().min(1).max(300),url:z.string().url().max(1000).refine(v=>v.startsWith('https://')),until:date,amount:z.number().int().min(0).max(10000000)})).max(100).optional(),
   liveRevision:z.number().int().nonnegative().optional(),

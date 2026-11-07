@@ -1,3 +1,4 @@
+import {petAllowed} from './travel-toolkit';
 import {dayWeather} from './day-weather';
 import {weatherAllowed} from './weather';
 import {availability,confirmedFacilities} from './venue-details';
@@ -223,6 +224,8 @@ export function validateSchedule(
             );
         }
         if(b.mode==='real'){
+          if(b.toolkit?.petOnly&&!petAllowed(p.name,`${p.region??b.region} ${p.visitorInfo?.address??''}`,b.toolkit.petRules))add('pet-required','violation',[i.id],'반려동물 동반 조건을 확인한 장소가 아닙니다.');
+          if(b.toolkit?.closures.some(x=>x.placeId===p.id&&x.status==='closed'&&x.until>=dayDate(b,i.day)))add('closure','violation',[i.id],'통제·운휴 기록이 있는 장소입니다.');
           if(!confirmedFacilities(p,b.requiredFacilities))add('facility-required','violation',[i.id],'필수 시설의 최근 확인 기록이 없는 장소입니다.');
           const visitDate=dayDate(b,i.day),reserved=b.reservations?.some(r=>r.placeId===p.id&&r.date===visitDate)??false;
           for(const issue of availability(p,visitDate,i.start,i.end,reserved))add('opening',issue.status,[i.id],issue.message,p.opening?[p.opening.evidenceId]:[]);

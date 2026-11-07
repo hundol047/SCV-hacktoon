@@ -1,3 +1,4 @@
+import {gangwonDiscovery,winterNames} from './gangwon-discovery';
 import {osmAccessibility} from '../domain/accessibility';
 import {settingFromTags} from '../domain/weather';
 import {koreaCategories,koreaRegions,type KoreaSnapshot,type KoreaRecord} from './korea-tourism';
@@ -27,7 +28,7 @@ export function koreaPlace(record:KoreaRecord,snapshot:KoreaSnapshot,region:stri
  const fact=<T>(field:string,value:T|null):Fact<T>=>({value,evidenceId:record.id+':'+field,source,nature:'real',checked:value===null?'unknown':'source',collectedAt});
  const website=record.tags.website??record.tags['contact:website'];
  return {visitorInfo:{address:record.address||undefined,hoursText:record.tags.opening_hours,phone:record.tags.phone??record.tags['contact:phone'],website:website&&/^https?:\/\//.test(website)?website:undefined},id:record.id,name:record.name,kind:record.category==='food'?'meal':['cafe','rest'].includes(record.category)?'rest':'visit',
-  experiences:record.category==='culture'||record.category==='heritage'?['문화·전시']:record.category==='nature'?['자연 풍경']:[],
+  experiences:winterNames.some(n=>n.replace(/\s/g,'')===record.name.replace(/\s/g,''))?['겨울 레저']:record.category==='culture'||record.category==='heritage'?['문화·전시']:record.category==='nature'?['자연 풍경']:[],
   setting:fact('setting',settingFromTags(record.tags)),
   facilities:osmAccessibility(record.tags,record.id,source,collectedAt),
   description:koreaCategories[record.category],
@@ -38,9 +39,10 @@ export function koreaPlace(record:KoreaRecord,snapshot:KoreaSnapshot,region:stri
 }
 export function koreaCatalog(snapshot:KoreaSnapshot,province:string,query='',limit=200):Catalog {
  const name=koreaRegions.find(r=>r.code===province)?.name;if(!name)throw Error('한 시·도를 선택해 주세요.');
- const region=name,matches=searchKorea(snapshot,query,province,'',1,snapshot.records.length).records;
+ const region=name;let matches=searchKorea(snapshot,query,province,'',1,snapshot.records.length).records;
+ const city=query.trim().replace(/[시군]$/,'');if(province==='KR-42'&&gangwonDiscovery[city]){const normalize=(v:string)=>v.replace(/\s/g,'');const names=new Set(gangwonDiscovery[city].map(normalize));const curated=snapshot.records.filter(r=>r.provinces.includes(province)&&names.has(normalize(r.name)));matches=[...new Map([...matches,...curated].map(r=>[r.id,r])).values()];}
  // Lodging/shopping/leisure remain searchable; they must not silently become sightseeing/rest stops.
- const eligible=matches.filter(r=>r.nameKnown&&r.latitude!==null&&r.longitude!==null&&!['lodging','shopping','leisure'].includes(r.category));
+ const eligible=matches.filter(r=>r.nameKnown&&r.latitude!==null&&r.longitude!==null&&(!['lodging','shopping','leisure'].includes(r.category)||r.category==='leisure'&&winterNames.some(n=>n.replace(/\s/g,'')===r.name.replace(/\s/g,''))));
  const groups=[eligible.filter(r=>r.category==='food'),eligible.filter(r=>['cafe','rest'].includes(r.category)),eligible.filter(r=>!['food','cafe','rest'].includes(r.category))];
  const selected:KoreaRecord[]=[];
  // Interleave types so a sort by OSM ID cannot hide all meals or breaks.

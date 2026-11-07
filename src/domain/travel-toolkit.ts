@@ -1,0 +1,15 @@
+import {z} from 'zod';
+export const petRuleSchema=z.object({name:z.string().trim().min(1).max(200),region:z.string().trim().min(1).max(120),allowed:z.boolean(),conditions:z.string().max(500),source:z.string().url().startsWith('https://'),checkedAt:z.string().date()});
+export const closureSchema=z.object({placeId:z.string().max(100),status:z.enum(['closed','caution']),message:z.string().trim().min(1).max(500),until:z.string().date(),source:z.string().url().startsWith('https://')});
+export const toolkitSchema=z.object({notes:z.record(z.string().max(100),z.string().max(1000)).default({}),completed:z.array(z.string().max(100)).max(1000).default([]),petRules:z.array(petRuleSchema).max(500).default([]),petOnly:z.boolean().default(false),closures:z.array(closureSchema).max(200).default([])});
+export type Toolkit=z.infer<typeof toolkitSchema>;
+// RFC4180 quotes, CRLF, BOM and embedded newlines; reject incomplete records.
+export function csvRows(text:string){if(text.length>500000)throw Error('CSV는 500KB 이하로 올려 주세요.');const rows:string[][]=[];let row:string[]=[],cell='',quoted=false;const s=text.replace(/^\uFEFF/,'');for(let i=0;i<s.length;i++){const ch=s[i];if(ch==='"'){if(quoted&&s[i+1]==='"'){cell+='"';i++;}else if(!quoted&&cell)throw Error('CSV 따옴표 위치를 확인하세요.');else quoted=!quoted;}else if(ch===','&&!quoted){row.push(cell);cell='';}else if((ch==='\n'||ch==='\r')&&!quoted){if(ch==='\r'&&s[i+1]==='\n')i++;row.push(cell);if(row.some(v=>v.trim()))rows.push(row);row=[];cell='';}else cell+=ch;}if(quoted)throw Error('닫히지 않은 CSV 따옴표입니다.');row.push(cell);if(row.some(v=>v.trim()))rows.push(row);return rows;}
+export function importPetRules(text:string,today=new Date().toISOString().slice(0,10)){
+ const [header,...rows]=csvRows(text);const expected=['name','region','allowed','conditions','source','checkedAt'];if(!header||expected.some(k=>!header.includes(k))||new Set(header).size!==header.length)throw Error('CSV 헤더: name,region,allowed,conditions,source,checkedAt');
+ if(rows.length>500||!rows.length)throw Error('1~500개 장소를 올려 주세요.');const result=rows.map((r,i)=>{if(r.length!==header.length)throw Error(`${i+2}행 열 수를 확인하세요.`);const data=Object.fromEntries(header.map((k,n)=>[k,r[n].trim()]));if(!['true','false'].includes(data.allowed))throw Error(`${i+2}행 allowed는 true 또는 false입니다.`);const parsed=petRuleSchema.safeParse({...data,allowed:data.allowed==='true'});if(!parsed.success)throw Error(`${i+2}행 장소·지역·HTTPS 출처·확인 날짜 형식을 확인하세요.`);const rule=parsed.data;if(rule.checkedAt>today)throw Error('확인 날짜는 미래일 수 없습니다.');return rule;});if(new Set(result.map(r=>r.region+'|'+r.name)).size!==result.length)throw Error('같은 지역·장소가 중복되었습니다.');return result;
+}
+export function petAllowed(name:string,region:string,rules:Toolkit['petRules'],now=Date.now()){
+ const normalize=(v:string)=>v.replace(/\s/g,'');const matches=rules.filter(r=>normalize(r.name)===normalize(name)&&region.includes(r.region));
+ return matches.length===1&&matches[0].allowed&&now-Date.parse(matches[0].checkedAt)>=0&&now-Date.parse(matches[0].checkedAt)<30*86400000;
+}

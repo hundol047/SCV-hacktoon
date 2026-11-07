@@ -18,7 +18,7 @@ export function courseInput(b:Basics,c:Conditions,catalog:Catalog,day:number){
   const region=b.destinations?.find(d=>d.startDay<=day&&d.endDay>=day)?.region??b.region;
   const preference=b.coursePreferences?.find(p=>p.day===day),weather=dayWeather(b,day);
   if(weather==='storm')throw Error(weatherGuidance.storm);
-  const local=catalog.places.filter(p=>!closedOn(p,dayDate(b,day))&&(p.region??catalog.region)===region&&Number.isFinite(p.latitude)&&Number.isFinite(p.longitude));
+  const local=catalog.places.filter(p=>!closedOn(p,dayDate(b,day))&&!b.toolkit?.closures.some(x=>x.placeId===p.id&&x.status==='closed'&&x.until>=dayDate(b,day))&&(p.region??catalog.region)===region&&Number.isFinite(p.latitude)&&Number.isFinite(p.longitude));
   const localOrigin=preference?.originId?local.find(p=>p.id===preference.originId):local.find(p=>p.kind==='visit');
   const origin=localOrigin&&day===1&&b.departureCoordinates?{...localOrigin,...b.departureCoordinates,name:b.departureRegion??localOrigin.name}:localOrigin;
   if(!origin)throw Error('이 지역의 기준 출발 장소를 선택하세요.');

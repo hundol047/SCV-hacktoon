@@ -1,0 +1,7 @@
+import {z} from 'zod';
+import {tripSchema} from '../../../domain/schema';
+import {savePlan,savedPlans} from '../../../domain/course-plans';
+import {sameOrigin,json,readJSON} from '../../../server/security';
+import {planningQuota} from '../../../server/planning-quota';
+import {prepareTrip} from '../../../server/prepare-trip';
+export async function POST(request:Request){if(!sameOrigin(request))return json({error:'잘못된 요청입니다.'},403);try{await planningQuota(request);const {trip,day,ids}=z.object({trip:tripSchema,day:z.number().int().min(1).max(5),ids:z.array(z.string().max(100)).min(1).max(12)}).parse(await readJSON(request));if(!trip.catalog||trip.basics.days>5||day>trip.basics.days||new Set(ids).size!==ids.length||ids.some(id=>!trip.catalog!.places.some(p=>p.id===id)))throw Error('장소 목록을 확인하세요.');if(trip.items.some(i=>i.locked))throw Error('고정된 일정이 있습니다. 고정을 해제한 뒤 편집하세요.');const plan=savedPlans(trip.basics).find(p=>(p.day??1)===day);if(!plan)throw Error('추천 코스를 먼저 만들어 주세요.');const basics=savePlan(trip.basics,{...plan,orderedPlaceIds:ids,selectedPlaceIds:ids,startPlaceId:ids[0],endPlaceId:undefined,returnToStart:false});const next=await prepareTrip(basics,trip.conditions,trip.catalog);return json({trip:tripSchema.parse({...next,id:trip.id,revision:trip.revision+1,history:[...trip.history,trip.items].slice(-20),historyBasics:[...(trip.historyBasics??[]),trip.basics].slice(-20),feedback:trip.feedback})});}catch(e){return json({error:e instanceof Error?e.message:'일정을 편집하지 못했습니다.'},422);}}

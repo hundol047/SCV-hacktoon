@@ -1,4 +1,5 @@
 "use client";
+import RegionDiscovery from './RegionDiscovery';
 import UsageVideo from './UsageVideo';
 import BeforeDeparture from './BeforeDeparture';
 import {createId} from '../domain/id';
@@ -457,7 +458,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
               <button className="primary" onClick={()=>startTaxi('taxi')}>택시 여행 빠르게 만들기 <ArrowRight size={18}/></button><button className="secondary" onClick={()=>startTaxi('driving')}>자가용 여행 빠르게 만들기 <ArrowRight size={18}/></button>
 
             </section>
-            <UsageVideo/>
+            <UsageVideo/><RegionDiscovery/>
             <section className="hero">
               <div className="hero-copy">
                 <div className="eyebrow">

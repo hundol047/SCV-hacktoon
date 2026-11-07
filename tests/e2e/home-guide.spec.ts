@@ -15,7 +15,7 @@ test('home has working photo controls and a playable usage video',async({page})=
  expect(await video.evaluate((v:HTMLVideoElement)=>v.paused)).toBe(true);
  await video.evaluate(async(v:HTMLVideoElement)=>{await v.play();});
  await expect.poll(()=>video.evaluate((v:HTMLVideoElement)=>v.currentTime)).toBeGreaterThan(0.2);
- expect(await video.evaluate((v:HTMLVideoElement)=>v.videoWidth)).toBe(1280);
+ expect(await video.evaluate((v:HTMLVideoElement)=>v.videoWidth)).toBe(1920);
  await video.evaluate((v:HTMLVideoElement)=>{v.currentTime=10;});
  await expect.poll(()=>video.evaluate((v:HTMLVideoElement)=>v.currentTime)).toBeGreaterThanOrEqual(10);
 });
