@@ -91,6 +91,8 @@ test('comfort route report persists and evidence backup restores without auto-co
 test('voice input applies fields and explicit command generates only once',async({page})=>{
  await page.addInitScript(()=>{class Recognition{lang='';continuous=false;interimResults=false;onresult:any;onerror:any;onend:any;start(){(window as any).testRecognition=this;}abort(){this.onend?.();}}(window as any).SpeechRecognition=Recognition;});
  let requests=0;let payload:any;
+ const {emptyVoicePatch}=await import('../../src/domain/voice-ai');
+ await page.route('**/api/voice-intent',r=>{const body=r.request().postDataJSON();const patch:import('../../src/domain/voice-ai').VoiceAIReply['patch']={...emptyVoicePatch};const initial=body.text.includes('판교역');if(initial)Object.assign(patch,{departure:'판교역',region:'속초',days:2});else if(body.text.includes('영월'))patch.region='영월';return r.fulfill({json:{result:{action:initial?'generate':'update',patch,reply:initial?'일정 생성을 시작할게요.':'영월로 바꿨어요.',questions:[]},provider:'bedrock'}});});
  await page.route('**/api/location',r=>r.fulfill({json:{locations:[{id:'origin',name:'판교역',address:'성남시 분당구',latitude:37.39,longitude:127.11}]}}));
  await page.route('**/api/tourism?**',r=>r.fulfill({json:catalog}));
  await page.route('**/api/courses',r=>{requests++;payload=r.request().postDataJSON();return r.fulfill({status:503,json:{error:'음성 생성 요청 확인'}});});
@@ -100,4 +102,14 @@ test('voice input applies fields and explicit command generates only once',async
  await expect(page.locator('.simple-trip').getByRole('alert')).toHaveText('음성 생성 요청 확인');expect(requests).toBe(1);expect(payload.basics.departureRegion).toBe('판교역');expect(payload.basics.days).toBe(2);expect(payload.basics.title).toBe('속초 여행');
  await page.getByRole('button',{name:'음성으로 입력',exact:true}).click();await page.evaluate(()=>{const r=(window as any).testRecognition;r.onresult({results:[[{transcript:'여행지는 영월'}]]});r.onend();});await expect(page.getByRole('combobox',{name:'여행 지역',exact:true})).toHaveValue('영월');expect(requests).toBe(1);
  await page.getByRole('button',{name:'음성으로 입력',exact:true}).click();await page.getByRole('button',{name:'음성 입력 중지',exact:true}).click();await page.evaluate(()=>{(window as any).testRecognition.onresult({results:[[{transcript:'일정 만들어 줘'}]]});});expect(requests).toBe(1);
+});
+
+test('AI voice clarification carries conversation and never executes failed interpretation',async({page})=>{
+ const {emptyVoicePatch}=await import('../../src/domain/voice-ai');
+ await page.addInitScript(()=>{class Recognition{onresult:any;onend:any;start(){(window as any).testRecognition=this;}abort(){this.onend?.();}}(window as any).SpeechRecognition=Recognition;});
+ let calls=0,generations=0;
+ await page.route('**/api/courses',r=>{generations++;return r.fulfill({status:500,json:{error:'unexpected'}});});
+ await page.route('**/api/voice-intent',r=>{calls++;const body=r.request().postDataJSON();expect(body.consent).toBe(true);if(calls===1)return r.fulfill({json:{result:{action:'clarify',patch:{...emptyVoicePatch,comfort:true,interests:['바다 보기']},reply:'바다를 보면서 여유롭게 다니도록 할게요.',questions:['연속해서 몇 분 정도 걸을 수 있나요?']}}});if(calls===2){expect(body.history).toHaveLength(2);expect(body.history[1].text).toContain('몇 분');expect(body.context.interests).toEqual(['바다 보기']);return r.fulfill({json:{result:{action:'update',patch:{...emptyVoicePatch,walkLimit:12},reply:'연속 보행 12분으로 반영했어요.',questions:[]}}});}return r.fulfill({status:503,json:{error:'AI 연결을 확인하세요.'}});});
+ await page.goto('/');const say=async(text:string)=>{await page.getByRole('button',{name:'음성으로 입력',exact:true}).click();await page.evaluate(text=>{const r=(window as any).testRecognition;r.onresult({results:[[{transcript:text}]]});r.onend?.();},text);};
+ await say('엄마랑 바다를 보고 싶어. 오래 걷기는 힘들어');await expect(page.locator('.voice-trip')).toContainText('연속해서 몇 분');await say('12분 정도');await expect(page.locator('.voice-trip')).toContainText('12분으로 반영');await page.locator('.simple-options > summary').click();await expect(page.getByRole('combobox',{name:'연속 보행 시간 한도',exact:true})).toHaveValue('12');await say('일정 만들어 줘');await expect(page.locator('.voice-trip')).toContainText('AI 연결을 확인하세요.');expect(generations).toBe(0);await expect(page.getByRole('combobox',{name:'연속 보행 시간 한도',exact:true})).toHaveValue('12');
 });

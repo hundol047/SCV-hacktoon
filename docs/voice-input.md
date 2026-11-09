@@ -1,17 +1,19 @@
-# Korean voice trip entry
+# Korean voice entry with AI interpretation
 
-The compact four-field form offers an explicit microphone button. It uses the browser's SpeechRecognition/webkitSpeechRecognition with ko-KR, single utterances and final results only. Audio may be processed by the browser's recognition provider; this is disclosed next to the control. The app does not record or store audio and the existing Bedrock course generator is unchanged.
+The compact four-field form keeps one microphone button. Browser SpeechRecognition/webkitSpeechRecognition performs Korean transcription after the user clicks; `/api/voice-intent` then sends the transcript, current form and up to six recent conversation turns to the existing Bedrock model (`global.openai.gpt-6-sol`) for structured interpretation. This replaces the original keyword-only execution path. The old parser utility is not used as a silent fallback.
 
 Examples:
 - 판교역에서 내일 강릉으로 1박 2일 일정 만들어 줘
-- 여행지는 속초
-- 출발지는 판교고등학교
-- 기간은 이틀
-- 2027년 1월 3일
-- 일정 만들어 줘
+- 엄마랑 바다 보고 싶어. 많이 걷지 않고 쉬엄쉬엄 다니고 싶어.
+- 걷는 건 십오 분 정도, 중간에 이십 분 쉬고 싶어.
+- 그럼 여행지는 속초로 바꿔줘.
+- 이 서비스로 어떤 여행을 만들 수 있어?
+- 일정 만들어 줘 / 아니, 만들지 말고 조건만 바꿔줘
 
-Recognized corrections update the current form. Explicit generation commands invoke the same validated workflow after React has applied the new fields. No final-result event can trigger generation twice. Unknown dates/regions are not guessed; ambiguous weekday expressions require an explicit date. Cancelled sessions ignore late results. Microphone access starts only after a button click and is aborted on unmount or when generation starts.
+The model returns update, clarify, answer, generate or cancel. Nullable patch fields preserve existing selections. Unsupported regions, invalid dates, numeric ranges and missing departure on generation are checked server-side. Numeric walking/rest limits not present as explicit durations in user turns are replaced with a clarification. Age or mobility descriptions alone cannot become a numeric limit. Questions/answers/cancellation do not execute generation. Interpreted corrections, preferences and accessibility requirements map to the existing form and course API; the existing course model is unchanged.
 
-Deployment: HTTPS (localhost allowed), microphone permission, and a browser implementing Web Speech recognition are required. The existing plain HTTP IP address does not support this feature. Provider availability varies by device/network; unsupported or denied capture leaves manual entry usable. No new server API key is needed.
+The UI shows what it heard and the AI response. Questions can be answered with the microphone again. Failed AI requests expose retry and preserve the form. Stale responses cannot overwrite manual edits; cancelling or unmounting aborts the client request and invalidates late responses. Server processing already started may still consume API usage. No audio or conversation is persisted by the application; speech may be processed by the browser provider and transcripts/context by AWS, as disclosed beside the button.
 
-Verification: parser unit tests and desktop/mobile Playwright recognition-event mocks check fields, generation payload, corrections, duplication and cancellation. Real microphone quality and browser-provider connectivity require a physical-device test after HTTPS deployment; mocks do not establish actual transcription accuracy.
+Deployment: HTTPS (localhost allowed), microphone permission and a supported browser are required. The existing HTTP IP address cannot use microphone capture. AI uses the existing server region, EC2 role and `reserveAI` quota/account rules. Each interpretation consumes an additional AI request; there is no local keyword fallback when Bedrock is unavailable. No new API key is required.
+
+Verification uses injected Bedrock responses and desktop/mobile browser recognition/API mocks for conversation carry-over, clarification, corrections, one-shot execution and error retention. Live Bedrock inference and real microphone accuracy still require the deployed HTTPS service and its server credentials; local mocks do not establish those results.
