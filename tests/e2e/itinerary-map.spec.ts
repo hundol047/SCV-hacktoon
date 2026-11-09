@@ -30,14 +30,15 @@ test('three distinct daily courses update the itinerary and keep map aligned',as
  const {regionalCourse}=await import('../../src/domain/regional-course');
  const {savePlan}=await import('../../src/domain/course-plans');
  const many=osmCatalog('강릉',{elements:Array.from({length:14},(_,i)=>({type:'node',id:i+101,lat:37.75+i*.001,lon:128.9,tags:{name:'강릉 관광지 '+i,tourism:'museum'}}))},new Date().toISOString());
- many.places[0].visitorInfo={imageUrl:'https://tong.visitkorea.or.kr/cms/resource/1/photo.jpg'};
- await page.route('https://tong.visitkorea.or.kr/**',r=>r.fulfill({contentType:'image/png',body:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/l9sAAAAASUVORK5CYII=','base64')}));
+ many.places[0].visitorInfo={imageUrl:'https://tong.visitkorea.or.kr/broken.jpg'};
+ await page.route('**/broken.jpg',r=>r.abort());
+ await page.route('https://tong.visitkorea.or.kr/**',r=>r.request().url().endsWith('/broken.jpg')?r.abort():r.fulfill({contentType:'image/png',body:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/l9sAAAAASUVORK5CYII=','base64')}));
  let basics={...trip.basics,travelHours:{start:540,end:1110}};
  for(const day of [1,2])basics=savePlan(basics,regionalCourse(basics,defaultConditions,many,day,{candidateIds:many.places.slice((day-1)*2,day*2).map(p=>p.id)}).plan) as typeof basics;
  const rows=basics.coursePlans!.flatMap(p=>p.orderedPlaceIds.flatMap((id,i)=>[{...trip.items[0],id:`${p.day}:${i}`,day:p.day!,start:540+i*100,end:600+i*100,placeId:id},{...trip.items[0],id:`rest:${p.day}:${i}`,day:p.day!,start:600+i*100,end:620+i*100,placeId:id,kind:'rest' as const,label:'휴식'}]));
  const fixture={...trip,catalog:many,basics,items:rows};
  await page.addInitScript(t=>localStorage.setItem('bopok:trip:v1',JSON.stringify(t)),fixture);
- await page.route('**/api/place-details',r=>r.fulfill({json:{places:{}}}));await page.route('**/api/departure-hubs',r=>r.fulfill({json:{hubs:[]}}));
+ await page.route('**/api/place-details',r=>r.fulfill({json:{places:Object.fromEntries(r.request().postDataJSON().ids.map((id:string)=>[id,{imageUrl:'https://tong.visitkorea.or.kr/gallery.jpg',imageUrls:['https://tong.visitkorea.or.kr/gallery.jpg']}]))}}));await page.route('**/api/departure-hubs',r=>r.fulfill({json:{hubs:[]}}));
  await page.route('https://tile.openstreetmap.org/**',r=>r.abort());
  await page.route('https://router.project-osrm.org/**',r=>{const coords=r.request().url().split('/driving/')[1].split('?')[0].split(';').map(p=>p.split(',').map(Number));const legs=coords.slice(1).map(()=>({duration:600,distance:1000}));return r.fulfill({json:{code:'Ok',waypoints:coords.map(location=>({location})),routes:[{duration:legs.length*600,distance:legs.length*1000,legs,geometry:{type:'LineString',coordinates:coords}}]}});});
  let calls=0;
@@ -46,6 +47,7 @@ test('three distinct daily courses update the itinerary and keep map aligned',as
  const cards=page.locator('.course-choice-grid article');await expect(cards).toHaveCount(3);
  expect(new Set(await cards.locator('ol').allTextContents()).size).toBe(3);await expect(cards.first().getByRole('img',{name:'강릉 관광지 0 사진'})).toBeVisible();await expect.poll(()=>cards.first().locator('img').first().evaluate((e:HTMLImageElement)=>e.naturalWidth)).toBeGreaterThan(0);
  await expect(page.locator('.compact-stops>li')).toHaveCount(2);
+ await expect(page.locator('.compact-stops img')).toHaveCount(2);await expect(cards.first().locator('img').first()).toHaveAttribute('src','https://tong.visitkorea.or.kr/gallery.jpg');await page.locator('.compact-stops img').first().scrollIntoViewIfNeeded();await expect(page.locator('.compact-stops img').first()).toHaveAttribute('src','https://tong.visitkorea.or.kr/gallery.jpg');
  await expect(page.locator('.route-stop-order>span')).toHaveCount(2);
  await page.getByRole('button',{name:'2D 지도',exact:true}).click();await expect(page.locator('.route-number-marker')).toHaveCount(2);
  await expect(page.locator('.leaflet-tooltip')).toHaveCount(0);

@@ -17,7 +17,7 @@ const fact = <T>(id: string, field: string, value: T | null): Fact<T> => ({
 });
 export type Place = {
   accessNotes?:{entry:string;route:string;parking:string;toilet:string;source:string;collectedAt:string};
-  visitorInfo?:{imageUrl?:string;address?:string;hoursText?:string;phone?:string;website?:string};
+  visitorInfo?:{imageUrls?:string[];imageUrl?:string;address?:string;hoursText?:string;phone?:string;website?:string};
   facilities?:Partial<Record<Facility,Fact<boolean>>>;
   opening?:Fact<OpeningInfo>;
   id: string;
