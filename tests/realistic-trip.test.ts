@@ -50,3 +50,19 @@ it('remaining-day replanning retains the hotel and measures its new incoming roa
  const f=async(url:any,init?:any)=>{const u=String(url);if(u.includes('/route/')){const coordinates=u.split('/driving/')[1].split('?')[0].split(';').map(p=>p.split(',').map(Number));return Response.json({code:'Ok',routes:[{distance:1000,duration:600,geometry:{type:'LineString',coordinates}}]});}return fetcher(url);};
  const result=await replanTrip(two,1,660,'unknown',{},f as typeof fetch,[catalog.places[0].id]);expect(result.items.some(i=>i.day===1&&i.label==='체크인')).toBe(true);expect(result.items.some(i=>i.day===1&&i.kind==='move'&&i.toId===`stay:1:hotel-r`)).toBe(true);expect(result.items.filter(i=>i.day===2)).toEqual(two.items.filter(i=>i.day===2));
 });
+it.each([2,4,5])('uses fresh route indexes for %i days with different stops',async(days)=>{
+ const source=osmCatalog('강릉',{elements:Array.from({length:days*2},(_,i)=>({type:'node',id:100+i,lat:37.75+i/10000,lon:128.9,tags:{name:'공원'+i,tourism:'museum',indoor:'yes'}}))},new Date().toISOString());
+ const plans=Array.from({length:days},(_,i)=>{
+  const ids=source.places.slice(i*2,i*2+2).map(p=>p.id);
+  const result=optimizeTaxiOrder(source.places,ids,ids[0],2,null,null,undefined,{day:i+1});
+  if('error'in result)throw Error(result.error);return result.plan;
+ });
+ const before=JSON.stringify(source);
+ const trip=await prepareTrip({...basics,days,coursePlans:plans,taxiPlan:plans.at(-1)},defaultConditions,source,fetcher as typeof fetch);
+ for(let day=1;day<=days;day++){
+  expect(trip.items.filter(i=>i.day===day&&i.kind==='visit').map(i=>i.placeId)).toEqual(plans[day-1].orderedPlaceIds);
+  const moves=trip.items.filter(i=>i.day===day&&i.kind==='move');
+  expect(moves).toHaveLength(1);expect(moves[0].end-moves[0].start).toBe(30);
+ }
+ expect(JSON.stringify(source)).toBe(before);
+});
