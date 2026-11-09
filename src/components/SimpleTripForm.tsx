@@ -22,7 +22,7 @@ export default function SimpleTripForm({onTrip,conditions:baseConditions,initial
  const [walkLimit,setWalkLimit]=useState(''),[restMinutes,setRestMinutes]=useState('20');
  const [comfort,setComfort]=useState(true);
  const [showOptions,setShowOptions]=useState(false);
- const [startTime,setStartTime]=useState('09:00'),[endTime,setEndTime]=useState('18:30');
+ const [startTime,setStartTime]=useState('09:00'),[endTime,setEndTime]=useState('20:00');
  const [dailyTimes,setDailyTimes]=useState<Record<number,{start:string;end:string}>>({});
  const [startMode,setStartMode]=useState<'home'|'destination'>('destination'),[returnHome,setReturnHome]=useState(false),[returnTime,setReturnTime]=useState('20:00'),[budget,setBudget]=useState('');
  const [departure,setDeparture]=useState(''),[travelers,setTravelers]=useState(2);

@@ -18,7 +18,7 @@ export function dailyCourseOptions(trip:Trip,day:number):CourseOption[]{
   for(let attempt=0;attempt<candidates.length&&options.length<3;attempt++){
    const used=new Map<string,number>();for(const option of options)for(const id of option.ids)used.set(id,(used.get(id)??0)+1);
    const rotated=[...candidates.slice(attempt),...candidates.slice(0,attempt)].sort((a,b)=>(used.get(a)??0)-(used.get(b)??0));
-   try{add(regionalCourse(trip.basics,trip.conditions,catalog,day,{candidateIds:rotated.slice(0,Math.max(input.minAttractions,Math.min(count,candidates.length-1)))}).plan.orderedPlaceIds);}catch{/* Keep only valid candidates, never relax requested accessibility. */}
+   try{add(regionalCourse(trip.basics,trip.conditions,catalog,day,{candidateIds:rotated.slice(0,Math.max(input.minAttractions,Math.min(count,candidates.length-1)))},{fillDay:true}).plan.orderedPlaceIds);}catch{/* Keep only valid candidates, never relax requested accessibility. */}
   }
  }catch{/* A saved course remains available even if no alternatives meet the conditions. */}
  return options;

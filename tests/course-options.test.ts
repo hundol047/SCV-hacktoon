@@ -17,4 +17,4 @@ it('offers three different attraction sets per day without borrowing other-day v
  expect(JSON.stringify(trip)).toBe(before);
 });
 it('does not invent alternatives or relax required facilities',()=>{const trip=fixture(4);trip.basics.requiredFacilities=['wheelchair'];expect(dailyCourseOptions(trip,1)).toHaveLength(1);});
-it('uses distinct subsets when all local candidates were in the selected course',()=>{const trip=fixture(4);expect(dailyCourseOptions(trip,1)).toHaveLength(3);});
+it('does not shorten a full-day course just to manufacture three alternatives',()=>{const trip=fixture(4);expect(dailyCourseOptions(trip,1)).toHaveLength(1);});

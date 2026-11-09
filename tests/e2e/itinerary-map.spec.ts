@@ -51,7 +51,25 @@ test('three distinct daily courses update the itinerary and keep map aligned',as
  await cards.nth(1).getByRole('button').click();await expect(cards.nth(1)).toHaveClass(/selected/);await expect(page.locator('.compact-stops')).toContainText(second!);
  await page.locator('.day-tabs button').nth(1).click();await expect(cards).toHaveCount(3);
  const map=await page.locator('.itinerary-map').boundingBox(),stops=await page.locator('.lab-route-stops').boundingBox();
- if(info.project.name==='desktop'){expect(Math.abs(map!.y-stops!.y)).toBeLessThan(3);expect(map!.x).toBeGreaterThan(stops!.x);}
+ expect(map!.y+map!.height).toBeLessThanOrEqual(stops!.y);expect(Math.abs(map!.x-stops!.x)).toBeLessThan(3);expect(Math.abs(map!.width-stops!.width)).toBeLessThan(3);
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  await page.locator('.daily-course-options').screenshot({path:info.outputPath('course-options.png')});
+});
+
+test('coupon and travel-tool disclosures are compact and keyboard accessible',async({page},info)=>{
+ await page.addInitScript(t=>localStorage.setItem('bopok:trip:v1',JSON.stringify(t)),trip);
+ await page.route('**/api/place-details',r=>r.fulfill({json:{places:{}}}));await page.route('**/api/departure-hubs',r=>r.fulfill({json:{hubs:[]}}));await page.route('https://router.project-osrm.org/**',r=>r.abort());
+ await page.goto('/');await page.getByRole('button',{name:'이어서 보기',exact:true}).click();
+ await page.getByRole('button',{name:'예산·할인',exact:true}).click();
+ const coupon=page.locator('summary').filter({hasText:'직접 확인한 할인권 추가'});
+ expect((await coupon.boundingBox())!.height).toBeLessThanOrEqual(56);
+ await coupon.click();await expect(page.getByLabel('할인권 이름',{exact:true})).toBeVisible();await coupon.click();
+ await page.getByRole('button',{name:'여행 도우미',exact:true}).click();
+ for(const name of ['날짜별 시간·예산·코스 조정','지도 저장']){
+  const summary=page.locator('summary').filter({hasText:name});expect((await summary.boundingBox())!.height).toBeLessThanOrEqual(56);
+  await summary.focus();await page.keyboard.press('Enter');await expect(summary.locator('..')).toHaveAttribute('open','');
+  await page.keyboard.press('Enter');await expect(summary.locator('..')).not.toHaveAttribute('open','');
+ }
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ await page.locator('#trip-pane-tools').screenshot({path:info.outputPath('compact-tool-panels.png')});
 });

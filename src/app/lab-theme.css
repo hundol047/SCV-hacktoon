@@ -32,3 +32,22 @@
 .course-choice-grid button:disabled{opacity:1;color:var(--muted)}
 @media(max-width:760px){.course-choice-heading{display:block}.course-choice-heading>span{display:block;margin-top:6px}.course-choice-grid{grid-template-columns:1fr}.course-choice-grid article{padding:14px}.course-choice-grid article.selected{padding:13px}.course-choice-grid ol{margin:10px 0}.lab-route-layout .itinerary-map .road-map{height:260px}}
 .route-map-heading{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:10px}.route-map-heading button{font-size:11px;padding:6px 9px;border:1px solid var(--line);background:var(--white);white-space:nowrap}.lab-route-layout .route-map-heading h3{margin:0}
+/* Compact disclosures share one shape across coupons and travel tools. */
+.lab-app details.travel-panel{box-sizing:border-box;width:100%;margin:12px 0;padding:0 18px;border:1px solid var(--line);border-radius:14px;background:var(--white);overflow:visible}
+.lab-app details.travel-panel>summary{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:52px;margin:0 -18px;padding:12px 18px;border:0;border-radius:14px;background:transparent;list-style:none;font-size:14px;line-height:1.5;font-weight:600;cursor:pointer}
+.lab-app details.travel-panel>summary::-webkit-details-marker{display:none}
+.lab-app details.travel-panel>summary::after{content:'⌄';font-size:19px;font-weight:400;color:var(--muted);transition:transform .15s}
+.lab-app details.travel-panel[open]>summary::after{transform:rotate(180deg)}
+.lab-app details.travel-panel[open]{padding-bottom:18px}
+.lab-app details.travel-panel[open]>summary{margin-bottom:14px;border-bottom:1px solid var(--line);border-radius:14px 14px 0 0}
+.lab-app details.travel-panel>summary:focus{outline:none}
+.lab-app details.travel-panel>summary:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+.lab-app details.travel-panel>summary:hover{background:var(--soft)}
+/* Route overview belongs between course selection and the time-by-time itinerary. */
+.lab-route-layout{display:flex;flex-direction:column;gap:18px}
+.lab-route-layout .itinerary-map{position:static;order:0;width:100%;margin:0}
+.lab-route-layout .itinerary-map .road-map{height:300px}
+.lab-route-layout>.arrival-guide{order:1;width:100%;margin:0;padding:14px 18px}
+.lab-route-layout>.arrival-guide>summary{font-size:13px;font-weight:600;cursor:pointer}
+.lab-route-layout>.lab-route-stops{order:2;width:100%}
+@media(max-width:760px){.lab-route-layout .itinerary-map .road-map{height:240px}}
