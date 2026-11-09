@@ -1,3 +1,4 @@
+import {placePhotoURL} from '../domain/place-photo';
 import type {KoreaRecord} from '../data/korea-tourism';
 import {haversineKm} from '../domain/taxi-plan';
 import {z} from 'zod';
@@ -13,7 +14,7 @@ export function matchingTourismPlace(place:Pick<KoreaRecord,'name'|'latitude'|'l
 export function tourInfo(basic:Record<string,string|number>,intro:Record<string,string|number>):Info{
  const address=text([basic.addr1,basic.addr2].filter(Boolean).join(' '));const phone=text(intro.infocenter||intro.infocenterculture||intro.infocenterleports||intro.infocenterfood||basic.tel);
  const hours=text(intro.usetime||intro.usetimeculture||intro.usetimeleports||intro.opentimefood,2500);const closed=text(intro.restdate||intro.restdateculture||intro.restdateleports||intro.restdatefood,400);
- return {...(address?{address}:{}),...(phone?{phone}:{}),...(hours||closed?{hoursText:[hours,closed?'휴무: '+closed:''].filter(Boolean).join(' · ')}:{})};
+ return {imageUrl:placePhotoURL(basic.firstimage||basic.firstimage2),...(address?{address}:{}),...(phone?{phone}:{}),...(hours||closed?{hoursText:[hours,closed?'휴무: '+closed:''].filter(Boolean).join(' · ')}:{})};
 }
 export function createTourAPIEnricher(fetcher:typeof fetch=fetch){
  const cache=new Map<string,{at:number;info:Info}>();const pending=new Map<string,Promise<Info>>();let day='',requests=0;

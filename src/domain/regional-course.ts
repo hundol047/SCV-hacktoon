@@ -1,3 +1,5 @@
+import {distinctVisits,tourismVisitAllowed,visitTheme} from './tourism-diversity';
+import {tourismMealScore} from './tourism-meals';
 import {visitDuration} from './visit-duration';
 import {closedOn,recentFact} from './venue-details';
 import {dayDate} from './schema';
@@ -24,7 +26,7 @@ export function courseInput(b:Basics,c:Conditions,catalog:Catalog,day:number){
   const origin=localOrigin&&day===1&&b.departureCoordinates?{...localOrigin,...b.departureCoordinates,name:b.departureRegion??localOrigin.name}:localOrigin;
   if(!origin)throw Error('이 지역의 기준 출발 장소를 선택하세요.');
   const used=new Set(savedPlans(b).filter(p=>(p.day??1)!==day).flatMap(p=>p.selectedPlaceIds));
-  const available=rankVehiclePlaces(local.filter(p=>p.kind==='visit'&&!used.has(p.id)&&weatherAllowed(p,weather)),b,c,origin).sort((a,d)=>weatherScore(d.place,weather)-weatherScore(a.place,weather));
+  const available=rankVehiclePlaces(local.filter(p=>p.kind==='visit'&&tourismVisitAllowed(p)&&!used.has(p.id)&&weatherAllowed(p,weather)),b,c,origin).sort((a,d)=>weatherScore(d.place,weather)-weatherScore(a.place,weather));
   const hours=b.dailyHours?.find(w=>w.day===day)?.hours??b.travelHours;
   const minAttractions=hours?1:2;
   const maxAttractions=hours?Math.max(1,Math.min(8,Math.ceil((hours.end-hours.start)/90),available.length)):b.daySession?Math.max(2,Math.min(b.daySession==='morning'?4:3,available.length-2*(b.days-day))):available.length===2*(b.days-day+1)?2:3;
@@ -37,6 +39,8 @@ export function regionalCourse(b:Basics,c:Conditions,catalog:Catalog,day:number,
   const {candidateIds}=courseReplySchema.parse(raw),input=courseInput(b,c,catalog,day);
   if(candidateIds.length<input.minAttractions||candidateIds.length>input.maxAttractions)throw Error('선택한 여행 시간과 남은 날짜에 맞게 방문 장소 수를 조정해 주세요.');
   if(new Set(candidateIds).size!==candidateIds.length||candidateIds.some(id=>!input.candidates.some(p=>p.place.id===id)))throw Error('제공된 지역·날씨 후보 밖의 추천 또는 중복 추천입니다. 다시 요청하세요.');
+  const diverse=distinctVisits(candidateIds.map(id=>catalog.places.find(p=>p.id===id)!));
+  candidateIds.splice(0,candidateIds.length,...diverse.map(p=>p.id));
   const hours=b.dailyHours?.find(w=>w.day===day)?.hours??b.travelHours;
   if(options.fillDay&&hours&&hours.end-hours.start>=360){
     const selected=new Set(candidateIds);
@@ -48,7 +52,7 @@ export function regionalCourse(b:Basics,c:Conditions,catalog:Catalog,day:number,
     const target=hours.end-hours.start-mealMinutes;
     // This estimate only sizes the candidate list. prepareTrip uses queried road times.
     const occupied=()=>[...selected].reduce((sum,id)=>sum+visitDuration(catalog.places.find(p=>p.id===id)!)+(c.restMin??15)+15,0);
-    for(const {place} of pool){if(selected.size>=limit||occupied()>=target)break;selected.add(place.id);}
+    for(const {place} of pool){if(selected.size>=limit||occupied()>=target)break;if(![...selected].some(id=>visitTheme(catalog.places.find(p=>p.id===id)!)===visitTheme(place)))selected.add(place.id);}
     candidateIds.splice(0,candidateIds.length,...selected);
   }
   const previous=savedPlans(b).find(p=>(p.day??1)===day);
@@ -57,7 +61,7 @@ export function regionalCourse(b:Basics,c:Conditions,catalog:Catalog,day:number,
   if('error' in result)throw Error(result.error);
   const warnings=[weatherGuidance[input.weather]];
   const serves=(p:typeof catalog.places[number],start:number)=>!p.opening?.value||!recentFact(p.opening)||(p.opening.value.open<=start&&p.opening.value.close>=start+60);
-  const meal=rankVehiclePlaces(input.local.filter(p=>p.kind==='meal'&&weatherAllowed(p,input.weather)&&serves(p,Math.max(720,hours?.start??720))),b,c,result.places[Math.min(1,result.places.length-1)]).sort((a,d)=>weatherScore(d.place,input.weather)-weatherScore(a.place,input.weather))[0]?.place;
+  const meal=rankVehiclePlaces(input.local.filter(p=>p.kind==='meal'&&tourismMealScore(p)>=0&&weatherAllowed(p,input.weather)&&serves(p,Math.max(720,hours?.start??720))),b,c,result.places[Math.min(1,result.places.length-1)]).sort((a,d)=>tourismMealScore(d.place)-tourismMealScore(a.place)||weatherScore(d.place,input.weather)-weatherScore(a.place,input.weather))[0]?.place;
   const ordered=[...result.places];
   if(hours){const {start,end}=hours;if(meal&&end-start>=240){
     if(start<=720&&end>=780){
@@ -65,9 +69,9 @@ export function regionalCourse(b:Basics,c:Conditions,catalog:Catalog,day:number,
       while(index<ordered.length){const next=visitDuration(ordered[index])+(c.restMin??15)+15;if(index>0&&elapsed+next>750)break;elapsed+=next;index++;}
       ordered.splice(Math.max(1,index),0,meal);
     }
-    if(start<=1080&&end>=1140){const dinner=rankVehiclePlaces(input.local.filter(p=>p.kind==='meal'&&!ordered.some(o=>o.id===p.id)&&weatherAllowed(p,input.weather)&&serves(p,1080)&&serves(p,Math.min(1140,end-60))),b,c,ordered.at(-1))[0]?.place;if(dinner)ordered.push(dinner);}
+    if(start<=1080&&end>=1140){const dinner=rankVehiclePlaces(input.local.filter(p=>p.kind==='meal'&&tourismMealScore(p)>=0&&!ordered.some(o=>o.id===p.id)&&weatherAllowed(p,input.weather)&&serves(p,1080)&&serves(p,Math.min(1140,end-60))),b,c,ordered.at(-1))[0]?.place;if(dinner)ordered.push(dinner);}
   }}
-  else if(meal){if(b.daySession==='afternoon')ordered.push(meal);else ordered.splice(Math.min(b.daySession==='morning'?(ordered.length>=4?2:1):2,ordered.length),0,meal);if(b.daySession==='morning'){const dinner=rankVehiclePlaces(input.local.filter(p=>p.kind==='meal'&&p.id!==meal.id&&weatherAllowed(p,input.weather)),b,c,ordered.at(-1))[0]?.place;if(dinner)ordered.push(dinner);}}else warnings.push('조건·날씨에 맞는 식당 자료가 없어 식사는 자동 추가하지 않았습니다. 식당 후보를 추가하세요.');
+  else if(meal){if(b.daySession==='afternoon')ordered.push(meal);else ordered.splice(Math.min(b.daySession==='morning'?(ordered.length>=4?2:1):2,ordered.length),0,meal);if(b.daySession==='morning'){const dinner=rankVehiclePlaces(input.local.filter(p=>p.kind==='meal'&&tourismMealScore(p)>=0&&p.id!==meal.id&&weatherAllowed(p,input.weather)),b,c,ordered.at(-1))[0]?.place;if(dinner)ordered.push(dinner);}}else warnings.push('조건·날씨에 맞는 식당 자료가 없어 식사는 자동 추가하지 않았습니다. 식당 후보를 추가하세요.');
   const distanceKm=ordered.slice(1).reduce((sum,p,i)=>sum+haversineKm(ordered[i],p)!,0);
   const plan={...result.plan,selectedPlaceIds:ordered.map(p=>p.id),orderedPlaceIds:ordered.map(p=>p.id),distanceKm,courseOptions:{weather:input.weather,visitMinutes:b.coursePreferences?.find(p=>p.day===day)?.visitMinutes??60,restMinutes:c.restMin??15}};
   for(const p of ordered)if(!p.setting||p.setting.value==='unknown'||p.setting.value===null)warnings.push(p.name+': 실내외 미확인 — 날씨 적합성 확인 필요');

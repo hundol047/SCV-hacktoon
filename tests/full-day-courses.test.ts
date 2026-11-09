@@ -5,7 +5,7 @@ import {validateBatch} from '../src/domain/course-batch';
 import {dailyCourseOptions} from '../src/domain/course-options';
 import {savePlan} from '../src/domain/course-plans';
 import {prepareTrip} from '../src/server/prepare-trip';
-const catalog=osmCatalog('강릉',{elements:Array.from({length:50},(_,i)=>({type:'node',id:i+1,lat:37.75+i*.0001,lon:128.9,tags:i<40?{name:i%3===0?'수목원 '+i:i%3===1?'박물관 '+i:'해변 '+i,tourism:'attraction'}:{name:'식당 '+i,amenity:'restaurant'}}))},new Date().toISOString(),200);
+const catalog=osmCatalog('강릉',{elements:Array.from({length:50},(_,i)=>({type:'node',id:i+1,lat:37.75+i*.0001,lon:128.9,tags:i<40?{name:i%3===0?'수목원 '+i:i%3===1?'박물관 '+i:'해변 '+i,tourism:'attraction'}:{name:'초당순두부 식당 '+i,amenity:'restaurant'}}))},new Date().toISOString(),200);
 const conditions={...defaultConditions,restMin:20};
 const fetcher:typeof fetch=async(url)=>{const u=String(url);if(!u.includes('/table/'))return Response.json({elements:[]});const points=u.split('/driving/')[1].split('?')[0].split(';').map(p=>p.split(',').map(Number));return Response.json({code:'Ok',sources:points.map(location=>({location})),destinations:points.map(location=>({location})),durations:points.map((_,i)=>points.map((_,j)=>i===j?0:780)),distances:points.map((_,i)=>points.map((_,j)=>i===j?0:6200))});};
 it('expands a one-attraction AI reply into full A/B/C days through 19–20h',async()=>{

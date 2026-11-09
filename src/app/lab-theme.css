@@ -55,3 +55,27 @@
 .lab-app .simple-basics>.departure-field,.lab-app .simple-basics>.destination-field{grid-column:span 3}
 .lab-app .simple-basics>.simple-date,.lab-app .simple-basics>.simple-duration,.lab-app .simple-basics>.simple-party{grid-column:span 2}
 @media(max-width:760px){.lab-app .simple-basics{grid-template-columns:repeat(2,minmax(0,1fr))}.lab-app .simple-basics>.departure-field,.lab-app .simple-basics>.destination-field,.lab-app .simple-basics>.simple-party{grid-column:1/-1}.lab-app .simple-basics>.simple-date,.lab-app .simple-basics>.simple-duration{grid-column:span 1}}
+.lab-app:has(.workspace) main{max-width:1480px}
+.course-map-workspace{display:grid;grid-template-columns:minmax(0,2fr) minmax(300px,1fr);gap:18px;align-items:start;margin-bottom:22px}
+.course-map-workspace .daily-course-options{margin:0;min-width:0}
+.course-map-workspace .course-choice-heading{display:block;height:52px}.course-map-workspace .course-choice-heading>span{display:block;margin-top:5px}
+.course-map-workspace .course-choice-grid{height:clamp(360px,65svh,650px);gap:10px}
+.course-map-workspace .course-choice-grid article{padding:12px;min-height:0}.course-map-workspace .course-choice-grid article.selected{padding:11px}
+.course-map-workspace .course-choice-grid ol{list-style:none;overflow:auto;overscroll-behavior:contain;min-height:0;padding:0;margin:12px 0}
+.course-choice-grid li{display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid var(--line)}.course-choice-grid li>span{font-size:12px;line-height:1.5}.course-choice-grid li small{display:block;font-size:10px;color:var(--muted)}
+.course-place-photo{flex:0 0 64px;width:64px;height:72px;border-radius:9px;overflow:hidden;background:#e9eeeb}.course-place-photo img{width:100%;height:100%;object-fit:cover;display:block}.course-place-photo>span{height:100%;display:flex;flex-direction:column;gap:3px;align-items:center;justify-content:center;color:#697975}.course-place-photo small{font-size:9px!important}
+.course-map-workspace .itinerary-map{min-width:0;margin:52px 0 0;padding:14px;border-radius:14px;background:white;border:1px solid var(--line);height:clamp(360px,65svh,650px);display:flex;flex-direction:column}
+.course-map-workspace .road-map-view{flex:1;min-height:0;display:flex;flex-direction:column}.course-map-workspace .road-map{flex:1;min-height:160px;height:auto;isolation:isolate;border-radius:12px;overflow:hidden}
+.course-map-workspace .route-stop-order{display:none}.course-map-workspace .road-note{margin:5px 0;font-size:10px}
+.map-view-switch{display:flex;gap:6px;margin-bottom:9px}.map-view-switch button{padding:6px 10px;font-size:12px;border:1px solid var(--line);background:white}.map-view-switch button[aria-pressed=true]{background:var(--soft);border-color:var(--green)}
+.terrain-stop-marker{border:2px solid white!important;border-radius:20px!important;min-width:30px;min-height:30px;padding:4px 7px!important;background:#176573!important;color:white!important;font:700 12px sans-serif!important;box-shadow:0 2px 7px #0004}
+.map-stop-picker{display:flex;gap:5px;overflow:auto;padding:6px 0;flex:0 0 auto}.map-stop-picker button{flex-shrink:0;padding:5px 8px;font-size:11px;border:1px solid var(--line);background:white}
+.lab-app .compact-stops>li>div>.course-place-photo{float:right;width:112px;height:90px;margin:0 0 12px 16px}.lab-app .compact-stops>li>div{display:flow-root}
+@media(max-width:1050px){.course-map-workspace{grid-template-columns:minmax(0,1fr)}.course-map-workspace .itinerary-map{margin:0;height:360px}.course-map-workspace .course-choice-grid{height:480px}.course-map-workspace .course-choice-heading{height:auto;margin-bottom:12px}}
+@media(max-width:600px){.course-map-workspace .course-choice-grid{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;height:470px}.course-map-workspace .course-choice-grid article{flex:0 0 82%;scroll-snap-align:start}.course-map-workspace .itinerary-map{height:330px}.lab-app .compact-stops>li>div>.course-place-photo{width:80px;height:72px}}
+.terrain-road-map .maplibregl-popup-content{padding:10px 12px;max-height:110px;overflow:auto;border-radius:10px}
+.terrain-road-map .maplibregl-popup-content p{font-size:12px;line-height:1.5;margin:3px 20px 3px 0}
+.terrain-road-map .maplibregl-popup-close-button{min-height:22px!important;min-width:22px!important;width:22px;height:22px;padding:0!important;font-size:16px!important;line-height:22px;border:0;background:transparent}
+/* Keep the selected-place list inside short maps, including clustered markers. */
+.terrain-road-map .maplibregl-popup{transform:none!important;top:8px;left:8px;right:auto;bottom:auto;width:max-content;max-width:calc(100% - 64px)!important}
+.terrain-road-map .maplibregl-popup-tip{display:none}

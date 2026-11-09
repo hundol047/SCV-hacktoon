@@ -1,8 +1,9 @@
 'use client';
-import {useEffect,useRef,useState} from 'react';
+import TerrainRoadMap from './TerrainRoadMap';
+import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import type {Place} from '../data/demo';
 import type {RoadRoute} from '../domain/road-route';
-export default function RoadMap({from,to,route,stops}:{from:Place;to:Place;route:RoadRoute;stops?:Place[]}){
+function FlatRoadMap({from,to,route,stops}:{from:Place;to:Place;route:RoadRoute;stops?:Place[]}){
  const host=useRef<HTMLDivElement>(null),retry=useRef<()=>void>(()=>{}),[message,setMessage]=useState('도로 지도 불러오는 중…'),[failed,setFailed]=useState(false);
  useEffect(()=>{
   let cancelled=false,map:import('leaflet').Map|undefined,observer:ResizeObserver|undefined,timer:ReturnType<typeof setTimeout>|undefined,frame:number|undefined;
@@ -34,4 +35,9 @@ export default function RoadMap({from,to,route,stops}:{from:Place;to:Place;route
   return()=>{cancelled=true;clearTimeout(timer);if(frame)cancelAnimationFrame(frame);retry.current=()=>{};observer?.disconnect();map?.remove();};
  },[from,to,route,stops]);
  return <><div className="road-map" ref={host} role="region" aria-label={stops?'하루 전체 자동차 코스 지도':`${from.name}에서 ${to.name}까지 자동차 경로 지도`}/>{message&&<p role="status" className="road-note">{message}</p>}{failed&&<button type="button" onClick={()=>retry.current()}>지도 다시 불러오기</button>}</>;
+}
+
+export default function RoadMap(props:{from:Place;to:Place;route:RoadRoute;stops?:Place[]}){
+ const [mode,setMode]=useState<'3d'|'2d'>('3d');const fallback=useCallback(()=>setMode('2d'),[]);const stops=useMemo(()=>props.stops??[props.from,props.to],[props.stops,props.from,props.to]);
+ return <div className="road-map-view"><div className="map-view-switch"><button type="button" aria-pressed={mode==='3d'} onClick={()=>setMode('3d')}>3D 지형</button><button type="button" aria-pressed={mode==='2d'} onClick={()=>setMode('2d')}>2D 지도</button></div>{mode==='3d'?<TerrainRoadMap route={props.route} stops={stops} onFallback={fallback}/>:<FlatRoadMap {...props}/>}</div>;
 }

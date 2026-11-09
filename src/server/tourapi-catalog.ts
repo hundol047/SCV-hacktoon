@@ -1,3 +1,4 @@
+import {placePhotoURL} from '../domain/place-photo';
 import {winterLeisure} from '../data/national-discovery';
 import {catalogSchema,type Catalog} from '../data/catalog';
 import type {Place,Fact} from '../data/demo';
@@ -17,7 +18,7 @@ export function createOfficialCatalog(fetcher:typeof fetch=fetch){
    for(const r of groups.flat()){const lat=Number(r.mapy),lon=Number(r.mapx);if(!/^\d+$/.test(String(r.contentid))||!String(r.title??'').trim()||lat<33||lat>39||lon<124||lon>132||!Number.isFinite(lat)||!Number.isFinite(lon))continue;
     const id='tourapi:'+r.contentid;
     const fact=<T>(field:string,value:T|null):Fact<T>=>({value,evidenceId:id+':'+field,source:'https://apis.data.go.kr/B551011/KorService2/areaBasedList2',nature:'real',checked:value===null?'unknown':'source',collectedAt:at});
-    places.push({id,name:r.title.slice(0,300),region:base.region,latitude:lat,longitude:lon,currency:'KRW',kind:String(r.contenttypeid)==='39'?'meal':'visit',experiences:winterLeisure(String(r.title))?['겨울 레저']:String(r.contenttypeid)==='14'?['문화·전시']:[],description:'한국관광공사 관광정보',visitorInfo:{address:[r.addr1,r.addr2].filter(Boolean).join(' ').slice(0,1000),phone:String(r.tel??'').slice(0,3000)},walkMin:fact<number>('walkMin',null),walkM:fact<number>('walkM',null),stairs:fact<boolean>('stairs',null),seat:fact<boolean>('seat',null),foods:fact<string[]>('foods',null),cost:fact<number>('cost',null),hours:fact<[number,number]>('hours',null),situations:fact<string[]>('situations',null)});
+    places.push({id,name:r.title.slice(0,300),region:base.region,latitude:lat,longitude:lon,currency:'KRW',kind:String(r.contenttypeid)==='39'?'meal':'visit',experiences:winterLeisure(String(r.title))?['겨울 레저']:String(r.contenttypeid)==='14'?['문화·전시']:[],description:'한국관광공사 관광정보',visitorInfo:{imageUrl:placePhotoURL(r.firstimage||r.firstimage2),address:[r.addr1,r.addr2].filter(Boolean).join(' ').slice(0,1000),phone:String(r.tel??'').slice(0,3000)},walkMin:fact<number>('walkMin',null),walkM:fact<number>('walkM',null),stairs:fact<boolean>('stairs',null),seat:fact<boolean>('seat',null),foods:fact<string[]>('foods',null),cost:fact<number>('cost',null),hours:fact<[number,number]>('hours',null),situations:fact<string[]>('situations',null)});
    }
    const catalog=catalogSchema.parse({...base,places:[...new Map(places.map(p=>[p.id,p])).values()],sourceNotice:'한국관광공사 국문 관광정보',collectedAt:at});if(cache.size>=100)cache.delete(cache.keys().next().value!);cache.set(cacheKey,{at:Date.now(),catalog});return merge(base,catalog);
   }catch{return base;}
