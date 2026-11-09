@@ -55,3 +55,14 @@ it('provider failure or wrong content ID never creates accessibility evidence',a
   expect((await enrich(c,'key')).places[0].facilities).toEqual({});
  }
 });
+it('reads explicit grammatical facility statements without inferring access from rental',()=>{
+ const facts=barrierFreeFacts({exit:'문턱이 없음, 경사로가 설치되어 있음, 휠체어 진입 가능',restroom:'장애인 전용 화장실이 있음',elevator:'있음'},'venue',at);
+ expect(facts?.stepFree?.value).toBe(true);expect(facts?.ramp?.value).toBe(true);expect(facts?.accessibleToilet?.value).toBe(true);expect(facts?.elevator?.value).toBe(true);
+ expect(barrierFreeFacts({exit:'문턱이 있음, 경사로가 없음',elevator:'없음'},'venue',at)?.stepFree?.value).toBe(false);
+ expect(barrierFreeFacts({wheelchair:'대여가능',elevator:'일부 구간만 이용 가능'},'venue',at)?.wheelchair).toBeUndefined();
+});
+it('enriches places beyond the original forty-place cutoff',async()=>{
+ const c=catalog();c.places=Array.from({length:65},(_,i)=>({...c.places[0],id:'tourapi:'+(i+1),facilities:{}}));
+ const fetcher=vi.fn(async(input:unknown)=>{const id=new URL(String(input)).searchParams.get('contentId');return Response.json({response:{header:{resultCode:'0000'},body:{items:{item:{contentid:id,exit:'휠체어 진입 가능'}}}}});});
+ const result=await createAccessibilityEnricher(fetcher)(c,'key');expect(result.places[64].facilities?.wheelchair?.value).toBe(true);expect(fetcher).toHaveBeenCalledTimes(65);
+});

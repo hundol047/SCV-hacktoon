@@ -120,3 +120,12 @@ test('departure selection deduplicates addresses and clears the selection prompt
  await page.route('**/api/departure-hubs',r=>r.fulfill({json:{hubs:[],fallback:false}}));await page.goto('/');await page.getByLabel('출발 지역',{exact:true}).fill('서울역');await page.getByRole('button',{name:'주소 검색',exact:true}).click();
  await expect(page.locator('.location-options button')).toHaveCount(2);await page.locator('.location-options button').first().click();await expect(page.locator('.location-status')).toHaveText('출발지 선택 완료');await expect(page.locator('.location-options')).toHaveCount(0);await expect(page.locator('.simple-trip')).not.toContainText('검색 결과에서 출발지를 선택해 주세요.');await expect(page.getByText('소상공인 홍보 콘텐츠 만들기',{exact:true})).toHaveCount(0);await expect(page.locator('.simple-trip')).not.toContainText('CSV');
 });
+
+test('all accessibility requirements show coverage without silently relaxing conditions',async({page})=>{
+ const c=structuredClone(catalog);for(const p of c.places)p.facilities={wheelchair:{value:true,nature:'real',checked:'source',source:'https://example.com/access',evidenceId:p.id+':access',collectedAt:new Date().toISOString()}};
+ await page.route('**/api/location',r=>r.fulfill({json:{locations:[{id:'origin',name:'서울역',address:'서울역',latitude:37.55,longitude:126.97}]}}));await page.route('**/api/tourism?**',r=>r.fulfill({json:c}));let aiCalls=0;await page.route('**/api/courses',r=>{aiCalls++;return r.fulfill({status:503,json:{error:'AI 계약 테스트'}});});
+ await page.goto('/');await page.getByLabel('출발 지역',{exact:true}).fill('서울역');await page.locator('.simple-options > summary').click();
+ const labels=['계단 없는 진입 동선','휠체어 진입','경사로','완만한 진입로','엘리베이터','장애인 화장실'];for(const label of labels)await page.getByRole('checkbox',{name:label,exact:true}).check();
+ await page.getByRole('button',{name:'지역 검색하고 AI 일정 생성'}).click();const coverage=page.getByRole('region',{name:'접근성 확인 현황'});await expect(coverage).toContainText('선택한 조건 모두 확인: 0곳');await expect(coverage).toContainText('미확인 3곳');expect(aiCalls).toBe(0);for(const label of labels)await expect(page.getByRole('checkbox',{name:label,exact:true})).toBeChecked();
+ for(const label of labels.filter(l=>l!=='휠체어 진입'))await page.getByRole('checkbox',{name:label,exact:true}).uncheck();await expect(coverage).toContainText('선택한 조건 모두 확인: 3곳');await page.getByRole('button',{name:'지역 검색하고 AI 일정 생성'}).click();await expect(page.locator('.simple-trip').getByRole('alert')).toHaveText('AI 계약 테스트');expect(aiCalls).toBe(1);
+});
