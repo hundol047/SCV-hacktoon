@@ -9,6 +9,7 @@ if ! command -v docker >/dev/null; then
   sudo -n apt-get update
   sudo -n apt-get install -y docker.io
 fi
+sudo -n systemctl daemon-reload
 sudo -n systemctl start docker
 sudo -n docker info >/dev/null
 name=yeohaengit-web

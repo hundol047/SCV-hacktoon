@@ -1,8 +1,7 @@
 FROM node:24-bookworm-slim AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN --mount=type=secret,id=proxy-ca,required=false \
-    if [ -f /run/secrets/proxy-ca ]; then export NODE_EXTRA_CA_CERTS=/run/secrets/proxy-ca; fi; npm ci --no-audit --no-fund
+RUN npm ci --no-audit --no-fund
 COPY . .
 RUN npm run build && node_modules/.bin/esbuild scripts/verify-bedrock-role.ts --bundle --platform=node --format=cjs --outfile=bedrock-role-probe.cjs
 FROM node:24-bookworm-slim AS runtime
