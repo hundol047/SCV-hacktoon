@@ -87,3 +87,17 @@ test('comfort route report persists and evidence backup restores without auto-co
  const bundleEvent=page.waitForEvent('download');await page.getByRole('button',{name:'제출 검토용 파일 묶음 내려받기',exact:true}).click();const bundle=await bundleEvent;expect(bundle.suggestedFilename()).toContain('.zip');await bundle.saveAs(info.outputPath('submission.zip'));
  await page.locator('.evidence-backup').screenshot({path:info.outputPath('comfort-proof.png')});
 });
+
+test('voice input applies fields and explicit command generates only once',async({page})=>{
+ await page.addInitScript(()=>{class Recognition{lang='';continuous=false;interimResults=false;onresult:any;onerror:any;onend:any;start(){(window as any).testRecognition=this;}abort(){this.onend?.();}}(window as any).SpeechRecognition=Recognition;});
+ let requests=0;let payload:any;
+ await page.route('**/api/location',r=>r.fulfill({json:{locations:[{id:'origin',name:'판교역',address:'성남시 분당구',latitude:37.39,longitude:127.11}]}}));
+ await page.route('**/api/tourism?**',r=>r.fulfill({json:catalog}));
+ await page.route('**/api/courses',r=>{requests++;payload=r.request().postDataJSON();return r.fulfill({status:503,json:{error:'음성 생성 요청 확인'}});});
+ await page.goto('/');await expect(page.locator('.simple-trip input:visible, .simple-trip select:visible')).toHaveCount(4);
+ await page.getByRole('button',{name:'음성으로 입력',exact:true}).click();
+ await page.evaluate(()=>{const r=(window as any).testRecognition;r.onresult({results:[[{transcript:'판교역에서 내일 속초로 1박 2일 일정 만들어 줘'}]]});r.onresult({results:[[{transcript:'일정 만들어 줘'}]]});r.onend();});
+ await expect(page.locator('.simple-trip').getByRole('alert')).toHaveText('음성 생성 요청 확인');expect(requests).toBe(1);expect(payload.basics.departureRegion).toBe('판교역');expect(payload.basics.days).toBe(2);expect(payload.basics.title).toBe('속초 여행');
+ await page.getByRole('button',{name:'음성으로 입력',exact:true}).click();await page.evaluate(()=>{const r=(window as any).testRecognition;r.onresult({results:[[{transcript:'여행지는 영월'}]]});r.onend();});await expect(page.getByRole('combobox',{name:'여행 지역',exact:true})).toHaveValue('영월');expect(requests).toBe(1);
+ await page.getByRole('button',{name:'음성으로 입력',exact:true}).click();await page.getByRole('button',{name:'음성 입력 중지',exact:true}).click();await page.evaluate(()=>{(window as any).testRecognition.onresult({results:[[{transcript:'일정 만들어 줘'}]]});});expect(requests).toBe(1);
+});

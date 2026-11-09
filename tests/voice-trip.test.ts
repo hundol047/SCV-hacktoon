@@ -1,0 +1,8 @@
+import {it,expect} from 'vitest';
+import {parseVoiceTrip} from '../src/domain/voice-trip';
+it('extracts four fields and an explicit generate request',()=>{expect(parseVoiceTrip('판교역에서 내일 강릉으로 1박 2일 일정 만들어 줘','2026-11-09')).toEqual({departure:'판교역',region:'강릉',date:'2026-11-10',days:2,generate:true});});
+it('supports corrections without generating and keeps departure cities out of destination matching',()=>{expect(parseVoiceTrip('여행지는 속초','2026-11-09')).toEqual({region:'속초',generate:false});expect(parseVoiceTrip('강릉에서 모레 속초로 당일 여행 만들어 줘','2026-12-31')).toMatchObject({departure:'강릉',region:'속초',date:'2027-01-02',days:1,generate:true});expect(parseVoiceTrip('내일 판교역에서 강릉으로 한 박 이틀 일정 만들어줘','2026-11-09')).toMatchObject({departure:'판교역',date:'2026-11-10',days:2});});
+it('does not generate for cancellation, invalid dates, unsupported region or ambiguous time',()=>{for(const text of ['일정 만들지 마','판교역에서 부산으로 일정 만들어 줘','부산 여행 만들어 줘','판교역에서 내일 부산 여행 만들어 줘','2월 30일 강릉 일정 만들어줘','다음 주 토요일 강릉 일정 만들어줘','강릉 속초 일정 만들어줘','강릉 5박 6일 일정 만들어줘'])expect(parseVoiceTrip(text,'2026-11-09').generate).toBe(false);});
+it('accepts explicit future year and rejects past month without silently moving it',()=>{expect(parseVoiceTrip('2027년 1월 3일 강릉 여행 만들어줘','2026-11-09')).toMatchObject({date:'2027-01-03',generate:true});expect(parseVoiceTrip('1월 3일 강릉 일정 만들어줘','2026-11-09').error).toBeTruthy();});
+
+it('keeps calendar day separate from trip duration and reads spoken counts',()=>{expect(parseVoiceTrip('11월 20일 여행 만들어줘','2026-11-09')).toEqual({date:'2026-11-20',generate:true});expect(parseVoiceTrip('기간은 이틀','2026-11-09')).toEqual({days:2,generate:false});expect(parseVoiceTrip('강릉 일박 이일 일정 만들어줘','2026-11-09')).toMatchObject({days:2,generate:true});});

@@ -7,6 +7,8 @@ import {useEffect,useRef,useState} from 'react';
 import {defaultBasics,tripSchema,type Conditions,type Trip,type Basics} from '../domain/schema';
 import {catalogSchema} from '../data/catalog';
 import {validateBatch} from '../domain/course-batch';
+import VoiceTripInput from './VoiceTripInput';
+import type {VoiceTripCommand} from '../domain/voice-trip';
 import TravelBookings from './TravelBookings';
 import HalfPriceTravel from './HalfPriceTravel';
 import DepartureHubs from './DepartureHubs';
@@ -50,6 +52,9 @@ export default function SimpleTripForm({onTrip,conditions:baseConditions,initial
   }catch(e){if(request===locationRevision.current)setLocationMessage(e instanceof Error?e.message:(e as GeolocationPositionError).code===1?'위치 권한을 허용한 뒤 다시 눌러 주세요. 직접 입력도 가능해요.':(e as GeolocationPositionError).code===3?'위치 확인 시간이 초과됐어요. 다시 시도하거나 직접 입력해 주세요.':'위치를 확인하지 못했어요. 휴대폰 위치 설정을 확인하거나 직접 입력해 주세요.');}
   finally{if(request===locationRevision.current)setLocating(false);}
  }
+ const [voiceRun,setVoiceRun]=useState(0);const handledVoice=useRef(0);
+ function applyVoice(command:VoiceTripCommand){if(busy||locating)return;if(command.departure){locationRevision.current++;latestDeparture.current=command.departure;setDeparture(command.departure);setSelectedLocation(null);setLocations([]);setLocationMessage('');}if(command.region)setRegion(command.region);if(command.date)setDate(command.date);if(command.days)setDays(command.days);setError('');if(command.generate)setVoiceRun(v=>v+1);}
+ useEffect(()=>{if(voiceRun===handledVoice.current)return;handledVoice.current=voiceRun;if(!busy&&!locating)void create();},[voiceRun]);
  async function create(){const current=++revision.current;setBusy(true);setError('');try{
    const minutes=(value:string)=>{const [h,m]=value.split(':').map(Number);return h*60+m;};const travelHours={start:minutes(startTime),end:minutes(endTime)};
    if(!startTime||!endTime||travelHours.end-travelHours.start<30)throw Error('같은 날 안에서 종료 시간을 시작보다 30분 이상 늦게 선택해 주세요.');
@@ -76,7 +81,7 @@ export default function SimpleTripForm({onTrip,conditions:baseConditions,initial
    const prepared=await fetch('/api/prepare-trip',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({basics,conditions,catalog})});const ready=await prepared.json();if(!prepared.ok)throw Error(ready.error);
    if(current===revision.current)onTrip({...tripSchema.parse(ready.trip),id:createId()});
  }catch(e){if(current===revision.current)setError(e instanceof Error?e.message:'일정을 만들지 못했습니다.');}finally{if(current===revision.current)setBusy(false);}}
- return <section className="simple-trip" aria-label="간편 AI 일정 입력"><h2>네 가지만 고르면 준비 끝</h2><p className="comfort-intro">어디서 출발해 언제, 어디로 떠날까요?</p><div className="field-grid simple-basics">
+ return <section className="simple-trip" aria-label="간편 AI 일정 입력"><h2>네 가지만 고르면 준비 끝</h2><p className="comfort-intro">어디서 출발해 언제, 어디로 떠날까요?</p><VoiceTripInput disabled={busy||locating} onCommand={applyVoice}/><div className="field-grid simple-basics">
  <div className="departure-field"><div className="departure-heading"><label htmlFor="departure-region">출발 지역</label><button type="button" disabled={busy||locating} onClick={previewDeparture}>주소 검색</button><button type="button" disabled={busy||locating} onClick={locateDeparture}>{locating?'위치 확인 중…':'현재 위치'}</button></div><input id="departure-region" disabled={busy} value={departure} onBlur={previewDeparture} maxLength={120} placeholder="판교고, 분당중, 성남시 판교역로 235" onChange={e=>{locationRevision.current++;setLocating(false);setLocationMessage('');latestDeparture.current=e.target.value;setDeparture(e.target.value);setSelectedLocation(null);setLocations([]);}}/><p role="status" className="location-status">{locationMessage||'\u00a0'}</p></div>
  <label className="destination-field"><span className="destination-heading">여행 지역</span><select disabled={busy} value={region} onChange={e=>setRegion(e.target.value)}>{gangwonDistricts.map(name=><option key={name} value={name}>{name}</option>)}</select></label>
  <label>출발 날짜<input disabled={busy} type="date" value={date} onChange={e=>setDate(e.target.value)}/></label>
