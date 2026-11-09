@@ -1,3 +1,4 @@
+import {usableRestPlace} from './rest-place';
 import type {Basics,Conditions,Item} from './schema';
 import {dayDate} from './schema';
 import type {Place} from '../data/demo';
@@ -30,11 +31,11 @@ export function realisticDay(selected:Place[],basics:Basics,conditions:Condition
   if(begin+duration>ceiling)continue;
   // Arrive when the venue opens; do not record pre-opening waiting inside it.
   const moveStart=cursor+move<hours.open?begin-move:cursor;
-  if(last&&moveStart-cursor>=Math.max(1,rest)&&cursor>=venueWindow(last).open&&moveStart<=venueWindow(last).close)add(last,'rest',cursor,moveStart,'휴식');
+  if(last&&usableRestPlace(last,basics.requiredFacilities)&&moveStart-cursor>=Math.max(1,rest)&&cursor>=venueWindow(last).open&&moveStart<=venueWindow(last).close)add(last,'rest',cursor,moveStart,'휴식');
   if(last&&move>0){items.push({id:`real:${day}:${items.length}`,day,start:moveStart,end:moveStart+move,kind:'move',placeId:null,fromId:last.id,toId:p.id,transport:basics.transport,locked:false,mode:'real'});}
-  if(begin-moveStart-move>=Math.max(1,rest)&&moveStart+move>=hours.open)add(p,'rest',moveStart+move,begin,p.kind==='meal'?'식사 전 휴식':'이동 후 휴식');
+  // Waiting until lunch or opening is an unallocated gap, not a verified rest stop.
   add(p,p.kind,begin,begin+duration,p.kind==='meal'?(p===dinner?'저녁 식사':'점심 식사'):undefined);cursor=begin+duration;last=p;
-  if(p.kind==='visit'&&rest>0&&cursor+rest<=Math.min(window.end,hours.close)){add(p,'rest',cursor,cursor+rest,'휴식');cursor+=rest;}
+  if(p.kind==='visit'&&rest>0&&cursor+rest<=Math.min(window.end,hours.close)){if(usableRestPlace(p,basics.requiredFacilities))add(p,'rest',cursor,cursor+rest,'휴식');else items.push({id:`real:${day}:${items.length}`,day,start:cursor,end:cursor+rest,kind:'rest',placeId:null,fromId:null,toId:null,transport:null,locked:false,mode:'real',label:'휴식 장소 확인 필요'});cursor+=rest;}
  }
  if(!items.some(i=>i.kind==='visit'))throw Error('이동·체류·영업시간을 반영하면 방문 시간이 부족합니다. 시작을 앞당기거나 종료 시간을 늦춰 주세요.');
  return items;

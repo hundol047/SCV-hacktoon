@@ -1,0 +1,25 @@
+import {it,expect} from 'vitest';
+import {costRange} from '../src/domain/cost-range';
+import {defaultBasics,defaultConditions,type Trip} from '../src/domain/schema';
+import {demoCatalog} from '../src/data/catalog';
+import {uniqueLocations} from '../src/domain/location';
+import {reviewGroups} from '../src/domain/review-groups';
+import {usableRestPlace} from '../src/domain/rest-place';
+import {fallbackRailHubs} from '../src/server/departure-hubs';
+const trip:Trip={version:1,id:'review',revision:0,basics:{...defaultBasics,days:2,travelers:2},conditions:defaultConditions,catalog:demoCatalog,items:[],history:[],feedback:[]};
+it('separates entered lodging from variable estimates and rounds the planning range',()=>{const t={...trip,basics:{...trip.basics,lodgings:[{id:'hotel',name:'숙소',latitude:37.7,longitude:128.9,night:1,rooms:1,totalPrice:123456,checkIn:900,checkOut:540,address:'강릉',distanceKm:1}]}};const r=costRange(t);expect(r.entered).toBe(123456);expect(r.low%1000).toBe(0);expect(r.high%1000).toBe(0);expect(r.low).toBeLessThanOrEqual(r.total);expect(r.high).toBeGreaterThanOrEqual(r.total);const discount=costRange(t,undefined,50000);expect(discount.high).toBe(r.high);expect(discount.low).toBeLessThan(r.low);});
+it('deduplicates the same address near the same point but keeps distant matches',()=>{const a={id:'a',name:'서울역',address:'서울, 용산구',latitude:37.55,longitude:126.97};expect(uniqueLocations([a,{...a,id:'b',address:'서울 용산구'},{...a,id:'c',latitude:37.6}])).toHaveLength(2);});
+it('groups repeated unknown checks without dropping their associated items',()=>{const rows=reviewGroups([{code:'hours-unknown',status:'unknown',itemIds:['a'],message:'영업시간 확인',evidenceIds:[]},{code:'hours-unknown',status:'unknown',itemIds:['b'],message:'영업시간 확인',evidenceIds:[]},{code:'cost-unknown',status:'unknown',itemIds:['a'],message:'비용 확인',evidenceIds:[]}]);expect(rows).toHaveLength(2);expect(rows[0].items[0].itemIds).toEqual(['a','b']);});
+it('requires recent seating, toilet and step-free evidence for a usable rest place',()=>{const p=structuredClone(demoCatalog.places[0]);expect(usableRestPlace(p)).toBe(false);const yes={value:true,evidenceId:'fact',source:'https://example.com/facilities',collectedAt:new Date().toISOString(),checked:'source' as const,nature:'real' as const};p.seat=yes;p.facilities={toilet:yes,stepFree:yes};expect(usableRestPlace(p)).toBe(true);p.facilities.stepFree={...yes,value:false};expect(usableRestPlace(p)).toBe(false);});
+it('returns nearby registered stations during a Seoul lookup failure without inventing distant ones',()=>{expect(fallbackRailHubs({latitude:37.5547,longitude:126.9707})[0].name).toBe('서울역');expect(fallbackRailHubs({latitude:33.5,longitude:126.5})).toEqual([]);});
+import {realisticDay} from '../src/domain/realistic-day';
+it('does not label restaurant waiting as rest or assign unsupported rest facilities',()=>{
+ const visit={...demoCatalog.places[0],id:'visit',name:'박물관',kind:'visit' as const,hours:{...demoCatalog.places[0].hours,value:null}};
+ const meal={...visit,id:'meal',name:'식당',kind:'meal' as const};
+ const fact={...visit.walkMin,value:10};
+ const catalog={...demoCatalog,places:[visit,meal],routes:[{...demoCatalog.routes[0],id:'r:visit:meal:taxi',fromId:'visit',toId:'meal',transport:'taxi' as const,duration:fact}]};
+ const rows=realisticDay([visit,meal],{...defaultBasics,transport:'taxi',travelHours:{start:540,end:1200}},{...defaultConditions,restMin:20},catalog,1);
+ expect(rows.find(i=>i.kind==='meal')?.start).toBe(720);
+ expect(rows.some(i=>i.kind==='rest'&&i.placeId==='meal')).toBe(false);
+ expect(rows.find(i=>i.kind==='rest')).toMatchObject({placeId:null,label:'휴식 장소 확인 필요'});
+});

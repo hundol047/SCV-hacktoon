@@ -113,3 +113,10 @@ test('AI voice clarification carries conversation and never executes failed inte
  await page.goto('/');const say=async(text:string)=>{await page.getByRole('button',{name:'음성으로 입력',exact:true}).click();await page.evaluate(text=>{const r=(window as any).testRecognition;r.onresult({results:[[{transcript:text}]]});r.onend?.();},text);};
  await say('엄마랑 바다를 보고 싶어. 오래 걷기는 힘들어');await expect(page.locator('.voice-trip')).toContainText('연속해서 몇 분');await say('12분 정도');await expect(page.locator('.voice-trip')).toContainText('12분으로 반영');await page.locator('.simple-options > summary').click();await expect(page.getByRole('combobox',{name:'연속 보행 시간 한도',exact:true})).toHaveValue('12');await say('일정 만들어 줘');await expect(page.locator('.voice-trip')).toContainText('AI 연결을 확인하세요.');expect(generations).toBe(0);await expect(page.getByRole('combobox',{name:'연속 보행 시간 한도',exact:true})).toHaveValue('12');
 });
+
+test('departure selection deduplicates addresses and clears the selection prompt',async({page})=>{
+ const origin={id:'seoul',name:'서울역',address:'서울 용산구 한강대로 405',latitude:37.5547,longitude:126.9707};
+ await page.route('**/api/location',r=>r.fulfill({json:{locations:[origin,{...origin,id:'duplicate'},{...origin,id:'other',name:'서울역 다른 출입구',address:'서울 중구 봉래동',latitude:37.556}]}}));
+ await page.route('**/api/departure-hubs',r=>r.fulfill({json:{hubs:[],fallback:false}}));await page.goto('/');await page.getByLabel('출발 지역',{exact:true}).fill('서울역');await page.getByRole('button',{name:'주소 검색',exact:true}).click();
+ await expect(page.locator('.location-options button')).toHaveCount(2);await page.locator('.location-options button').first().click();await expect(page.locator('.location-status')).toHaveText('출발지 선택 완료');await expect(page.locator('.location-options')).toHaveCount(0);await expect(page.locator('.simple-trip')).not.toContainText('검색 결과에서 출발지를 선택해 주세요.');await expect(page.getByText('소상공인 홍보 콘텐츠 만들기',{exact:true})).toHaveCount(0);await expect(page.locator('.simple-trip')).not.toContainText('CSV');
+});

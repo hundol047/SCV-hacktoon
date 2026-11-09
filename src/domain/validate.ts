@@ -1,3 +1,4 @@
+import {usableRestPlace} from './rest-place';
 import {petAllowed} from './travel-toolkit';
 import {dayWeather} from './day-weather';
 import {weatherAllowed} from './weather';
@@ -40,6 +41,7 @@ export function validateSchedule(
     try{const weather=dayWeather(b,day);for(const i of visits){const p=placeById.get(i.placeId??'');if(p&&!weatherAllowed(p,weather))add('weather-place','violation',[i.id],weather==='storm'?'악천후 조건입니다. 관광 연기와 공식 안내를 확인하세요.':'선택한 날씨에 맞지 않는 야외 장소입니다. 실내 대안을 확인하세요.');}}
     catch(e){add('weather-stale','unknown',visits.map(i=>i.id),(e as Error).message);}
   }
+  for(const item of items.filter(i=>i.kind==='rest'&&!i.placeId))add('rest-place','unknown',[item.id],'휴식 시간은 확보했지만 좌석·화장실·진입 시설이 확인된 장소가 필요합니다.');
   if (!items.length&&!Array.from({length:b.days},(_,i)=>isTravelOnlyDay(b,i+1)).some(Boolean))
     add(
       "empty",
@@ -328,9 +330,11 @@ export function validateSchedule(
       const validRest =
         i.kind === "rest" &&
         p?.seat.value === true &&
+        (b.mode!=='real'||usableRestPlace(p,b.requiredFacilities)) &&
         c.restMin !== null &&
         i.end - i.start >= c.restMin;
-      if (i.kind === "rest" && p?.seat.value === null) unconfirmedRest = true;
+      if (i.kind === "rest" && (!p||p.seat.value===null||b.mode==='real'&&!usableRestPlace(p,b.requiredFacilities))) unconfirmedRest = true;
+      if(i.kind==='rest'&&p&&b.mode==='real'&&!p.id.startsWith('stay:')&&!usableRestPlace(p,b.requiredFacilities))add('rest-facilities','unknown',[i.id],'휴식 장소의 최근 좌석·화장실·진입 시설 근거를 확인하세요.');
       if (i.kind === "rest" && p?.seat.value !== true)
         add(
           "seat",

@@ -51,7 +51,6 @@ import GangwonHeroPhoto from './GangwonHeroPhoto';
 import KoreaPhotoGallery from './KoreaPhotoGallery';
 import DeferredPanel from './DeferredPanel';
 import LocalEvents from './LocalEvents';
-import PromotionStudio from './PromotionStudio';
 import RegionalCourse from './RegionalCourse';
 import StudentTaxiPlanner from './StudentTaxiPlanner';
 import TravelSummary from './TravelSummary';
@@ -501,12 +500,12 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
               </section>
             )}
             <details className="lab-library"><summary>여행 보관함 · 사진과 저장된 일정</summary><LibraryPanel trips={library} current={trip} onSelect={t=>{setTrip(t);setDay(1);navigate('result');}}/></details>
-            <div className="lab-explore">
+            <nav className="trip-journey" aria-label="여행 준비 순서"><span>1 조건 입력</span><span>2 일정·숙소 비교</span><span>3 가족 의견</span><span>4 확정</span></nav><details className="lab-library"><summary>더 둘러보기 · 관광지·행사·사용 방법</summary><div className="lab-explore">
               <DeferredPanel title="강원 관광지·맛집 찾아보기"><RegionDiscovery/></DeferredPanel>
               <DeferredPanel title="지역 축제·문화행사 찾아보기"><LocalEvents onTrip={t=>{setTrip(t);setDay(1);setProposal(null);navigate('result');}}/></DeferredPanel>
               <DeferredPanel title="여행잇 사용 방법"><UsageVideo/></DeferredPanel>
-              <DeferredPanel title="소상공인 홍보 콘텐츠 만들기"><PromotionStudio/></DeferredPanel>
-            </div>
+
+            </div></details><a className="business-link" href="/business">사업자 홍보 도구</a>
           </>
         ) : null}
         {(screen === "conditions" || screen === "basics") && (
