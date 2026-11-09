@@ -9,11 +9,11 @@ test('Gangwon destination selection retains AI payload and accessible mobile for
  await page.route('**/api/departure-hubs',r=>r.fulfill({json:{hubs:[]}}));
  let payload:any;
  await page.route('**/api/courses',r=>{payload=r.request().postDataJSON();return r.fulfill({status:503,json:{error:'테스트: AI 요청 계약 확인 완료'}});});
- await page.goto('/');await expect(page.getByRole('heading',{level:1})).toContainText('편안한 강원 여행');
+ await page.goto('/');await expect(page.getByRole('heading',{level:1})).toContainText('편안한 강원 여행');await expect(page.locator('.simple-trip input:visible, .simple-trip select:visible, .simple-trip textarea:visible')).toHaveCount(4);await expect(page.locator('.simple-options')).not.toHaveAttribute('open','');
  await expect(page.getByRole('combobox',{name:'여행 지역',exact:true}).locator('option')).toHaveCount(18);
- await page.getByRole('button',{name:'속초·양양',exact:true}).click();await expect(page.getByRole('combobox',{name:'여행 지역',exact:true})).toHaveValue('속초');
+ await page.getByRole('combobox',{name:'여행 지역',exact:true}).selectOption('속초');await expect(page.getByRole('combobox',{name:'여행 지역',exact:true})).toHaveValue('속초');
  await page.getByLabel('출발 지역',{exact:true}).fill('서울역');await page.getByRole('combobox',{name:'여행 기간',exact:true}).selectOption('2');
- await page.getByRole('button',{name:'바다 보기',exact:true}).click();
+ await page.locator('.simple-options > summary').click();await expect(page.locator('.simple-options')).toHaveAttribute('open','');await page.getByRole('button',{name:'바다 보기',exact:true}).click();
  await page.getByText('예산·출발·귀가 조건',{exact:true}).click();await page.getByLabel('여행 전체 예산 (원)',{exact:true}).fill('300000');
  await page.getByRole('button',{name:'지역 검색하고 AI 일정 생성'}).click();await expect(page.locator('.simple-trip').getByRole('alert')).toHaveText('테스트: AI 요청 계약 확인 완료');
  expect(payload.basics.days).toBe(2);expect(payload.basics.title).toBe('속초 여행');expect(payload.basics.departureCoordinates).toEqual({latitude:37.55,longitude:126.97});expect(payload.basics.tripBudget).toBe(300000);expect(payload.conditions.experiences).toContain('바다 보기');expect(payload.basics.travelPriority).toBe('comfort');expect(payload.conditions.activity).toBe('slow');expect(payload.conditions.restMin).toBe(20);expect(payload.allDays).toBe(true);expect(payload.consent).toBe(true);
@@ -25,6 +25,7 @@ test('Gangwon destination selection retains AI payload and accessible mobile for
 
 test('half-price support follows destination and date without promising a refund',async({page})=>{
  await page.goto('/');await page.getByRole('combobox',{name:'여행 지역',exact:true}).selectOption('영월');await page.getByLabel('출발 날짜',{exact:true}).fill('2026-11-10');
+ await page.locator('.simple-options > summary').click();
  const policy=page.getByRole('complementary',{name:'정부 반값여행 지원'});
  await expect(policy).toContainText('영월 반값여행');await expect(policy).toContainText('2026-11-07 ~ 2026-11-22');
  await expect(policy.getByRole('link')).toHaveAttribute('href','https://korean.visitkorea.or.kr/dgtourcard/tour50.do');

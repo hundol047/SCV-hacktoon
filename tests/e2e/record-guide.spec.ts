@@ -22,9 +22,9 @@ test('record current comfort travel and evidence workflow',async({browser})=>{
  async function label(label:string,text:string){chapters.push({at:(Date.now()-start)/1000,label,text});await page.evaluate(t=>{const e=document.querySelector('#guide-label')!;e.replaceChildren();const small=document.createElement('small');small.textContent='YEOHAENGIT  /  함께 떠나는 강원 여행';e.append(small,document.createTextNode(t));},text);}
  const pause=(ms=3500)=>page.waitForTimeout(ms);
  async function focus(selector:string){await page.locator(selector).first().evaluate(e=>e.scrollIntoView({behavior:'smooth',block:'center'}));await pause(900);}
- await label('동행자 맞춤','함께 걷는 속도에 맞춰, 편안한 강원 여행');await focus('.comfort-choices');await pause();
+ await page.locator('.simple-options > summary').click();await label('동행자 맞춤','함께 걷는 속도에 맞춰, 편안한 강원 여행');await focus('.comfort-choices');await pause();
  await page.getByRole('combobox',{name:'연속 보행 시간 한도',exact:true}).selectOption('15');await pause(1800);await page.getByRole('combobox',{name:'관광 후 휴식',exact:true}).selectOption('20');await pause(2200);
- await label('여행 조건','걷는 시간과 휴식, 여행할 지역을 직접 선택해요');await page.getByRole('combobox',{name:'여행 지역',exact:true}).selectOption('영월');await page.getByLabel('출발 날짜',{exact:true}).fill('2026-11-14');await focus('.lab-destinations');await pause();
+ await label('여행 조건','걷는 시간과 휴식, 여행할 지역을 직접 선택해요');await page.getByRole('combobox',{name:'여행 지역',exact:true}).selectOption('영월');await page.getByLabel('출발 날짜',{exact:true}).fill('2026-11-14');await focus('.simple-basics');await pause();
  await page.getByRole('button',{name:'이어서 보기',exact:true}).click();await expect(page.getByRole('heading',{name:trip.basics.title,exact:true})).toBeVisible();
  await label('나의 일정','저장한 일정에서 방문 순서와 휴식을 살펴보세요');await focus('.compact-stops');await pause(5000);
  await label('반값여행','여행 날짜에 맞는 지원 안내와 신청 조건을 확인해요');await focus('.half-price-travel');await pause(1800);await page.getByText('신청 전 확인할 조건',{exact:true}).click();await pause(3000);await page.getByText('신청 전 확인할 조건',{exact:true}).click();

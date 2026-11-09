@@ -1981,3 +1981,6 @@ input[hidden] { display: none !important; }
 .comfort-review article{padding:14px 0;border-bottom:1px solid #dce8e3}.comfort-review h3{margin-top:24px}.comfort-review ul{padding-left:22px}.comfort-review li{margin:8px 0}
 .lodging-access{font-size:13px;padding:12px 0}.lodging-access label{display:block;margin:10px 0}.lodging-access select,.lodging-access textarea{width:100%;min-width:0}.lodging-access p{line-height:1.7}
 .evidence-backup fieldset{border:0;padding:0;min-width:0}.evidence-backup input[type=password]{width:100%;max-width:420px}.access-facts a{font-size:12px}.comfort-review textarea{width:100%;min-height:80px}
+.simple-defaults{margin:12px 0;color:#56716a;font-size:13px;line-height:1.6}
+.simple-options{border-top:1px solid #e0e9e4;margin:12px 0 20px;padding-top:14px}.simple-options>summary{cursor:pointer;font-weight:600;display:list-item}.simple-options>summary small{font-weight:400;color:#61766f;margin-left:8px}.simple-options[open]>.comfort-choices{margin-top:18px}.simple-basics{margin-top:22px}
+.simple-basics .location-status{min-height:2.8em;font-size:12px;line-height:1.4;margin:4px 0 0}
