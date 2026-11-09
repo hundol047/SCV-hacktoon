@@ -530,8 +530,8 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
                 <Heart size={18} /> 일정 한눈에
               </button>
             </div>
-            <CompactItinerary key={trip.id} trip={trip} onTrip={t=>{setTrip(t);setProposal(null);}}/><details className="trip-tools"><summary>동행자 의견·남은 일정 재추천</summary><RemainingTrip key={trip.id+':'+trip.revision} trip={trip} onTrip={t=>{setTrip(t);setProposal(null);}}/></details>
-            <details className="trip-tools"><summary>일정 수정·추가 기능</summary>
+            <CompactItinerary key={trip.id} trip={trip} onTrip={t=>{setTrip(t);setProposal(null);}}/><details className="trip-tools"><summary>동행자와 일정 조정</summary><RemainingTrip key={trip.id+':'+trip.revision} trip={trip} onTrip={t=>{setTrip(t);setProposal(null);}}/></details>
+            <details className="trip-tools"><summary>일정 편집</summary>
               <AIReplacement key={`replacement:${trip.id}:${trip.revision}`} trip={trip} onTrip={t=>{setTrip(t);setProposal(null);}}/>
               <DayRoadPlanner trip={trip} onTrip={t=>{setTrip(t);setProposal(null);}}/>
               <details><summary>시간·장소 직접 수정</summary><Editor items={trip.items} days={trip.basics.days} onChange={manualEdit}/></details>
@@ -760,7 +760,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
               </button>
             </section>
           )}
-        <details className="lab-sync" hidden={screen!=='home'&&screen!=='result'} open={!!initialCloud}><summary>서버 보관·가족 공유</summary><FamilySync key={identityRevision} trip={trip} onTrip={t=>{setTrip(t);if(proposal){setProposal(null);if(screen==='compare'){navigate('result');setNotice('공유 일정이 갱신되어 수정안을 다시 만들어 주세요.');}}}} onOpen={()=>{setDay(1);navigate('result');}} initialCloud={initialCloud} accessToken={accessToken} hidden={screen!=='home'&&screen!=='result'}/></details>
+        <details className="lab-sync" hidden={screen!=='home'&&screen!=='result'} open={!!initialCloud}><summary>저장·공유</summary><FamilySync key={identityRevision} trip={trip} onTrip={t=>{setTrip(t);if(proposal){setProposal(null);if(screen==='compare'){navigate('result');setNotice('공유 일정이 갱신되어 수정안을 다시 만들어 주세요.');}}}} onOpen={()=>{setDay(1);navigate('result');}} initialCloud={initialCloud} accessToken={accessToken} hidden={screen!=='home'&&screen!=='result'}/></details>
       </main>
       <footer className="site-footer no-print">
         <div className="footer-brand">

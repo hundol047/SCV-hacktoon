@@ -13,3 +13,22 @@
 .half-price-travel{background:#fff8e9;border:1px solid #dfcc9d;border-radius:14px;padding:18px;margin:20px 0;font-size:13px;color:#44391f}.half-price-travel h3{font-size:17px;margin:0 0 8px}.half-price-travel p{margin:8px 0}.half-price-round{border-top:1px solid #dfcc9d;padding:12px 0}.half-price-round>span,.half-price-round>small,.policy-source{display:block;margin-top:6px}.half-price-round>span{font-weight:600}.half-price-travel summary{cursor:pointer;padding:8px 0}.half-price-travel li{margin:8px 0}.half-price-travel>a{display:inline-block;margin-top:12px;font-weight:600;color:#65500e}.policy-source{font-size:11px}
 .half-price-documents{border-top:1px dashed #dfcc9d;margin-top:12px;padding-top:6px}.half-price-documents label{display:block;margin:10px 0}.half-price-documents select,.half-price-documents textarea{display:block;width:100%;margin-top:6px;border:1px solid var(--line);border-radius:10px;padding:12px;background:#fff;color:var(--ink);font:inherit}.half-price-documents textarea{resize:vertical;line-height:1.7}.half-price-documents .schedule-actions{flex-wrap:wrap;gap:8px}.half-price-documents button{font-size:12px;padding:8px 12px}
 .trip-evidence{margin:16px 0;padding:14px;background:var(--white);border:1px solid var(--line);border-radius:12px}.trip-evidence h4{margin:0 0 8px}.trip-evidence input:not([type=checkbox]){width:100%;min-width:0}.trip-evidence .check-row{align-items:flex-start}.evidence-card{border-top:1px solid var(--line);padding:14px 0;margin-top:14px}.evidence-card header{display:flex;align-items:center;gap:12px}.evidence-card header>div{min-width:0}.evidence-card strong{overflow-wrap:anywhere}.evidence-card img{width:90px;height:90px;object-fit:contain;background:#f5f5f5}.evidence-card fieldset{display:grid;grid-template-columns:1fr 1fr;gap:10px}.evidence-card .check-row,.evidence-card .schedule-actions{grid-column:1/-1}@media(max-width:760px){.evidence-card fieldset{grid-template-columns:1fr}}
+/* Keep result sections aligned; the map stays next to the first stop. */
+.lab-app .workspace>.trip-tools{max-width:none;width:100%;margin:12px 0;padding:14px 18px}
+.lab-app .lab-sync{margin-top:12px;padding:14px 18px}
+.lab-route-layout .itinerary-map{position:relative;top:auto;align-self:start}
+.lab-route-layout .itinerary-map .road-map{height:310px;border-radius:12px;overflow:hidden;isolation:isolate;z-index:0}
+.lab-route-layout .route-stop-order{margin:0 0 12px}
+.route-number-marker span{display:grid;place-items:center;width:28px;height:28px;border:2px solid white;border-radius:50%;background:#166474;color:white;font:700 12px sans-serif;box-shadow:0 2px 6px #0004}
+.daily-course-options{margin:0 0 24px}
+.course-choice-heading{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:12px}
+.course-choice-heading h3{font-size:17px;margin:0}.course-choice-heading>span{font-size:12px;color:var(--muted)}
+.course-choice-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.course-choice-grid article{display:flex;flex-direction:column;min-width:0;padding:18px;border:1px solid var(--line);border-radius:14px;background:var(--white)}
+.course-choice-grid article.selected{border:2px solid var(--green);padding:17px;background:var(--soft)}
+.course-choice-grid article>div{display:flex;justify-content:space-between;align-items:center;gap:8px}.course-selected{font-size:11px;color:var(--green);font-weight:600}
+.course-choice-grid ol{padding-left:18px;margin:16px 0;flex:1;font-size:13px;line-height:1.8;overflow-wrap:anywhere}
+.course-choice-grid button{width:100%;border:1px solid var(--line);padding:10px;font-size:13px;background:var(--white)}
+.course-choice-grid button:disabled{opacity:1;color:var(--muted)}
+@media(max-width:760px){.course-choice-heading{display:block}.course-choice-heading>span{display:block;margin-top:6px}.course-choice-grid{grid-template-columns:1fr}.course-choice-grid article{padding:14px}.course-choice-grid article.selected{padding:13px}.course-choice-grid ol{margin:10px 0}.lab-route-layout .itinerary-map .road-map{height:260px}}
+.route-map-heading{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:10px}.route-map-heading button{font-size:11px;padding:6px 9px;border:1px solid var(--line);background:var(--white);white-space:nowrap}.lab-route-layout .route-map-heading h3{margin:0}
