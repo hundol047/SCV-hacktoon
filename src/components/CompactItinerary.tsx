@@ -1,4 +1,5 @@
 'use client';
+import ComfortReview from './ComfortReview';
 import OfflineRoute from './OfflineRoute';
 import TravelToolkit from './TravelToolkit';
 import AccessFacts from './AccessFacts';
@@ -58,7 +59,7 @@ export default function CompactItinerary({trip,onTrip}:{trip:Trip;onTrip?:(t:Tri
  <div className="trip-overview"><strong>{b.departureRegion?`${b.departureRegion} → `:''}{b.title.replace(/ 여행$/,'')}</strong><span>{b.travelers??1}명 · {b.transport==='taxi'?'택시':b.transport==='driving'?'자가용':b.transport==='walk'?'도보':'대중교통'}{b.transport==='taxi'?` ${Math.ceil((b.travelers??1)/4)}대 (4인승)`:''}</span></div>
  {b.commutes?.filter(c=>c.day===day).map(c=><p className="commute-summary" key={c.kind}>{c.kind==='outbound'?'출발지 → 첫 여행지':'마지막 여행지 → 출발지'} · {clock(c.depart)} → {clock(c.arrive)} · 도로 약 {c.minutes}분</p>)}{b.roadCheckedAt&&<p className="road-note">조회한 도로 시간 반영 · 실시간 교통 체증 제외 · 체류 시간은 장소 유형별 계획 기준입니다.</p>}
  <aside className="comfort-plan" aria-label="이동·휴식 계획 조건"><strong>함께 가는 분을 위한 계획</strong><div>{b.travelPriority==='comfort'&&<span>이동 부담 줄이기</span>}{trip.conditions.maxWalkMin!=null&&<span>연속 보행 {trip.conditions.maxWalkMin}분 이내 요청</span>}{trip.conditions.restMin!=null&&<span>관광 후 휴식 {trip.conditions.restMin}분</span>}{(b.requiredFacilities??[]).map(f=><span key={f}>{facilityNames[f]}</span>)}</div><small>요청한 계획 조건입니다. 현장 접근성은 장소별 안내를 함께 확인하세요.</small></aside>
- <TripShareActions trip={trip} day={day} onTrip={onTrip}/>
+ <ComfortReview key={trip.id} trip={trip} onTrip={onTrip}/><TripShareActions trip={trip} day={day} onTrip={onTrip}/>
  <nav className="lab-result-nav" aria-label="여행 화면">{[{id:'plan',label:'여행 일정'},{id:'stay',label:'숙소'},{id:'budget',label:'예산·할인'},{id:'tools',label:'여행 도우미'}].map(tab=><button key={tab.id} type="button" aria-pressed={view===tab.id} aria-controls={'trip-pane-'+tab.id} onClick={()=>setView(tab.id)}>{tab.label}</button>)}</nav>
  <div id="trip-pane-stay" hidden={view!=='stay'}>{b.days>1?<TripLodgings key={'lodgings:'+trip.id} trip={trip} onTrip={onTrip}/>:<p className="lab-empty">당일 여행이에요. 숙박이 필요하면 여행 기간을 늘려 주세요.</p>}</div>
  <div id="trip-pane-budget" hidden={view!=='budget'}><TripEstimate key={`estimate:${trip.id}`} trip={trip} onTrip={onTrip}/>{onTrip&&<TripCoupons trip={trip} onTrip={onTrip}/>}<TravelBenefits trip={trip} day={day}/></div>

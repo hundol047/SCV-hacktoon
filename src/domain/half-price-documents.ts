@@ -5,11 +5,11 @@ import {evidenceSummary,type TripEvidence} from './trip-evidence';
 import {halfPriceSource} from './half-price-travel';
 export function halfPriceDocuments(trip:Trip,city:string,evidence:TripEvidence[]=[]){
  const b=trip.basics;
- const proof=evidenceSummary(evidence.filter(e=>e.tripId===trip.id&&e.city===city));
+ const proof=evidenceSummary(evidence.filter(e=>e.tripId===trip.id&&e.city===city&&!!e.reading.date&&e.reading.date>=dayDate(b,1)&&e.reading.date<=dayDate(b,b.days)));
  const oneLine=(s:string)=>s.replace(/[\r\n]/g,' ');
  const visits=proof.visits.length?proof.visits.map(e=>`- ${e.reading.date} ${oneLine(e.reading.label)} · 사진: ${oneLine(e.name)} (사용자 확인)`).join('\n'):'[방문한 곳·방문일을 인증사진과 대조해 입력]';
  const receipts=proof.receipts.length?proof.receipts.map(e=>`- ${e.reading.date} / ${oneLine(e.reading.label)} / ${e.reading.amount!.toLocaleString('ko-KR')}원 / ${oneLine(e.name)}`).join('\n'):'[결제일 / 가맹점명 / 결제수단 / 실제 결제금액 / 영수증 파일명]';
- const expense=proof.receipts.length?`${proof.total.toLocaleString('ko-KR')}원 (사용자가 확인한 증빙 합계 · 중복·제외 업종·인정 여부 별도 확인)`:'[영수증 기준으로 입력]';
+ const expense=proof.receipts.length?`${proof.total.toLocaleString('ko-KR')}원 (사용자가 확인한 증빙 합계 · 여행기간 내 증빙 · 중복·제외 업종·인정 여부 별도 확인)`:'[영수증 기준으로 입력]';
 
  const schedule=Array.from({length:b.days},(_,i)=>{
   const day=i+1;const stops=itineraryStops(trip,day);

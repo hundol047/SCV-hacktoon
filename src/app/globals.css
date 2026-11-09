@@ -1974,3 +1974,10 @@ input[hidden] { display: none !important; }
 .lodging-more{display:block;margin:18px auto 0!important;padding:10px 24px!important;border:1px solid #ccd7c9!important;background:transparent!important;color:#315943!important;border-radius:24px!important;font-size:13px!important}
 .lodging-footer{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:18px;padding-top:14px;border-top:1px solid #e0e5dc}.lodging-footer small{font-size:11px;color:#778174}.lodging-selected{font-size:13px;padding:12px;background:#edf3e9;border-radius:8px}
 @media(max-width:700px){.recommended-lodgings{padding:16px!important}.lodging-grid{grid-template-columns:1fr}.lodging-heading h3{font-size:20px}.lodging-controls{gap:8px}.lodging-controls label{min-width:0}.lodging-refresh{white-space:nowrap}.lodging-photo{aspect-ratio:16/9}}
+
+/* Companion comfort and evidence review stay collapsed until needed. */
+.comfort-review,.policy-checklist,.evidence-backup{margin:16px 0;padding:18px;border:1px solid #dce8e3;border-radius:18px;background:#f7faf8}
+.comfort-review summary,.policy-checklist summary,.evidence-backup summary,.lodging-access summary{cursor:pointer;font-weight:650;line-height:1.6}
+.comfort-review article{padding:14px 0;border-bottom:1px solid #dce8e3}.comfort-review h3{margin-top:24px}.comfort-review ul{padding-left:22px}.comfort-review li{margin:8px 0}
+.lodging-access{font-size:13px;padding:12px 0}.lodging-access label{display:block;margin:10px 0}.lodging-access select,.lodging-access textarea{width:100%;min-width:0}.lodging-access p{line-height:1.7}
+.evidence-backup fieldset{border:0;padding:0;min-width:0}.evidence-backup input[type=password]{width:100%;max-width:420px}.access-facts a{font-size:12px}.comfort-review textarea{width:100%;min-height:80px}

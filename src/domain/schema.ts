@@ -1,3 +1,4 @@
+import {comfortReviewSchema} from './comfort-review';
 import {toolkitSchema} from './travel-toolkit';
 import {forecastSchema} from './live-weather';
 import { z } from "zod";
@@ -148,6 +149,7 @@ export const feedbackSchema = z.object({
   at: z.string(),
 });
 export const tripSchema = z.object({
+  comfortReview:comfortReviewSchema.optional(),
   version: z.literal(1),
   id: z.string().min(1).max(100),
   revision: z.number().int().nonnegative(),

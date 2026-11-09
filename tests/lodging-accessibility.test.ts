@@ -1,0 +1,5 @@
+import {it,expect,vi,afterEach} from 'vitest';
+import {createLodgingAccess} from '../src/server/lodging-accessibility';
+afterEach(()=>vi.unstubAllEnvs());
+it('accepts matching provider evidence, caches and excludes keys from facts',async()=>{vi.stubEnv('BOPok_TOURAPI_KEY','test-secret');const fetcher=vi.fn(async()=>Response.json({response:{header:{resultCode:'0000'},body:{items:{item:{contentid:'123',exit:'경사로 있음',restroom:'장애인 화장실 있음'}}}}}));const lookup=createLodgingAccess(fetcher);const facts=await lookup('123');expect(facts?.ramp?.value).toBe(true);expect(facts?.accessibleToilet?.value).toBe(true);expect(JSON.stringify(facts)).not.toContain('test-secret');await lookup('123');expect(fetcher).toHaveBeenCalledTimes(1);});
+it('does not assign another property accessibility data or guess on provider error',async()=>{vi.stubEnv('BOPok_TOURAPI_KEY','test-secret');const lookup=createLodgingAccess(async()=>Response.json({response:{header:{resultCode:'0000'},body:{items:{item:{contentid:'999',exit:'경사로 있음'}}}}}));expect(await lookup('123')).toBeUndefined();expect(await createLodgingAccess(async()=>{throw Error('offline');})('123')).toBeUndefined();});

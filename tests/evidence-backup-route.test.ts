@@ -1,0 +1,10 @@
+import {beforeEach,it,expect,vi} from 'vitest';
+const mocks=vi.hoisted(()=>({account:vi.fn(),reserve:vi.fn()}));
+vi.mock('../src/server/account',()=>({accountOf:mocks.account}));
+vi.mock('../src/server/store',()=>({configuredRPC:()=>({}),TripStore:class{reserve=mocks.reserve;}}));
+vi.mock('../src/server/security',()=>({sameOrigin:(r:Request)=>r.headers.get('origin')==='https://app.test',json:(data:unknown,status=200)=>Response.json(data,{status}),hash:(s:string)=>s,readJSON:(r:Request)=>r.json()}));
+import {GET,PUT,DELETE} from '../src/app/api/evidence-backup/route';
+const fetcher=vi.fn();beforeEach(()=>{vi.stubEnv('BOPok_SUPABASE_URL','https://db.test');vi.stubEnv('BOPok_SUPABASE_KEY','server-key');vi.stubGlobal('fetch',fetcher);fetcher.mockReset();mocks.account.mockReturnValue({id:'owner-a'});mocks.reserve.mockResolvedValue({allowed:true});});
+it('rejects unauthenticated reads and cross-origin writes before accessing storage',async()=>{mocks.account.mockReturnValue(null);expect((await GET(new Request('https://app.test/api/evidence-backup'))).status).toBe(401);expect((await PUT(new Request('https://app.test/api/evidence-backup',{method:'PUT',headers:{origin:'https://other.test'}}))).status).toBe(403);expect(fetcher).not.toHaveBeenCalled();});
+it('derives private object ownership from account, never a caller path',async()=>{fetcher.mockResolvedValue(Response.json({ok:true}));const response=await DELETE(new Request('https://app.test/api/evidence-backup?owner=someone-else',{method:'DELETE',headers:{origin:'https://app.test'}}));expect(response.status).toBe(200);expect(JSON.parse(fetcher.mock.calls[0][1].body)).toEqual({prefixes:['owner-a/latest.json']});});
+it('enforces rate limit before any provider call',async()=>{mocks.reserve.mockResolvedValue({allowed:false});expect((await GET(new Request('https://app.test/api/evidence-backup'))).status).toBe(429);expect(fetcher).not.toHaveBeenCalled();});
