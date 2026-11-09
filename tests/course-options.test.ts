@@ -20,3 +20,14 @@ it('does not invent alternatives or relax required facilities',()=>{const trip=f
 it('does not shorten a full-day course just to manufacture three alternatives',()=>{const trip=fixture(4);expect(dailyCourseOptions(trip,1)).toHaveLength(1);});
 it('finds a third replacement combination when automatic filling converges on the same set',()=>{const options=dailyCourseOptions(fixture(5),1);expect(options).toHaveLength(3);expect(new Set(options.map(o=>o.signature)).size).toBe(3);});
 it('Hongcheon is not capped to one course when enough valid candidates exist',()=>{const trip=fixture(60);trip.basics.region='홍천';trip.catalog!.region='홍천';trip.catalog!.places=trip.catalog!.places.map(p=>({...p,region:'홍천'}));expect(dailyCourseOptions(trip,1)).toHaveLength(3);expect(dailyCourseOptions(trip,2)).toHaveLength(3);});
+import {genuinelyDifferentCourses,courseSignature} from '../src/domain/course-options';
+it('rejects reordered sets, aliases and strict supersets while allowing genuine overlap',()=>{
+ const trip=fixture(8),catalog=trip.catalog!,ids=catalog.places.map(p=>p.id);
+ expect(genuinelyDifferentCourses(ids.slice(0,3),[ids[2],ids[0],ids[1]],catalog)).toBe(false);
+ expect(genuinelyDifferentCourses(ids.slice(0,3),ids.slice(0,4),catalog)).toBe(false);
+ expect(genuinelyDifferentCourses(ids.slice(0,3),[ids[0],ids[1],ids[4]],catalog)).toBe(true);
+ const alias={...catalog.places[0],id:'tourapi:900',name:'관광지  0'};catalog.places.push(alias);
+ expect(genuinelyDifferentCourses([ids[0],ids[1]],[alias.id,ids[1]],catalog)).toBe(false);
+ expect(courseSignature([ids[0],ids[1]],catalog)).toBe(courseSignature([ids[1],alias.id],catalog));
+});
+it('every pair has at least one genuinely different venue, not just an extra stop',()=>{for(const count of [5,8,14,60]){const trip=fixture(count);const options=dailyCourseOptions(trip,1);for(let i=0;i<options.length;i++)for(let j=i+1;j<options.length;j++)expect(genuinelyDifferentCourses(options[i].ids,options[j].ids,trip.catalog!)).toBe(true);}});
