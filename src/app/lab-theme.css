@@ -51,3 +51,7 @@
 .lab-route-layout>.arrival-guide>summary{font-size:13px;font-weight:600;cursor:pointer}
 .lab-route-layout>.lab-route-stops{order:2;width:100%}
 @media(max-width:760px){.lab-route-layout .itinerary-map .road-map{height:240px}}
+.lab-app .simple-basics{grid-template-columns:repeat(6,minmax(0,1fr))}
+.lab-app .simple-basics>.departure-field,.lab-app .simple-basics>.destination-field{grid-column:span 3}
+.lab-app .simple-basics>.simple-date,.lab-app .simple-basics>.simple-duration,.lab-app .simple-basics>.simple-party{grid-column:span 2}
+@media(max-width:760px){.lab-app .simple-basics{grid-template-columns:repeat(2,minmax(0,1fr))}.lab-app .simple-basics>.departure-field,.lab-app .simple-basics>.destination-field,.lab-app .simple-basics>.simple-party{grid-column:1/-1}.lab-app .simple-basics>.simple-date,.lab-app .simple-basics>.simple-duration{grid-column:span 1}}

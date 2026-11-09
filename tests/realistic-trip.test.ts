@@ -66,3 +66,16 @@ it.each([2,4,5])('uses fresh route indexes for %i days with different stops',asy
  }
  expect(JSON.stringify(source)).toBe(before);
 });
+it('arrives after opening and finishes visits plus rest before closing',async()=>{
+ const copy=structuredClone(catalog);const first=copy.places[0],second=copy.places[1];
+ const opening=(p:typeof first,open:number,close:number)=>{p.opening={value:{open,close,closedWeekdays:[],closedDates:[],reservationRequired:false},nature:'real',checked:'source',evidenceId:p.id+':opening',source:'https://example.com/hours',collectedAt:new Date().toISOString()};};
+ opening(first,600,720);opening(second,840,1020);
+ const trip=await prepareTrip(basics,{...defaultConditions,restMin:20},copy,fetcher as typeof fetch);
+ for(const item of trip.items){if(item.placeId===first.id){expect(item.start).toBeGreaterThanOrEqual(600);expect(item.end).toBeLessThanOrEqual(720);}if(item.placeId===second.id){expect(item.start).toBeGreaterThanOrEqual(840);expect(item.end).toBeLessThanOrEqual(1020);}}
+ const toSecond=trip.items.find(i=>i.kind==='move'&&i.toId===second.id)!;expect(toSecond.end).toBe(840);expect(toSecond.end-toSecond.start).toBe(30);
+});
+it('honors legacy hours together with newer hours and skips a visit that cannot fit its rest',async()=>{
+ const copy=structuredClone(catalog);const p=copy.places[0];p.hours={...p.hours,value:[600,700],checked:'source',collectedAt:new Date().toISOString()};
+ const trip=await prepareTrip(basics,{...defaultConditions,restMin:20},copy,fetcher as typeof fetch);
+ expect(trip.items.some(i=>i.placeId===p.id)).toBe(false);
+});

@@ -6,6 +6,7 @@ import {visitDuration} from './visit-duration';
 import {closedOn,recentFact} from './venue-details';
 export function realisticDay(selected:Place[],basics:Basics,conditions:Conditions,catalog:Catalog,day:number):Item[]{
  const window=basics.dayWindows?.find(w=>w.day===day)??basics.travelHours!;
+ const venueWindow=(p:Place)=>{const opening=p.opening?.value&&recentFact(p.opening)?p.opening.value:null;return {open:Math.max(opening?.open??0,p.hours.value?.[0]??0),close:Math.min(opening?.close??1440,p.hours.value?.[1]??1440)};};
  const meals=selected.filter(p=>p.kind==='meal');
  const dinner=(meals.length>1||window.start>=900&&window.end>=1140)?meals.at(-1):undefined;
  const dinnerStart=Math.min(1140,window.end-60);
@@ -16,20 +17,24 @@ export function realisticDay(selected:Place[],basics:Basics,conditions:Condition
   const route=last?indexCatalog(catalog).getRoute(last.id,p.id,basics.transport):null;
   if(last&&route?.duration.value==null)throw Error('장소 간 도로 시간을 조회하지 못했습니다. 다시 생성해 주세요.');
   const move=last?Math.ceil(route!.duration.value!):0;
-  let begin=cursor+move;if(p.kind==='meal')begin=Math.max(begin,p===dinner?Math.min(1080,dinnerStart):720);const hours=p.opening?.value&&recentFact(p.opening)?p.opening.value:null;
-  if(hours)begin=Math.max(begin,hours.open);
+  let begin=cursor+move;if(p.kind==='meal')begin=Math.max(begin,p===dinner?Math.min(1080,dinnerStart):720);const hours=venueWindow(p);
+  begin=Math.max(begin,hours.open);
   // Unknown opening times are not treated as verified availability.
-  let ceiling=Math.min(window.end,hours?.close??window.end);
+  const rest=conditions.restMin??10;
+  let ceiling=Math.min(window.end,hours.close-(p.kind==='visit'?rest:0));
   if(dinner&&window.end>=1140&&p!==dinner&&p.kind==='visit'&&selected.indexOf(p)<selected.indexOf(dinner)){
    const toDinner=indexCatalog(catalog).getRoute(p.id,dinner.id,basics.transport)?.duration.value;
    if(toDinner!=null)ceiling=Math.min(ceiling,dinnerStart-Math.ceil(toDinner)-(conditions.restMin??10));
   }
   const duration=visitDuration(p);
   if(begin+duration>ceiling)continue;
-  if(last&&move>0){items.push({id:`real:${day}:${items.length}`,day,start:cursor,end:cursor+move,kind:'move',placeId:null,fromId:last.id,toId:p.id,transport:basics.transport,locked:false,mode:'real'});}
-  if(begin-cursor-move>=Math.max(1,conditions.restMin??10))add(p,'rest',cursor+move,begin,hours&&hours.open>cursor+move&&hours.open===begin?'운영 시작 전 여유 시간':p.kind==='meal'?'식사 전 휴식':'이동 후 휴식');
+  // Arrive when the venue opens; do not record pre-opening waiting inside it.
+  const moveStart=cursor+move<hours.open?begin-move:cursor;
+  if(last&&moveStart-cursor>=Math.max(1,rest)&&cursor>=venueWindow(last).open&&moveStart<=venueWindow(last).close)add(last,'rest',cursor,moveStart,'휴식');
+  if(last&&move>0){items.push({id:`real:${day}:${items.length}`,day,start:moveStart,end:moveStart+move,kind:'move',placeId:null,fromId:last.id,toId:p.id,transport:basics.transport,locked:false,mode:'real'});}
+  if(begin-moveStart-move>=Math.max(1,rest)&&moveStart+move>=hours.open)add(p,'rest',moveStart+move,begin,p.kind==='meal'?'식사 전 휴식':'이동 후 휴식');
   add(p,p.kind,begin,begin+duration,p.kind==='meal'?(p===dinner?'저녁 식사':'점심 식사'):undefined);cursor=begin+duration;last=p;
-  const rest=conditions.restMin??10;if(p.kind==='visit'&&cursor+rest<=window.end){add(p,'rest',cursor,cursor+rest,'휴식');cursor+=rest;}
+  if(p.kind==='visit'&&rest>0&&cursor+rest<=Math.min(window.end,hours.close)){add(p,'rest',cursor,cursor+rest,'휴식');cursor+=rest;}
  }
  if(!items.some(i=>i.kind==='visit'))throw Error('이동·체류·영업시간을 반영하면 방문 시간이 부족합니다. 시작을 앞당기거나 종료 시간을 늦춰 주세요.');
  return items;

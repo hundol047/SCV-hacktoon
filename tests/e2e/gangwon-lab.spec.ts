@@ -9,14 +9,14 @@ test('Gangwon destination selection retains AI payload and accessible mobile for
  await page.route('**/api/departure-hubs',r=>r.fulfill({json:{hubs:[]}}));
  let payload:any;
  await page.route('**/api/courses',r=>{payload=r.request().postDataJSON();return r.fulfill({status:503,json:{error:'테스트: AI 요청 계약 확인 완료'}});});
- await page.goto('/');await expect(page.getByRole('heading',{level:1})).toContainText('편안한 강원 여행');await expect(page.locator('.simple-trip input:visible, .simple-trip select:visible, .simple-trip textarea:visible')).toHaveCount(4);await expect(page.locator('.simple-options')).not.toHaveAttribute('open','');
+ await page.goto('/');await expect(page.getByRole('heading',{level:1})).toContainText('편안한 강원 여행');await expect(page.locator('.simple-trip input:visible, .simple-trip select:visible, .simple-trip textarea:visible')).toHaveCount(5);await expect(page.locator('.simple-options')).not.toHaveAttribute('open','');await page.getByRole('combobox',{name:'여행 인원',exact:true}).selectOption('5');
  await expect(page.getByRole('combobox',{name:'여행 지역',exact:true}).locator('option')).toHaveCount(18);
  await page.getByRole('combobox',{name:'여행 지역',exact:true}).selectOption('속초');await expect(page.getByRole('combobox',{name:'여행 지역',exact:true})).toHaveValue('속초');
  await page.getByLabel('출발 지역',{exact:true}).fill('서울역');await page.getByRole('combobox',{name:'여행 기간',exact:true}).selectOption('2');
  await page.locator('.simple-options > summary').click();await expect(page.locator('.simple-options')).toHaveAttribute('open','');await page.getByRole('button',{name:'바다 보기',exact:true}).click();
  await page.getByText('예산·출발·귀가 조건',{exact:true}).click();await page.getByLabel('여행 전체 예산 (원)',{exact:true}).fill('300000');
  await page.getByRole('button',{name:'지역 검색하고 AI 일정 생성'}).click();await expect(page.locator('.simple-trip').getByRole('alert')).toHaveText('테스트: AI 요청 계약 확인 완료');
- expect(payload.basics.days).toBe(2);expect(payload.basics.title).toBe('속초 여행');expect(payload.basics.departureCoordinates).toEqual({latitude:37.55,longitude:126.97});expect(payload.basics.tripBudget).toBe(300000);expect(payload.conditions.experiences).toContain('바다 보기');expect(payload.basics.travelPriority).toBe('comfort');expect(payload.conditions.activity).toBe('slow');expect(payload.conditions.restMin).toBe(20);expect(payload.allDays).toBe(true);expect(payload.consent).toBe(true);
+ expect(payload.basics.days).toBe(2);expect(payload.basics.title).toBe('속초 여행');expect(payload.basics.departureCoordinates).toEqual({latitude:37.55,longitude:126.97});expect(payload.basics.tripBudget).toBe(300000);expect(payload.conditions.experiences).toContain('바다 보기');expect(payload.basics.travelPriority).toBe('comfort');expect(payload.conditions.activity).toBe('slow');expect(payload.conditions.restMin).toBe(20);expect(payload.basics.travelers).toBe(5);expect(payload.allDays).toBe(true);expect(payload.consent).toBe(true);
  await page.getByText('예산·출발·귀가 조건',{exact:true}).click();await page.getByText('예산·출발·귀가 조건',{exact:true}).click();await expect(page.getByLabel('여행 전체 예산 (원)',{exact:true})).toHaveValue('300000');
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  const audit=await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze();expect(audit.violations).toEqual([]);expect(errors).toEqual([]);
@@ -96,7 +96,7 @@ test('voice input applies fields and explicit command generates only once',async
  await page.route('**/api/location',r=>r.fulfill({json:{locations:[{id:'origin',name:'판교역',address:'성남시 분당구',latitude:37.39,longitude:127.11}]}}));
  await page.route('**/api/tourism?**',r=>r.fulfill({json:catalog}));
  await page.route('**/api/courses',r=>{requests++;payload=r.request().postDataJSON();return r.fulfill({status:503,json:{error:'음성 생성 요청 확인'}});});
- await page.goto('/');await expect(page.locator('.simple-trip input:visible, .simple-trip select:visible')).toHaveCount(4);
+ await page.goto('/');await expect(page.locator('.simple-trip input:visible, .simple-trip select:visible')).toHaveCount(5);
  await page.getByRole('button',{name:'음성으로 입력',exact:true}).click();
  await page.evaluate(()=>{const r=(window as any).testRecognition;r.onresult({results:[[{transcript:'판교역에서 내일 속초로 1박 2일 일정 만들어 줘'}]]});r.onresult({results:[[{transcript:'일정 만들어 줘'}]]});r.onend();});
  await expect(page.locator('.simple-trip').getByRole('alert')).toHaveText('음성 생성 요청 확인');expect(requests).toBe(1);expect(payload.basics.departureRegion).toBe('판교역');expect(payload.basics.days).toBe(2);expect(payload.basics.title).toBe('속초 여행');
