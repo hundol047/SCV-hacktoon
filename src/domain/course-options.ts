@@ -20,6 +20,9 @@ export function dailyCourseOptions(trip:Trip,day:number):CourseOption[]{
    const rotated=[...candidates.slice(attempt),...candidates.slice(0,attempt)].sort((a,b)=>(used.get(a)??0)-(used.get(b)??0));
    try{add(regionalCourse(trip.basics,trip.conditions,catalog,day,{candidateIds:rotated.slice(0,Math.max(input.minAttractions,Math.min(count,candidates.length-1)))},{fillDay:true}).plan.orderedPlaceIds);}catch{/* Keep only valid candidates, never relax requested accessibility. */}
   }
+  // Replacing one stop avoids fillDay repeatedly rebuilding the same full set.
+  const currentVisits=current.orderedPlaceIds.filter(id=>catalog.places.find(p=>p.id===id)?.kind==='visit');
+  for(const removed of currentVisits){if(options.length>=3)break;for(const replacement of candidates){if(options.length>=3)break;if(currentVisits.includes(replacement))continue;const ids=currentVisits.map(id=>id===removed?replacement:id);try{const result=regionalCourse(trip.basics,trip.conditions,catalog,day,{candidateIds:ids},{fillDay:true,reservedIds:new Set([removed])});if(result.plan.orderedPlaceIds.filter(id=>catalog.places.find(p=>p.id===id)?.kind==='visit').length>=currentVisits.length)add(result.plan.orderedPlaceIds);}catch{}}}
  }catch{/* A saved course remains available even if no alternatives meet the conditions. */}
  return options;
 }

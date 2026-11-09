@@ -79,3 +79,6 @@
 /* Keep the selected-place list inside short maps, including clustered markers. */
 .terrain-road-map .maplibregl-popup{transform:none!important;top:8px;left:8px;right:auto;bottom:auto;width:max-content;max-width:calc(100% - 64px)!important}
 .terrain-road-map .maplibregl-popup-tip{display:none}
+.course-choice-grid.with-custom{grid-template-columns:repeat(4,minmax(0,1fr))}.course-choice-grid .course-add-place{width:auto;display:block;padding:3px 7px;margin-top:6px;font-size:11px}.course-choice-grid .custom-course{border:2px dashed var(--green);background:#f1f7f5}.course-empty,.custom-course-empty{flex:1;font-size:12px;line-height:1.7;color:var(--muted);padding:16px 0}.course-choice-grid li[draggable=true]{cursor:grab}.course-choice-grid li[draggable=true]:active{cursor:grabbing}.daily-course-options>[role=region]{margin-top:18px}.course-map-workspace .course-choice-grid.with-custom{height:clamp(400px,68svh,680px)}
+@media(min-width:1051px){.course-map-workspace:has(.with-custom){grid-template-columns:minmax(0,3fr) minmax(260px,1fr)}}
+@media(min-width:601px) and (max-width:900px){.course-choice-grid.with-custom{display:flex;overflow-x:auto}.course-choice-grid.with-custom article{flex:0 0 30%;min-width:190px}}

@@ -44,16 +44,16 @@ test('three distinct daily courses update the itinerary and keep map aligned',as
  let calls=0;
  await page.route('**/api/edit-course',r=>{calls++;const {trip:t,day,ids}=r.request().postDataJSON();if(calls===1)return r.fulfill({status:422,json:{error:'다시 시도해 주세요.'}});const old=t.basics.coursePlans.find((p:{day:number})=>p.day===day);return r.fulfill({json:{trip:{...t,revision:t.revision+1,basics:savePlan(t.basics,{...old,selectedPlaceIds:ids,orderedPlaceIds:ids,startPlaceId:ids[0]}),items:[...t.items.filter((i:{day:number})=>i.day!==day),...ids.map((id:string,i:number)=>({...t.items[0],id:`updated:${i}`,day,placeId:id,start:540+i*100,end:600+i*100}))]}}});});
  await page.goto('/');await page.getByRole('button',{name:'이어서 보기',exact:true}).click();
- const cards=page.locator('.course-choice-grid article');await expect(cards).toHaveCount(3);
+ const cards=page.locator('.course-choice-grid article:not(.custom-course)');await expect(cards).toHaveCount(3);
  expect(new Set(await cards.locator('ol').allTextContents()).size).toBe(3);await expect(cards.first().getByRole('img',{name:'강릉 관광지 0 사진'})).toBeVisible();await expect.poll(()=>cards.first().locator('img').first().evaluate((e:HTMLImageElement)=>e.naturalWidth)).toBeGreaterThan(0);
  await expect(page.locator('.compact-stops>li')).toHaveCount(2);
  await expect(page.locator('.compact-stops img')).toHaveCount(2);await expect(cards.first().locator('img').first()).toHaveAttribute('src','https://tong.visitkorea.or.kr/gallery.jpg');await page.locator('.compact-stops img').first().scrollIntoViewIfNeeded();await expect(page.locator('.compact-stops img').first()).toHaveAttribute('src','https://tong.visitkorea.or.kr/gallery.jpg');
  await expect(page.locator('.route-stop-order>span')).toHaveCount(2);
  await page.getByRole('button',{name:'2D 지도',exact:true}).click();await expect(page.locator('.route-number-marker')).toHaveCount(2);
  await expect(page.locator('.leaflet-tooltip')).toHaveCount(0);
- const second=await cards.nth(1).locator('li>span').first().evaluate(e=>e.childNodes[e.childNodes.length-1].textContent);
- await cards.nth(1).getByRole('button').click();await expect(page.getByRole('status').filter({hasText:'다시 시도해 주세요.'})).toBeVisible();await expect(cards.first()).toHaveClass(/selected/);
- await cards.nth(1).getByRole('button').click();await expect(cards.nth(1)).toHaveClass(/selected/);await expect(page.locator('.compact-stops')).toContainText(second!);
+ const second=await cards.nth(1).locator('li>span').first().evaluate(e=>Array.from(e.childNodes).filter(n=>n.nodeType===Node.TEXT_NODE).map(n=>n.textContent).join(''));
+ await cards.nth(1).getByRole('button',{name:'이 코스 선택',exact:true}).click();await expect(page.getByRole('status').filter({hasText:'다시 시도해 주세요.'})).toBeVisible();await expect(cards.first()).toHaveClass(/selected/);
+ await cards.nth(1).getByRole('button',{name:'이 코스 선택',exact:true}).click();await expect(cards.nth(1)).toHaveClass(/selected/);await expect(page.locator('.compact-stops')).toContainText(second!);
  await page.locator('.day-tabs button').nth(1).click();await expect(cards).toHaveCount(3);
  const map=await page.locator('.itinerary-map').boundingBox(),stops=await page.locator('.lab-route-stops').boundingBox();
  expect(map!.y+map!.height).toBeLessThanOrEqual(stops!.y);const choices=await page.locator('.daily-course-options').boundingBox();if(info.project.name==='desktop'){expect(map!.x).toBeGreaterThan(choices!.x);expect(map!.height).toBeLessThan(720);}
@@ -104,4 +104,16 @@ test('lodging comparison shows before and after costs and places before applying
  expect((await page.evaluate(()=>JSON.parse(localStorage.getItem('bopok:trip:v1')!))).basics.lodgings??[]).toHaveLength(0);
  await comparison.getByRole('button',{name:'변경 일정 적용',exact:true}).click();await expect(page.getByText('선택한 숙소:',{exact:false})).toContainText('비교할 강릉 호텔');
  await page.getByRole('button',{name:'예산·할인',exact:true}).click();await expect(page.locator('.estimate-head h3')).toContainText('–');await expect(page.locator('.cost-certainty')).toContainText('확정 금액을 산정하지 않습니다');await expect(page.locator('.cost-certainty')).toContainText('미포함 비용');expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.locator('.trip-estimate').screenshot({path:info.outputPath('cost-range.png')});
+});
+
+test('custom course accepts dragged or tapped places and previews automatic arrangement',async({page},info)=>{
+ const {regionalCourse}=await import('../../src/domain/regional-course');const {savePlan}=await import('../../src/domain/course-plans');
+ const many=osmCatalog('강릉',{elements:Array.from({length:8},(_,i)=>({type:'node',id:i+101,lat:37.75+i*.001,lon:128.9,tags:{name:'선택 관광지 '+i,tourism:'attraction'}}))},new Date().toISOString());
+ const b={...trip.basics,days:1,travelHours:{start:540,end:1200}};const plan=regionalCourse(b,defaultConditions,many,1,{candidateIds:many.places.slice(0,2).map(p=>p.id)}).plan;const fixture={...trip,basics:savePlan(b,plan),catalog:many,items:plan.orderedPlaceIds.map((id,i)=>({...trip.items[0],id:'custom:'+i,placeId:id,start:540+i*100,end:600+i*100}))};
+ await page.addInitScript(t=>localStorage.setItem('bopok:trip:v1',JSON.stringify(t)),fixture);await page.route('**/api/place-details',r=>r.fulfill({json:{places:{}}}));await page.route('https://router.project-osrm.org/**',r=>r.abort());
+ let requested:string[]=[];await page.route('**/api/edit-course',r=>{const data=r.request().postDataJSON();expect(data.optimize).toBe(true);requested=data.ids;const order=[...data.ids].reverse();return r.fulfill({json:{trip:{...data.trip,revision:data.trip.revision+1,basics:savePlan(data.trip.basics,{...plan,orderedPlaceIds:order,selectedPlaceIds:order,startPlaceId:order[0]}),items:order.map((id:string,i:number)=>({...trip.items[0],id:'arranged:'+i,placeId:id,start:540+i*100,end:600+i*100}))}}});});
+ await page.goto('/');await page.getByRole('button',{name:'이어서 보기',exact:true}).click();await expect(page.getByRole('article',{name:'코스 C',exact:true})).toBeVisible();const custom=page.getByRole('article',{name:'내 맘대로 여행',exact:true});const first=page.getByRole('article',{name:'코스 A',exact:true}).locator('li').first();
+ if(info.project.name==='desktop')await first.dragTo(custom);else await first.getByRole('button',{name:/내 여행에 담기/}).click();await expect(custom.locator('li')).toHaveCount(1);
+ await page.getByRole('article',{name:'코스 A',exact:true}).locator('li').nth(1).getByRole('button',{name:/내 여행에 담기/}).click();await expect(custom.locator('li')).toHaveCount(2);await custom.getByRole('button',{name:'효율적으로 자동 배치'}).click();const preview=page.getByRole('region',{name:'내 여행 자동 배치 결과',exact:true});await expect(preview).toBeVisible();expect(requested).toHaveLength(2);expect((await page.evaluate(()=>JSON.parse(localStorage.getItem('bopok:trip:v1')!))).revision).toBe(0);await preview.getByRole('button',{name:'변경 일정 적용',exact:true}).click();await expect(preview).toHaveCount(0);expect((await page.evaluate(()=>JSON.parse(localStorage.getItem('bopok:trip:v1')!))).revision).toBe(1);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ await page.locator('.daily-course-options').screenshot({path:info.outputPath('custom-course.png')});
 });

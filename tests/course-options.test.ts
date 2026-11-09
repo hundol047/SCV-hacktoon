@@ -18,3 +18,4 @@ it('offers three different attraction sets per day without borrowing other-day v
 });
 it('does not invent alternatives or relax required facilities',()=>{const trip=fixture(4);trip.basics.requiredFacilities=['wheelchair'];expect(dailyCourseOptions(trip,1)).toHaveLength(1);});
 it('does not shorten a full-day course just to manufacture three alternatives',()=>{const trip=fixture(4);expect(dailyCourseOptions(trip,1)).toHaveLength(1);});
+it('finds a third replacement combination when automatic filling converges on the same set',()=>{const options=dailyCourseOptions(fixture(5),1);expect(options).toHaveLength(3);expect(new Set(options.map(o=>o.signature)).size).toBe(3);});
