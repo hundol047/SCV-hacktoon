@@ -56,6 +56,7 @@ import RegionalCourse from './RegionalCourse';
 import StudentTaxiPlanner from './StudentTaxiPlanner';
 import TravelSummary from './TravelSummary';
 import {transportLabel,money,destinationFor,localInstant} from '../domain/world';
+import {clearEvidence} from '../adapters/evidence-storage';
 import {clearPhotos} from '../adapters/photo-storage';
 import LibraryPanel from './LibraryPanel';
 import FamilySync from './FamilySync';
@@ -266,7 +267,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
   };
   const remove = async () => {
     try {
-      await clearPhotos();
+      await Promise.all([clearPhotos(),clearEvidence()]);
       localStorage.removeItem(STORAGE_KEY);
       localStorage.removeItem(FORM_KEY);
       localStorage.removeItem('bopok:cloud:v1');localStorage.removeItem(LIBRARY_KEY);setLibrary([]);
@@ -433,7 +434,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
 
 
         </nav>
-        <span className="header-caption">강원에서 만나는 나만의 하루</span>
+        <span className="header-caption">함께 걷는 속도에 맞춘 강원 여행</span>
         <div className="header-account"><AccountPanel/></div>
       </header>
       <main id="main">
@@ -455,9 +456,9 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
           <>
             <section className="lab-hero" aria-labelledby="gangwon-title">
               <GangwonHeroPhoto/>
-              <div className="lab-hero-copy"><span>바다와 산, 도시 사이</span><h1 id="gangwon-title" tabIndex={-1}>강원 여행,<br/>나에게 맞는 하루</h1><p>지역과 취향을 고르면 AI가 여행을 이어 드려요.</p><a href="#gangwon-plan" className="primary">여행 계획하기 <ArrowRight size={18}/></a></div>
+              <div className="lab-hero-copy"><span>부모님과 함께, 이동의 부담은 덜고</span><h1 id="gangwon-title" tabIndex={-1}>함께라서 좋은,<br/>편안한 강원 여행</h1><p>걷는 시간·휴식·이동 편의를 맞춰 여행을 계획해요.</p><a href="#gangwon-plan" className="primary">여행 계획하기 <ArrowRight size={18}/></a></div>
             </section>
-            <details className="lab-manual" id="gangwon-plan" open><summary>직접 골라서 만들기</summary><SimpleTripForm conditions={defaultConditions} onTrip={t=>{setTrip(t);setDay(1);setProposal(null);navigate('result');}}/></details>
+            <details className="lab-manual" id="gangwon-plan" open><summary>동행자에게 맞는 여행 만들기</summary><SimpleTripForm conditions={defaultConditions} onTrip={t=>{setTrip(t);setDay(1);setProposal(null);navigate('result');}}/></details>
             {ready && savedDraft && (
               <section className="resume">
                 <div>
@@ -510,7 +511,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
         ) : null}
         {(screen === "conditions" || screen === "basics") && (
           <section className="workspace form-workspace">
-            <div className="form-heading"><button className="back" onClick={()=>navigate('home')}><ArrowLeft size={18}/> 홈으로</button><span className="eyebrow">나만의 강원 여행</span><h1 tabIndex={-1}>나에게 맞는 여행을 만들어 보세요</h1><p>출발지와 목적지, 함께 떠날 인원을 알려주세요.</p></div>
+            <div className="form-heading"><button className="back" onClick={()=>navigate('home')}><ArrowLeft size={18}/> 홈으로</button><span className="eyebrow">나만의 강원 여행</span><h1 tabIndex={-1}>함께 가는 분에게 맞춰 보세요</h1><p>동행자의 보행·휴식 조건과 가고 싶은 곳을 알려주세요.</p></div>
             <div className="form-body"><SimpleTripForm initialTransport={b.transport==='driving'?'driving':'taxi'} conditions={defaultConditions} onTrip={t=>{setTrip(t);setDay(1);setProposal(null);setSavedDraft(null);try{localStorage.removeItem(FORM_KEY);}catch{}navigate('result');}}/></div>
           </section>
         )}

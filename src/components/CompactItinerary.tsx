@@ -2,6 +2,7 @@
 import OfflineRoute from './OfflineRoute';
 import TravelToolkit from './TravelToolkit';
 import AccessFacts from './AccessFacts';
+import {facilityNames} from '../domain/venue-details';
 import {useEffect,useMemo,useState} from 'react';
 import {z} from 'zod';
 import type {Place} from '../data/demo';
@@ -19,6 +20,7 @@ import {useKoreaToday} from './useKoreaToday';
 import PlaceBenefits from './PlaceBenefits';
 import {selectBenefits,benefitsForPlace} from '../domain/travel-benefits';
 import TravelBenefits from './TravelBenefits';
+import HalfPriceTravel from './HalfPriceTravel';
 import TravelBookings from './TravelBookings';
 import TripCoupons from './TripCoupons';
 import LiveTripPanel from './LiveTripPanel';
@@ -55,12 +57,14 @@ export default function CompactItinerary({trip,onTrip}:{trip:Trip;onTrip?:(t:Tri
  return <section className="compact-itinerary" aria-label="여행 코스">
  <div className="trip-overview"><strong>{b.departureRegion?`${b.departureRegion} → `:''}{b.title.replace(/ 여행$/,'')}</strong><span>{b.travelers??1}명 · {b.transport==='taxi'?'택시':b.transport==='driving'?'자가용':b.transport==='walk'?'도보':'대중교통'}{b.transport==='taxi'?` ${Math.ceil((b.travelers??1)/4)}대 (4인승)`:''}</span></div>
  {b.commutes?.filter(c=>c.day===day).map(c=><p className="commute-summary" key={c.kind}>{c.kind==='outbound'?'출발지 → 첫 여행지':'마지막 여행지 → 출발지'} · {clock(c.depart)} → {clock(c.arrive)} · 도로 약 {c.minutes}분</p>)}{b.roadCheckedAt&&<p className="road-note">조회한 도로 시간 반영 · 실시간 교통 체증 제외 · 체류 시간은 장소 유형별 계획 기준입니다.</p>}
+ <aside className="comfort-plan" aria-label="이동·휴식 계획 조건"><strong>함께 가는 분을 위한 계획</strong><div>{b.travelPriority==='comfort'&&<span>이동 부담 줄이기</span>}{trip.conditions.maxWalkMin!=null&&<span>연속 보행 {trip.conditions.maxWalkMin}분 이내 요청</span>}{trip.conditions.restMin!=null&&<span>관광 후 휴식 {trip.conditions.restMin}분</span>}{(b.requiredFacilities??[]).map(f=><span key={f}>{facilityNames[f]}</span>)}</div><small>요청한 계획 조건입니다. 현장 접근성은 장소별 안내를 함께 확인하세요.</small></aside>
  <TripShareActions trip={trip} day={day} onTrip={onTrip}/>
  <nav className="lab-result-nav" aria-label="여행 화면">{[{id:'plan',label:'여행 일정'},{id:'stay',label:'숙소'},{id:'budget',label:'예산·할인'},{id:'tools',label:'여행 도우미'}].map(tab=><button key={tab.id} type="button" aria-pressed={view===tab.id} aria-controls={'trip-pane-'+tab.id} onClick={()=>setView(tab.id)}>{tab.label}</button>)}</nav>
  <div id="trip-pane-stay" hidden={view!=='stay'}>{b.days>1?<TripLodgings key={'lodgings:'+trip.id} trip={trip} onTrip={onTrip}/>:<p className="lab-empty">당일 여행이에요. 숙박이 필요하면 여행 기간을 늘려 주세요.</p>}</div>
  <div id="trip-pane-budget" hidden={view!=='budget'}><TripEstimate key={`estimate:${trip.id}`} trip={trip} onTrip={onTrip}/>{onTrip&&<TripCoupons trip={trip} onTrip={onTrip}/>}<TravelBenefits trip={trip} day={day}/></div>
  <div id="trip-pane-tools" hidden={view!=='tools'}>{onTrip&&<LiveTripPanel trip={trip} onTrip={onTrip}/ >}{onTrip&&<TripPlanningOptions key={trip.id+':options:'+trip.revision} trip={trip} onTrip={onTrip}/>}<TravelBookings destination={b.title}/>{onTrip&&<TravelToolkit trip={trip} onTrip={onTrip}/>}</div>
  <div id="trip-pane-plan" hidden={view!=='plan'}>
+ <HalfPriceTravel trip={trip} region={[b.region,b.title,...stops.map(s=>s.place.visitorInfo?.address??s.place.region??'')].join(' ')} date={dayDate(b,day)}/>
  <div className="day-tabs">{Array.from({length:b.days},(_,i)=><button key={i} onClick={()=>setDay(i+1)} className={day===i+1?'active':''}>{i+1}일차 <span>{dayDate(b,i+1).slice(5)}</span></button>)}</div>
 
  {day===1&&(far||airSea)&&<aside className="arrival-guide"><strong>먼 거리 이동 안내</strong>{includeDeparture&&allLegs[0]&&<p>첫 장소까지 차량 약 {duration(Math.ceil(allLegs[0].duration/60))} · {(allLegs[0].distance/1000).toFixed(0)}km (교통상황 미반영)</p>}{airSea?<><p>{b.departureRegion??'출발지'} → 공항·항구 → {b.region} → {first?.name}</p><p>항공·배편을 먼저 예약하고 도착 시각에 맞춰 여행 시작 시간을 선택하세요.</p></>:<><DepartureHubs origin={b.departureCoordinates!} name={b.departureRegion??'출발지'}/><p>{b.departureRegion} → 출발 터미널 → {b.region} 방면 도착 터미널 → {first?.name}</p><p><a href="https://www.bustago.or.kr/" target="_blank" rel="noreferrer">버스타고</a> · <a href="https://txbus.t-money.co.kr/" target="_blank" rel="noreferrer">시외버스 티머니</a>에서 출발·도착 터미널과 인원 {b.travelers??1}명을 선택해 노선과 시간을 확인한 뒤 예약하세요. 예매표의 도착 터미널에서 내려 첫 장소까지 택시나 시내버스로 이동하세요.</p><div className="stop-links"><a href={'https://map.kakao.com/link/search/'+encodeURIComponent(b.title.replace(/ 여행$/, '')+' 버스터미널')} target="_blank" rel="noreferrer">도착 터미널 찾기</a><a href="https://www.letskorail.com/" target="_blank" rel="noreferrer">열차편 확인</a></div><ArrivalTerminals region={b.title.replace(/ 여행$/,'')} destination={destination}/></>}</aside>}
