@@ -47,7 +47,7 @@ import RealSearch from './RealSearch';
 import SimpleTripForm from './SimpleTripForm';
 import WorldPlan from './WorldPlan';
 import BrandMark from './BrandMark';
-import DailyTourismPhoto from './DailyTourismPhoto';
+import GangwonHeroPhoto from './GangwonHeroPhoto';
 import KoreaPhotoGallery from './KoreaPhotoGallery';
 import DeferredPanel from './DeferredPanel';
 import LocalEvents from './LocalEvents';
@@ -413,7 +413,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
   const report = useMemo(()=>trip?validateSchedule(trip.items,trip.conditions,trip.basics,trip.catalog):null,[trip,verificationTick]);
   const progress = screen === "conditions" ? step + 1 : 4;
   return (
-    <CatalogContext.Provider value={currentCatalog}><div className={screen === "parent" ? "app parent-mode" : "app"}>
+    <CatalogContext.Provider value={currentCatalog}><div className={screen === "parent" ? "app lab-app parent-mode" : "app lab-app"}>
       <a className="skip-link" href="#main">
         본문 바로가기
       </a>
@@ -433,7 +433,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
 
 
         </nav>
-        <span className="header-caption">AI 기반 지역 맞춤형 여행코스 추천</span>
+        <span className="header-caption">강원에서 만나는 나만의 하루</span>
         <div className="header-account"><AccountPanel/></div>
       </header>
       <main id="main">
@@ -453,69 +453,11 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
         )}
         {screen === "home" ? (
           <>
-            <section className="quick-start" aria-label="여행 시작 방법">
-              <div><span className="eyebrow">지역부터, 나에게 맞는 여행</span><h2>지역과 취향으로 나만의 코스를 만드세요</h2><p>지역 자료를 불러오고 취향·이동 수단을 선택하면 코스를 추천합니다. 가고 싶은 지역과 취향만 골라 보세요.</p></div>
-              <button className="primary" onClick={()=>startTaxi('taxi')}>택시 여행 빠르게 만들기 <ArrowRight size={18}/></button><button className="secondary" onClick={()=>startTaxi('driving')}>자가용 여행 빠르게 만들기 <ArrowRight size={18}/></button>
-
+            <section className="lab-hero" aria-labelledby="gangwon-title">
+              <GangwonHeroPhoto/>
+              <div className="lab-hero-copy"><span>바다와 산, 도시 사이</span><h1 id="gangwon-title" tabIndex={-1}>강원 여행,<br/>나에게 맞는 하루</h1><p>지역과 취향을 고르면 AI가 여행을 이어 드려요.</p><a href="#gangwon-plan" className="primary">여행 계획하기 <ArrowRight size={18}/></a></div>
             </section>
-            <UsageVideo/><RegionDiscovery/>
-            <section className="hero">
-              <div className="hero-copy">
-                <div className="eyebrow">
-                  <span /> AI 기반 지역 맞춤형 여행코스 추천 서비스
-                </div>
-                <h1 tabIndex={-1}>
-                  가고 싶은 지역에서,
-                  <br />
-                  나에게 맞는 <em>여행</em>
-                </h1>
-                <p className="hero-description">
-                  지역의 관광지와 나의 취향을 연결해 코스를 만들어요.
-                  <br />
-                  혼자, 친구와, 가족과 함께 — 취향에 맞는 한국 여행.
-                </p>
-                <button
-                  className="primary hero-cta"
-                  onClick={() => startTaxi('taxi')}
-                >
-                  지역 맞춤 여행 시작 <ArrowUpRight size={20} />
-                </button>
-                <button
-                  className="text-button hero-secondary"
-                  onClick={() => {if(trip)navigate("result");else {navigate("home");setNotice("여행 보관함에서 저장된 일정을 선택하세요.");}}}
-                >
-                  이미 계획한 여행이 있나요?{" "}
-                  <span>
-                    기존 일정 점검하기 <ArrowRight size={16} />
-                  </span>
-                </button>
-                <div className="hero-note">
-                  <Leaf size={16} /> 바다부터 골목까지, 나만의 여행 취향으로
-                </div>
-              </div>
-              <div className="hero-art hero-photo-card">
-                <div className="art-top">A LITTLE SLOWER, A LITTLE CLOSER</div>
-                <DailyTourismPhoto/>
-                <div className="art-caption">
-                  <span>
-                    우리의 여행은
-                    <br />
-                    <strong>서두르지 않아도 괜찮으니까.</strong>
-                  </span>
-                  <Footprints size={28} />
-                </div>
-                <div className="floating-note">
-                  <Armchair size={22} />
-                  <span>
-                    쉬어 가는 시간도
-                    <br />
-                    <strong>여행의 일부예요</strong>
-                  </span>
-                </div>
-              </div>
-            </section>
-            <DeferredPanel title="지역 축제·문화행사 찾아보기"><LocalEvents onTrip={t=>{setTrip(t);setDay(1);setProposal(null);navigate('result');}}/></DeferredPanel>
-            <DeferredPanel title="소상공인 홍보 콘텐츠 만들기"><PromotionStudio/></DeferredPanel>
+            <details className="lab-manual" id="gangwon-plan" open><summary>직접 골라서 만들기</summary><SimpleTripForm conditions={defaultConditions} onTrip={t=>{setTrip(t);setDay(1);setProposal(null);navigate('result');}}/></details>
             {ready && savedDraft && (
               <section className="resume">
                 <div>
@@ -557,79 +499,18 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
                 </button>
               </section>
             )}
-            <KoreaPhotoGallery/>
-            <LibraryPanel trips={library} current={trip} onSelect={t=>{setTrip(t);setDay(1);navigate('result');}}/>
-            <section className="intro-section">
-              <div className="section-heading">
-                <span className="eyebrow">HOW WE TRAVEL</span>
-                <h2>
-                  좋은 여행은,
-                  <br />
-                  가고 싶은 곳을 고르는 것부터.
-                </h2>
-                <p>
-                  새로운 풍경과 맛있는 음식,
-                  <br />
-                  하고 싶은 경험을 함께 지키는 여행을 설계해요.
-                </p>
-              </div>
-              <div className="principles">
-                <article>
-                  <span className="step-number">01</span>
-                  <Footprints />
-                  <h3>지역과 날짜 선택</h3>
-                  <p>
-                    떠나고 싶은 지역과 날짜,
-                    <br />꼭 보고 싶은 풍경을 직접 선택해요.
-                  </p>
-                </article>
-                <article>
-                  <span className="step-number">02</span>
-                  <Route />
-                  <h3>마음은 그대로, 동선은 편하게</h3>
-                  <p>
-                    부담스러운 구간을 찾고,
-                    <br />
-                    경험을 유지하는 수정안을 비교해요.
-                  </p>
-                </article>
-                <article>
-                  <span className="step-number">03</span>
-                  <NotebookPen />
-                  <h3>함께 읽고, 함께 확인</h3>
-                  <p>
-                    큰 글씨의 쉬운 일정으로 살펴보고,
-                    <br />
-                    여행 취향에 맞게 일정을 바꿔요.
-                  </p>
-                </article>
-              </div>
-            </section>
-            <section className="demo-strip">
-              <div className="demo-stamp">
-                TRAVEL
-                <br />
-                NOTE <Leaf size={20} />
-              </div>
-              <div>
-                <span className="eyebrow">먼저 가볍게 둘러보세요</span>
-                <h2>바다를 보고 싶은 마음은 그대로.</h2>
-                <p>
-                  관광지와 식사, 이동 동선을 한눈에.
-                  <br className="mobile-only" /> 가상 솔바다 여행이 어떻게
-                  달라지는지 확인해 보세요.
-                </p>
-                <small>{DEMO_NOTICE}</small>
-              </div>
-              <button className="secondary" onClick={demo}>
-                예시 여행 체험하기 <ArrowUpRight size={18} />
-              </button>
-            </section>
+            <details className="lab-library"><summary>여행 보관함 · 사진과 저장된 일정</summary><LibraryPanel trips={library} current={trip} onSelect={t=>{setTrip(t);setDay(1);navigate('result');}}/></details>
+            <div className="lab-explore">
+              <DeferredPanel title="강원 관광지·맛집 찾아보기"><RegionDiscovery/></DeferredPanel>
+              <DeferredPanel title="지역 축제·문화행사 찾아보기"><LocalEvents onTrip={t=>{setTrip(t);setDay(1);setProposal(null);navigate('result');}}/></DeferredPanel>
+              <DeferredPanel title="여행잇 사용 방법"><UsageVideo/></DeferredPanel>
+              <DeferredPanel title="소상공인 홍보 콘텐츠 만들기"><PromotionStudio/></DeferredPanel>
+            </div>
           </>
         ) : null}
         {(screen === "conditions" || screen === "basics") && (
           <section className="workspace form-workspace">
-            <div className="form-heading"><button className="back" onClick={()=>navigate('home')}><ArrowLeft size={18}/> 홈으로</button><span className="eyebrow">나만의 한국 여행</span><h1 tabIndex={-1}>나에게 맞는 여행을 만들어 보세요</h1><p>출발지와 목적지, 함께 떠날 인원을 알려주세요.</p></div>
+            <div className="form-heading"><button className="back" onClick={()=>navigate('home')}><ArrowLeft size={18}/> 홈으로</button><span className="eyebrow">나만의 강원 여행</span><h1 tabIndex={-1}>나에게 맞는 여행을 만들어 보세요</h1><p>출발지와 목적지, 함께 떠날 인원을 알려주세요.</p></div>
             <div className="form-body"><SimpleTripForm initialTransport={b.transport==='driving'?'driving':'taxi'} conditions={defaultConditions} onTrip={t=>{setTrip(t);setDay(1);setProposal(null);setSavedDraft(null);try{localStorage.removeItem(FORM_KEY);}catch{}navigate('result');}}/></div>
           </section>
         )}
@@ -878,7 +759,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
               </button>
             </section>
           )}
-        <FamilySync key={identityRevision} trip={trip} onTrip={t=>{setTrip(t);if(proposal){setProposal(null);if(screen==='compare'){navigate('result');setNotice('공유 일정이 갱신되어 수정안을 다시 만들어 주세요.');}}}} onOpen={()=>{setDay(1);navigate('result');}} initialCloud={initialCloud} accessToken={accessToken} hidden={screen!=='home'&&screen!=='result'}/>
+        <details className="lab-sync" hidden={screen!=='home'&&screen!=='result'} open={!!initialCloud}><summary>서버 보관·가족 공유</summary><FamilySync key={identityRevision} trip={trip} onTrip={t=>{setTrip(t);if(proposal){setProposal(null);if(screen==='compare'){navigate('result');setNotice('공유 일정이 갱신되어 수정안을 다시 만들어 주세요.');}}}} onOpen={()=>{setDay(1);navigate('result');}} initialCloud={initialCloud} accessToken={accessToken} hidden={screen!=='home'&&screen!=='result'}/></details>
       </main>
       <footer className="site-footer no-print">
         <div className="footer-brand">

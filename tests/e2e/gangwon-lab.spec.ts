@@ -1,0 +1,24 @@
+import {test,expect} from '@playwright/test';
+import {osmCatalog} from '../../src/adapters/real-data';
+import AxeBuilder from '@axe-core/playwright';
+const catalog=osmCatalog('속초',{elements:[1,2,3].map(id=>({type:'node',id,lat:38.2,lon:128.6+id/1000,tags:{name:'여행지 '+id,tourism:'museum'}}))},new Date().toISOString());
+test('Gangwon destination selection retains AI payload and accessible mobile form',async({page},info)=>{
+ const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.route('**/api/tourism?**',r=>{const u=new URL(r.request().url());expect(u.searchParams.get('province')).toBe('KR-42');expect(u.searchParams.get('q')).toBe('속초');return r.fulfill({json:catalog});});
+ await page.route('**/api/location',r=>r.fulfill({json:{locations:[{id:'origin',name:'서울역',address:'서울역',latitude:37.55,longitude:126.97}]}}));
+ await page.route('**/api/departure-hubs',r=>r.fulfill({json:{hubs:[]}}));
+ let payload:any;
+ await page.route('**/api/courses',r=>{payload=r.request().postDataJSON();return r.fulfill({status:503,json:{error:'테스트: AI 요청 계약 확인 완료'}});});
+ await page.goto('/');await expect(page.getByRole('heading',{level:1})).toContainText('강원 여행');
+ await expect(page.getByRole('combobox',{name:'여행 지역',exact:true}).locator('option')).toHaveCount(18);
+ await page.getByRole('button',{name:'속초·양양',exact:true}).click();await expect(page.getByRole('combobox',{name:'여행 지역',exact:true})).toHaveValue('속초');
+ await page.getByLabel('출발 지역',{exact:true}).fill('서울역');await page.getByRole('combobox',{name:'여행 기간',exact:true}).selectOption('2');
+ await page.getByRole('button',{name:'바다 보기',exact:true}).click();
+ await page.getByText('예산·귀가·접근성 조건',{exact:true}).click();await page.getByLabel('여행 전체 예산 (원)',{exact:true}).fill('300000');
+ await page.getByRole('button',{name:'지역 검색하고 AI 일정 생성'}).click();await expect(page.locator('.simple-trip').getByRole('alert')).toHaveText('테스트: AI 요청 계약 확인 완료');
+ expect(payload.basics.days).toBe(2);expect(payload.basics.title).toBe('속초 여행');expect(payload.basics.departureCoordinates).toEqual({latitude:37.55,longitude:126.97});expect(payload.basics.tripBudget).toBe(300000);expect(payload.conditions.experiences).toContain('바다 보기');expect(payload.allDays).toBe(true);expect(payload.consent).toBe(true);
+ await page.getByText('예산·귀가·접근성 조건',{exact:true}).click();await page.getByText('예산·귀가·접근성 조건',{exact:true}).click();await expect(page.getByLabel('여행 전체 예산 (원)',{exact:true})).toHaveValue('300000');
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ const audit=await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze();expect(audit.violations).toEqual([]);expect(errors).toEqual([]);
+ await page.screenshot({path:info.outputPath('gangwon-home.png'),fullPage:true});
+});
