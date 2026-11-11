@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <script>
+    // 스타일시트보다 먼저 둔다 (뒤에 두면 스타일시트를 다 받을 때까지 화면이 멈춤)
+    // 외국어 화면: 첫 화면 고정 문구는 본문 끝의 static-i18n이 HTML을 읽는 즉시 번역한다. 일본어·중국어는 그 언어 자료를 앱 코드와 함께 바로 받기 시작한다
+    (function () {
+      var l; try { l = localStorage.getItem("lang"); } catch (e) {}
+      if (["ko", "en", "ja", "zh"].indexOf(l) < 0) { var n = (navigator.languages && navigator.languages[0]) || navigator.language || ""; l = /^ko\b/i.test(n) ? "ko" : /^ja\b/i.test(n) ? "ja" : /^zh\b/i.test(n) ? "zh" : "en"; } // i18n.js initialLang과 같은 규칙
+      if (l === "ko") return;
+      document.documentElement.dataset.earlyLang = l; // 본문 끝의 고정 문구 번역(static-i18n)이 쓴다
+      if (l !== "en") ["i18n-cjk.js", "knowledge-intl.js"].forEach(function (f) { var k = document.createElement("link"); k.rel = "modulepreload"; k.href = f; document.head.appendChild(k); });
+      document.documentElement.classList.add("i18n-wait"); // 본문을 다 읽고 번역할 때까지만 (보통 수 ms)
+      setTimeout(function () { document.documentElement.classList.remove("i18n-wait"); }, 3000);
+    })();
+  </script>
+  <style>.i18n-wait body { visibility: hidden; }</style>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>오늘강원</title>
+  <meta name="theme-color" content="#0b5e6b">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="preconnect" href="https://tile.openstreetmap.org" crossorigin>
+  <link rel="preconnect" href="https://router.project-osrm.org" crossorigin>
+  <link rel="preconnect" href="https://tong.visitkorea.or.kr">
+  <link rel="preconnect" href="https://ko.wikipedia.org" crossorigin>
+  <link rel="preconnect" href="https://api.open-meteo.com" crossorigin>
+  <link rel="modulepreload" href="planner.js">
+  <link rel="modulepreload" href="data.js">
+  <link rel="modulepreload" href="i18n.js">
+  <!-- app.js가 부르는 모듈을 한 번에 받기 시작 (차례로 받으면 느린 망에서 왕복이 3번 늘어남) -->
+  <link rel="modulepreload" href="booking-links.js">
+  <link rel="modulepreload" href="costs.js">
+  <link rel="modulepreload" href="origins.js">
+  <link rel="modulepreload" href="sun.js">
+  <link rel="modulepreload" href="alerts.js">
+  <link rel="modulepreload" href="today.js">
+  <link rel="modulepreload" href="directory-place.js">
+  <link rel="modulepreload" href="transit.js">
+  <link rel="modulepreload" href="extra-places.js">
+  <link rel="modulepreload" href="places-more.js">
+  <link rel="modulepreload" href="pet-places.js">
+  <link rel="modulepreload" href="access-data.js">
+  <link rel="modulepreload" href="voice-parse.js"><!-- 첫 화면 "만들기"가 바로 쓴다 -->
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="오늘강원">
+  <meta name="description" content="고르기만 하면 영업시간까지 맞춘 강원도 여행 일정">
+  <link rel="stylesheet" href="vendor/pretendard/pretendardvariable-dynamic-subset.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <button class="brand" id="home" type="button"><span class="dot"></span><span data-i18n>오늘강원</span></button>
+    <div class="top-right">
+      <div class="top-actions" id="topActions" hidden>
+        <button class="ghost" id="shareBtn" type="button" aria-label="링크 공유" data-i18n-title title="링크 공유"><span class="ico" aria-hidden="true">🔗</span><span class="lbl" data-i18n>링크 공유</span></button>
+        <button class="ghost" id="icsBtn" type="button" aria-label="캘린더 저장" data-i18n-title title="캘린더 저장"><span class="ico" aria-hidden="true">📅</span><span class="lbl" data-i18n>캘린더 저장</span></button>
+      </div>
+      <div class="lang" role="group" aria-label="Language">
+        <button type="button" data-lang="ko" lang="ko" aria-label="한국어"><span class="full">한국어</span><span class="short">한</span></button>
+        <button type="button" data-lang="en" lang="en" aria-label="English"><span class="full">EN</span><span class="short">EN</span></button>
+        <button type="button" data-lang="ja" lang="ja" aria-label="日本語"><span class="full">日本語</span><span class="short">日</span></button>
+        <button type="button" data-lang="zh" lang="zh-Hans" aria-label="中文"><span class="full">中文</span><span class="short">中</span></button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 1. 조건 선택 -->
+  <main id="setup" class="setup">
+    <section class="hero" id="hero">
+      <div class="hero-photo" id="heroPhoto" aria-hidden="true"></div>
+      <p class="hero-caption" id="heroCaption" hidden></p>
+      <div class="hero-text">
+        <h1 data-i18n>강원 여행,<br>말하면 일정이 나와요</h1>
+      </div>
+    </section>
+
+    <form class="card voice-start" id="aiStart">
+      <button type="button" class="mic" id="micBtn" aria-pressed="false" data-i18n-title title="말하기" aria-label="말하기">
+        <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+      </button>
+      <p class="voice-hint" id="voiceHint" data-i18n>마이크를 누르고 여행을 말해 보세요</p>
+      <p class="voice-example" data-i18n>예) 다음 주 토요일 부모님이랑 속초 1박, 서울역에서 기차로</p>
+      <div class="voice-row">
+        <input id="aiStartInput" maxlength="300" data-i18n-ph placeholder="말 대신 글로 써도 돼요" autocomplete="off">
+        <button type="submit" data-i18n>만들기</button>
+      </div>
+    </form>
+
+    <section class="card halfpkg" id="halfPkgs" hidden></section>
+    <section class="card saved" id="saved" hidden></section>
+    <section class="card past" id="past" hidden></section>
+
+    <details class="manual" id="manual">
+      <summary data-i18n>직접 골라서 만들기</summary>
+    <form class="card form" id="form">
+      <div class="field">
+        <span class="label" data-i18n>어디로</span>
+        <div class="seg wrap" data-name="region">
+          <button type="button" data-v="gangneung" class="on" data-i18n>강릉·동해</button>
+          <button type="button" data-v="seorak" data-i18n>속초·양양</button>
+          <button type="button" data-v="chuncheon" data-i18n>춘천·철원</button>
+          <button type="button" data-v="pyeongchang" data-i18n>평창·정선</button>
+          <button type="button" data-v="wonju" data-i18n>원주</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="label" for="date" data-i18n>언제</label>
+        <div class="row">
+          <input type="date" id="date" class="date" required>
+          <div class="seg wrap days" data-name="days">
+            <button type="button" data-v="1" data-i18n>당일</button>
+            <button type="button" data-v="2" class="on" data-i18n>1박 2일</button>
+            <button type="button" data-v="3" data-i18n>2박 3일</button>
+            <button type="button" data-v="4" data-i18n>3박 4일</button>
+            <button type="button" data-v="5" data-i18n>4박 5일</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="field" id="routeRow">
+        <span class="label" data-i18n>이어서 갈 권역 <em>원할 때만</em></span>
+        <div class="chips route" data-name="route">
+          <button type="button" data-v="gangneung" data-i18n>강릉·동해</button>
+          <button type="button" data-v="seorak" data-i18n>속초·양양</button>
+          <button type="button" data-v="chuncheon" data-i18n>춘천·철원</button>
+          <button type="button" data-v="pyeongchang" data-i18n>평창·정선</button>
+          <button type="button" data-v="wonju" data-i18n>원주</button>
+        </div>
+        <p class="route-note" id="routeNote"></p>
+      </div>
+
+      <div class="field">
+        <span class="label" data-i18n>누구와</span>
+        <div class="seg" data-name="who">
+          <button type="button" data-v="solo" data-i18n>혼자</button>
+          <button type="button" data-v="couple" class="on" data-i18n>연인·친구</button>
+          <button type="button" data-v="family" data-i18n>아이와</button>
+          <button type="button" data-v="parents" data-i18n>부모님과</button>
+          <button type="button" data-v="pet" data-i18n>반려동물과</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <span class="label" data-i18n>좋아하는 것 <em>여러 개 가능</em></span>
+        <div class="chips" data-name="likes">
+          <button type="button" data-v="sea" class="on" data-i18n>바다</button>
+          <button type="button" data-v="cafe" class="on" data-i18n>카페</button>
+          <button type="button" data-v="food" data-i18n>맛집</button>
+          <button type="button" data-v="culture" data-i18n>역사·문화</button>
+          <button type="button" data-v="nature" data-i18n>자연·산책</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <span class="label" data-i18n>이동 편의 <em>필요할 때만</em></span>
+        <div class="chips" data-name="access">
+          <button type="button" data-v="wheelchair" data-i18n>♿ 휠체어</button>
+          <button type="button" data-v="stroller" data-i18n>👶 유모차</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <span class="label" data-i18n>이동</span>
+        <div class="seg wrap" data-name="move">
+          <button type="button" data-v="car" class="on" data-i18n>자동차</button>
+          <button type="button" data-v="taxi" data-i18n>택시</button>
+          <button type="button" data-v="transit" data-i18n>대중교통·도보</button>
+        </div>
+      </div>
+
+      <div class="field start-field">
+        <div class="start-row">
+          <span class="label" data-i18n>출발</span>
+          <b id="startLabel"></b>
+          <button type="button" class="ghost small" id="startEdit" aria-expanded="false" data-i18n>출발지 바꾸기</button>
+        </div>
+        <div class="start-panel" id="startPanel" hidden>
+          <div class="start-acts">
+            <button type="button" class="ghost small" id="startGps" data-i18n>지금 위치에서</button>
+            <button type="button" class="ghost small" id="startDefault" data-i18n>기본(권역 역·터미널)</button>
+          </div>
+          <input id="startSearch" type="search" maxlength="40" autocomplete="off" data-i18n-ph placeholder="출발지 검색 (예: 서울역, 경포, 동서울)">
+          <ul class="start-results" id="startResults"></ul>
+          <label class="start-time"><span data-i18n>첫날 출발 시각</span>
+            <select id="startTime">
+              <option value="" data-i18n>자동</option>
+              <option>06:00</option><option>07:00</option><option>08:00</option><option>09:00</option><option>10:00</option><option>11:00</option><option>12:00</option>
+            </select>
+          </label>
+          <p class="start-note" data-i18n>고른 출발지는 이 기기에 저장돼요. 자동: 가까우면 10시, 멀면(60km 넘게) 8시에 출발</p>
+        </div>
+      </div>
+
+      <button class="primary" type="submit" data-i18n>일정 만들기</button>
+    </form>
+    </details>
+    <p class="owner-link needs-server" id="ownerLink"><a href="owner.html" data-i18n>사장님이세요? 메뉴 입력으로 가게 등록</a></p>
+  </main>
+
+  <!-- 2. 결과 -->
+  <dialog class="report-dlg" id="reportDlg">
+    <form method="dialog" id="reportForm">
+      <h3 id="reportTitle"></h3>
+      <div class="report-kinds">
+        <label><input type="radio" name="kind" value="closed" required> <span data-i18n>문을 닫았어요 (폐업·휴업)</span></label>
+        <label><input type="radio" name="kind" value="hours"> <span data-i18n>운영시간·쉬는 날이 달라요</span></label>
+        <label><input type="radio" name="kind" value="parking"> <span data-i18n>주차 정보가 달라요</span></label>
+        <label><input type="radio" name="kind" value="location"> <span data-i18n>위치가 달라요</span></label>
+        <label><input type="radio" name="kind" value="other"> <span data-i18n>기타</span></label>
+      </div>
+      <textarea name="note" rows="3" maxlength="500" data-i18n-ph placeholder="무엇이 다른지 적어 주세요 (선택)"></textarea>
+      <p class="report-note" data-i18n>개인정보는 받지 않아요. 확인 후 앱 정보를 고칩니다.</p>
+      <div class="acts"><button type="button" class="ghost small" id="reportCancel" data-i18n>취소</button><button type="submit" class="primary small" data-i18n>보내기</button></div>
+    </form>
+  </dialog>
+
+  <div class="thinking" id="thinking" hidden role="status" aria-live="polite">
+    <div class="think-card">
+      <div class="think-orb" aria-hidden="true"><i></i><i></i><i></i></div>
+      <h3 id="thinkTitle"></h3>
+      <ol class="think-steps" id="thinkSteps"></ol>
+    </div>
+  </div>
+
+  <main id="result" class="result" hidden>
+    <div class="result-head">
+      <div>
+        <h2 id="tripTitle"></h2>
+        <div class="stats" id="stats"></div>
+      </div>
+      <div class="head-acts"><button class="ghost small" id="saveTripBtn" type="button" data-i18n>저장</button><button class="ghost small" id="editBtn" type="button" data-i18n>조건 변경</button></div>
+    </div>
+    <section class="options" id="options" hidden></section>
+    <section class="card heard" id="heard" hidden></section>
+    <section class="card today" id="today" hidden></section>
+
+    <section class="festivals" id="festivals" hidden></section>
+
+    <section class="card lodging" id="lodgingCard" hidden></section>
+
+    <section class="card benefits" id="benefits" hidden></section>
+    <section class="card overnight" id="overnight" hidden></section>
+
+    <nav class="tabs" id="tabs"></nav>
+
+    <div class="adjust">
+      <div class="chips quick" id="quick">
+        <button type="button" data-q="rain" data-i18n>비가 와요</button>
+        <button type="button" data-q="lessWalk" data-i18n>덜 걷고 싶어요</button>
+        <button type="button" data-q="relaxed" data-i18n>여유롭게</button>
+        <button type="button" data-q="packed" data-i18n>더 알차게</button>
+      </div>
+    </div>
+
+    <section class="card guide" id="guide">
+      <div class="guide-head"><span class="ai-badge" data-i18n>무료 여행 가이드</span></div>
+      <div class="guide-log" id="guideLog"></div>
+      <div class="chips suggest" id="suggest">
+        <button type="button" data-i18n>비 오면 어떡해?</button>
+        <button type="button" data-i18n>아이랑 가도 괜찮을까?</button>
+        <button type="button" data-i18n>오늘 운영시간 알려줘</button>
+      </div>
+      <form class="ask" id="askForm">
+        <button type="button" class="mic small" id="askMic" data-i18n-title title="말하기" aria-label="말하기"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
+        <input id="askInput" maxlength="200" data-i18n-ph placeholder="예) 2일차에 바다 한 곳 더 넣어줘" autocomplete="off">
+        <button type="submit" data-i18n>보내기</button>
+      </form>
+    </section>
+
+    <div class="layout">
+      <ol class="timeline" id="timeline"></ol>
+      <div class="map-wrap"><button id="mapInteract" class="ghost small" type="button" aria-pressed="false" data-i18n>지도 이동 켜기</button><p class="map-hint" data-i18n>기본은 페이지 스크롤입니다. 지도 이동을 켜면 지도를 움직일 수 있어요.</p><div id="map"></div></div>
+    </div>
+    <section class="card shops" id="shops" hidden></section>
+    <section class="card souvenirs" id="souvenirs" hidden></section>
+    <section class="card costs" id="costs" hidden></section>
+    <section class="card pet-info" id="transit" hidden></section>
+    <section class="card pet-info" id="pet" hidden></section>
+    <section class="card checks" id="checks" hidden></section>
+  </main>
+
+  <p style="text-align:center"><a href="directory.html" data-i18n>강원 장소·운영정보 탐색</a> · <a href="privacy.html" data-i18n>개인정보처리방침</a><span class="needs-server"> · <a href="booking.html" data-i18n>숙소·투어 예약 신청</a> · <a href="booking-status.html" data-i18n>신청 조회</a> · <a href="reviews.html" data-i18n>여행 후기</a></span></p>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <!-- static-i18n:start (scripts/bake-static-i18n.mjs가 만듦, 직접 고치지 말 것) -->
+  <script>
+  (function () {
+    var D = {"en":{"오늘강원":"Oneul Gangwon","링크 공유":"Share","캘린더 저장":"Calendar","강원 여행,<br>말하면 일정이 나와요":"Your Gangwon trip,<br>just say it","마이크를 누르고 여행을 말해 보세요":"Tap the mic and tell us your trip","예) 다음 주 토요일 부모님이랑 속초 1박, 서울역에서 기차로":"e.g. Next Saturday, Sokcho for 1 night with my parents, by train from Seoul Station","만들기":"Create","직접 골라서 만들기":"Choose options yourself","어디로":"Where","강릉·동해":"Gangneung · Donghae","속초·양양":"Sokcho · Yangyang","춘천·철원":"Chuncheon · Cheorwon","평창·정선":"Pyeongchang · Jeongseon","원주":"Wonju","언제":"When","당일":"Day trip","1박 2일":"2 days, 1 night","2박 3일":"3 days, 2 nights","3박 4일":"4 days, 3 nights","4박 5일":"5 days, 4 nights","이어서 갈 권역 <em>원할 때만</em>":"Continue to <em>optional</em>","누구와":"With whom","혼자":"Solo","연인·친구":"Partner · friends","아이와":"With kids","부모님과":"With parents","반려동물과":"With a pet","좋아하는 것 <em>여러 개 가능</em>":"Interests <em>pick any</em>","바다":"Sea","카페":"Cafés","맛집":"Local food","역사·문화":"History · culture","자연·산책":"Nature · walks","이동 편의 <em>필요할 때만</em>":"Accessibility <em>if needed</em>","♿ 휠체어":"♿ Wheelchair","👶 유모차":"👶 Stroller","이동":"Getting around","자동차":"Car","택시":"Taxi","대중교통·도보":"Transit · walking","출발":"Start","출발지 바꾸기":"Change","지금 위치에서":"From my location","기본(권역 역·터미널)":"Default (station·terminal)","첫날 출발 시각":"Departure on day 1","자동":"Auto","고른 출발지는 이 기기에 저장돼요. 자동: 가까우면 10시, 멀면(60km 넘게) 8시에 출발":"Your starting point is saved on this device. Auto: leave at 10:00 if nearby, 08:00 if over 60 km away","일정 만들기":"Make my plan","사장님이세요? 메뉴 입력으로 가게 등록":"Own a shop? Enter your menu to register (Korean)","문을 닫았어요 (폐업·휴업)":"It's closed (shut down or on break)","운영시간·쉬는 날이 달라요":"Hours or closing days are wrong","주차 정보가 달라요":"Parking info is wrong","위치가 달라요":"Location is wrong","기타":"Other","개인정보는 받지 않아요. 확인 후 앱 정보를 고칩니다.":"No personal data is collected. We'll check and fix the app.","취소":"Cancel","보내기":"Send","저장":"Save","조건 변경":"Edit choices","비가 와요":"It's raining","덜 걷고 싶어요":"Less walking","여유롭게":"Relaxed","더 알차게":"Pack more in","무료 여행 가이드":"Free travel guide","비 오면 어떡해?":"What if it rains?","아이랑 가도 괜찮을까?":"Is it OK with kids?","오늘 운영시간 알려줘":"Today's opening hours?","지도 이동 켜기":"Enable map movement","기본은 페이지 스크롤입니다. 지도 이동을 켜면 지도를 움직일 수 있어요.":"Scroll the page normally. Enable map movement to pan the map.","강원 장소·운영정보 탐색":"Explore places and opening information","개인정보처리방침":"Privacy policy","숙소·투어 예약 신청":"Accommodation and tour requests","신청 조회":"Request status","여행 후기":"Travel reviews","말 대신 글로 써도 돼요":"Or type it here","출발지 검색 (예: 서울역, 경포, 동서울)":"Search a starting point (e.g. Seoul Station, Gyeongpo)","무엇이 다른지 적어 주세요 (선택)":"What's different? (optional)","예) 2일차에 바다 한 곳 더 넣어줘":"e.g. Add one more beach on day 2","말하기":"Speak"},"ja":{"오늘강원":"今日の江原","링크 공유":"共有","캘린더 저장":"カレンダー","강원 여행,<br>말하면 일정이 나와요":"江原道の旅、<br>話すだけでプランに","마이크를 누르고 여행을 말해 보세요":"マイクを押して旅の希望を話してください","예) 다음 주 토요일 부모님이랑 속초 1박, 서울역에서 기차로":"例) 来週の土曜日、両親と束草に1泊、ソウル駅から列車で","만들기":"作成","직접 골라서 만들기":"自分で選んで作る","어디로":"どこへ","강릉·동해":"江陵・東海","속초·양양":"束草・襄陽","춘천·철원":"春川・鉄原","평창·정선":"平昌・旌善","원주":"原州","언제":"いつ","당일":"日帰り","1박 2일":"1泊2日","2박 3일":"2泊3日","3박 4일":"3泊4日","4박 5일":"4泊5日","이어서 갈 권역 <em>원할 때만</em>":"続けて行くエリア <em>希望時のみ</em>","누구와":"誰と","혼자":"ひとり","연인·친구":"恋人・友人","아이와":"子ども連れ","부모님과":"両親と","반려동물과":"ペットと","좋아하는 것 <em>여러 개 가능</em>":"好きなこと <em>複数選択可</em>","바다":"海","카페":"カフェ","맛집":"グルメ","역사·문화":"歴史・文化","자연·산책":"自然・散歩","이동 편의 <em>필요할 때만</em>":"移動の配慮 <em>必要なときだけ</em>","♿ 휠체어":"♿ 車いす","👶 유모차":"👶 ベビーカー","이동":"移動","자동차":"車","택시":"タクシー","대중교통·도보":"公共交通・徒歩","출발":"出発","출발지 바꾸기":"出発地を変更","지금 위치에서":"現在地から","기본(권역 역·터미널)":"基本(エリアの駅・ターミナル)","첫날 출발 시각":"初日の出発時刻","자동":"自動","고른 출발지는 이 기기에 저장돼요. 자동: 가까우면 10시, 멀면(60km 넘게) 8시에 출발":"選んだ出発地はこの端末に保存されます。自動: 近ければ10時、遠ければ(60km超)8時に出発","일정 만들기":"プランを作る","사장님이세요? 메뉴 입력으로 가게 등록":"お店の方へ: メニューを入力してお店を登録(韓国語)","문을 닫았어요 (폐업·휴업)":"閉まっていた (閉業・休業)","운영시간·쉬는 날이 달라요":"営業時間・休業日が違う","주차 정보가 달라요":"駐車場情報が違う","위치가 달라요":"位置が違う","기타":"その他","개인정보는 받지 않아요. 확인 후 앱 정보를 고칩니다.":"個人情報は受け取りません。確認後にアプリの情報を直します。","취소":"キャンセル","보내기":"送信","저장":"保存","조건 변경":"条件を変更","비가 와요":"雨が降っている","덜 걷고 싶어요":"あまり歩きたくない","여유롭게":"ゆったり","더 알차게":"もっと詰め込む","무료 여행 가이드":"無料旅行ガイド","비 오면 어떡해?":"雨が降ったらどうする？","아이랑 가도 괜찮을까?":"子ども連れでも大丈夫？","오늘 운영시간 알려줘":"今日の営業時間は？","지도 이동 켜기":"地図の移動を有効にする","기본은 페이지 스크롤입니다. 지도 이동을 켜면 지도를 움직일 수 있어요.":"通常はページをスクロールします。地図の移動を有効にすると地図を動かせます。","강원 장소·운영정보 탐색":"江原の場所・営業時間を探す","개인정보처리방침":"プライバシーポリシー","숙소·투어 예약 신청":"宿泊・ツアー予約申請","신청 조회":"申請照会","여행 후기":"旅行の口コミ","말 대신 글로 써도 돼요":"話す代わりに入力してもOK","출발지 검색 (예: 서울역, 경포, 동서울)":"出発地を検索 (例: ソウル駅、鏡浦)","무엇이 다른지 적어 주세요 (선택)":"何が違うか書いてください (任意)","예) 2일차에 바다 한 곳 더 넣어줘":"例) 2日目に海をもう一つ追加して","말하기":"話す"},"zh":{"오늘강원":"今日江原","링크 공유":"分享链接","캘린더 저장":"存入日历","강원 여행,<br>말하면 일정이 나와요":"江原道旅行，<br>说出来就有行程","마이크를 누르고 여행을 말해 보세요":"点击麦克风，说说你想怎么玩","예) 다음 주 토요일 부모님이랑 속초 1박, 서울역에서 기차로":"例) 下周六和父母去束草住一晚，从首尔站坐火车","만들기":"生成","직접 골라서 만들기":"自己选择条件","어디로":"去哪里","강릉·동해":"江陵·东海","속초·양양":"束草·襄阳","춘천·철원":"春川·铁原","평창·정선":"平昌·旌善","원주":"原州","언제":"什么时候","당일":"一日游","1박 2일":"两天一夜","2박 3일":"三天两夜","3박 4일":"四天三夜","4박 5일":"五天四夜","이어서 갈 권역 <em>원할 때만</em>":"接着去的区域 <em>可选</em>","누구와":"和谁","혼자":"一个人","연인·친구":"情侣·朋友","아이와":"带孩子","부모님과":"和父母","반려동물과":"带宠物","좋아하는 것 <em>여러 개 가능</em>":"喜欢的 <em>可多选</em>","바다":"大海","카페":"咖啡店","맛집":"美食","역사·문화":"历史·文化","자연·산책":"自然·散步","이동 편의 <em>필요할 때만</em>":"无障碍 <em>需要时选择</em>","♿ 휠체어":"♿ 轮椅","👶 유모차":"👶 婴儿车","이동":"交通","자동차":"自驾","택시":"出租车","대중교통·도보":"公共交通·步行","출발":"出发","출발지 바꾸기":"更改出发地","지금 위치에서":"从当前位置","기본(권역 역·터미널)":"默认(区域车站·客运站)","첫날 출발 시각":"第一天出发时间","자동":"自动","고른 출발지는 이 기기에 저장돼요. 자동: 가까우면 10시, 멀면(60km 넘게) 8시에 출발":"选好的出发地会保存在这台设备上。自动: 近的话10点出发，远的话(超过60公里)8点出发","일정 만들기":"生成行程","사장님이세요? 메뉴 입력으로 가게 등록":"您是店主吗？输入菜单登记店铺(韩语)","문을 닫았어요 (폐업·휴업)":"已关门 (停业·歇业)","운영시간·쉬는 날이 달라요":"营业时间或休息日不对","주차 정보가 달라요":"停车信息不对","위치가 달라요":"位置不对","기타":"其他","개인정보는 받지 않아요. 확인 후 앱 정보를 고칩니다.":"不收集个人信息。核实后会修正应用信息。","취소":"取消","보내기":"发送","저장":"保存","조건 변경":"修改条件","비가 와요":"下雨了","덜 걷고 싶어요":"想少走路","여유롭게":"轻松一点","더 알차게":"安排更满","무료 여행 가이드":"免费旅行助手","비 오면 어떡해?":"下雨怎么办？","아이랑 가도 괜찮을까?":"带孩子去可以吗？","오늘 운영시간 알려줘":"今天的营业时间？","지도 이동 켜기":"开启地图移动","기본은 페이지 스크롤입니다. 지도 이동을 켜면 지도를 움직일 수 있어요.":"默认滚动页面。开启地图移动后可拖动地图。","강원 장소·운영정보 탐색":"探索江原地点及运营信息","개인정보처리방침":"隐私政策","숙소·투어 예약 신청":"住宿及旅游预订申请","신청 조회":"申请查询","여행 후기":"旅行评价","말 대신 글로 써도 돼요":"也可以直接输入","출발지 검색 (예: 서울역, 경포, 동서울)":"搜索出发地 (例: 首尔站、镜浦)","무엇이 다른지 적어 주세요 (선택)":"请写下哪里不同 (可选)","예) 2일차에 바다 한 곳 더 넣어줘":"例) 第2天再加一个海边","말하기":"语音输入"}}[document.documentElement.dataset.earlyLang];
+    if (!D) return;
+    var q = function (s, f) { var a = document.querySelectorAll(s); for (var i = 0; i < a.length; i++) f(a[i]); };
+    q("[data-i18n]", function (el) { var k = el.innerHTML.trim(); if (D[k]) { el.dataset.ko = k; el.innerHTML = D[k]; } });
+    q("[data-i18n-ph]", function (el) { var k = el.placeholder; if (D[k]) { el.dataset.koPh = k; el.placeholder = D[k]; } });
+    q("[data-i18n-title]", function (el) { var k = el.title || el.getAttribute("aria-label") || ""; if (D[k]) { el.dataset.koTitle = k; el.title = D[k]; el.setAttribute("aria-label", D[k]); } });
+    q("[data-lang]", function (b) { var on = b.dataset.lang === document.documentElement.dataset.earlyLang; b.classList.toggle("on", on); b.setAttribute("aria-pressed", on); });
+    document.title = D["오늘강원"];
+    document.documentElement.classList.remove("i18n-wait");
+  })();
+  </script>
+  <!-- static-i18n:end -->
+  <script type="module" src="app.js"></script>
+</body>
+</html>

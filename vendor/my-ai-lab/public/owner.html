@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>가게 등록 · 오늘강원</title>
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="vendor/pretendard/pretendardvariable-dynamic-subset.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <a class="brand" href="./"><span class="dot"></span>오늘강원 <small class="owner-tag">사장님</small></a>
+  </header>
+  <main class="owner">
+    <h1>메뉴 입력으로 가게 등록</h1>
+
+    <p class="hint">메뉴 이름과 가격을 직접 입력하세요. 외국어 이름은 선택 사항이며, 입력한 내용으로 QR 메뉴를 만듭니다.</p>
+
+    <form class="card step" id="step2">
+      <span class="step-no">1</span>
+      <div class="grid2">
+        <label>가게 이름<input id="name" required maxlength="40"></label>
+        <label>지역
+          <select id="region" required>
+            <option value="gangneung">강릉·동해</option><option value="seorak">속초·양양</option>
+            <option value="chuncheon">춘천·철원</option><option value="pyeongchang">평창·정선</option><option value="wonju">원주</option>
+          </select>
+        </label>
+        <label>주소<input id="address" required maxlength="100"></label>
+        <label>영업시간<input id="hours" maxlength="60" placeholder="예) 매일 11:00–20:00, 화 휴무"></label>
+        <label>전화<input id="phone" required maxlength="20" inputmode="tel"></label>
+        <label class="check-row"><input type="checkbox" id="card"> 해외 카드 결제 가능</label>
+      </div>
+      <div class="menu-edit">
+        <div class="menu-head"><b>메뉴 확인</b><button type="button" class="ghost small" id="addRow">+ 메뉴 추가</button></div>
+        <div id="rows"></div>
+      </div>
+      <p class="hint" id="unclear"></p>
+      <button class="primary" type="submit">확인했어요, 등록하기</button>
+    </form>
+
+    <section class="card step" id="step3" hidden>
+      <span class="step-no">2</span>
+      <h2>검토 요청을 접수했어요</h2>
+      <p>운영자가 업체 연락처와 메뉴를 확인한 후 공개합니다. 승인 전에는 QR 메뉴가 열리지 않습니다.</p>
+      <img id="qr" alt="다국어 메뉴 QR" class="qr">
+      <div class="acts center">
+        <a class="ghost small" id="menuLink" target="_blank" rel="noopener">메뉴 화면 보기</a>
+        <button class="ghost small" type="button" onclick="window.print()">QR 인쇄</button>
+      </div>
+    </section>
+  </main>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script type="module" src="owner.js"></script>
+</body>
+</html>

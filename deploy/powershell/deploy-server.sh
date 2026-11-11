@@ -53,6 +53,7 @@ sudo -n docker run -d --name "$name" --label "app.deployer=$owner" \
   --restart unless-stopped --log-opt max-size=10m --log-opt max-file=3 \
   --env-file "$envfile" -e AWS_EC2_METADATA_V1_DISABLED=true \
   -e NO_PROXY=169.254.169.254,localhost,127.0.0.1 \
+  --mount type=volume,source=yeohaengit-lab-data,target=/app/.lab-data \
   -p "$port:3000" "$image"
 ready=false
 for attempt in {1..30}; do
