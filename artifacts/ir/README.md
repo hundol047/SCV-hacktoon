@@ -1,3 +1,16 @@
+# 보폭 IR 최신본
+
+- [PPTX: 실제 화면·중첩 시장](보폭_IR_실제화면_중첩시장.pptx)
+- [PDF](보폭_IR_실제화면_중첩시장.pdf)
+- 17장. STP, 실제 화면, TAM ⊃ SAM ⊃ SOM, 수익 모델, 시장 진입 계획, 팀 구성.
+- 최신 코드 64fd652를 로컬 프로덕션 서버에서 직접 실행하고 2배 해상도로 촬영했습니다. 운영 서버 촬영은 아닙니다. 외부 관광 사진이 로드되지 않은 곳은 실제 앱의 대체 표시가 그대로 포함되어 있습니다. 사진이나 운영 실적을 합성하지 않았습니다.
+- TAM은 기존 출처 통계, SAM은 핵심 고객 비중 가정, SOM은 초기 목표를 사용합니다. 원 크기는 금액 비례가 아닙니다.
+- 전체 PDF 렌더링, 텍스트 누락·슬라이드 경계 검사 완료.
+- 재생성: `node scripts/capture-ir-screens.cjs` (로컬 앱 3000 필요), `python3 scripts/build-ir-deck.py`.
+
+---
+이하 이전 버전 기록입니다.
+
 # 여행잇 신규 앱과 IR 덱
 
 - IR: `여행잇_IR_STP_TAM_SAM_SOM.pptx`, 15 slides. Actual integrated application screenshots, STP, TAM/SAM/SOM and calculation assumptions.

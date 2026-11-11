@@ -1,0 +1,22 @@
+const {chromium}=require('playwright');
+(async()=>{
+ const b=await chromium.launch({executablePath:'/usr/bin/chromium',args:['--no-sandbox']});
+ const p=await b.newPage({locale:'ko-KR',deviceScaleFactor:2,viewport:{width:1440,height:1000}});
+ await p.goto('http://localhost:3000/lab/',{waitUntil:'domcontentloaded'});
+ await p.waitForTimeout(3500);
+ await p.screenshot({path:'artifacts/ir/home.png'});
+ await p.locator('[data-profile="senior"]').click();
+ await p.locator('#manual').evaluate(e=>e.open=true);
+ await p.locator('#form').screenshot({path:'artifacts/ir/mobility-form.png'});
+ await p.locator('#form button[type=submit]').click();
+ await p.locator('#result').waitFor({state:'visible'});
+ await p.waitForTimeout(6000);
+ await p.screenshot({path:'artifacts/ir/result.png'});
+ await p.locator('#lodgingCard').screenshot({path:'artifacts/ir/lodging-v4.png'});
+ const first=p.locator('#timeline .place').first();
+ await first.scrollIntoViewIfNeeded();
+ await first.screenshot({path:'artifacts/ir/place-detail.png'});
+ await p.locator('#timeline').scrollIntoViewIfNeeded();
+ await p.screenshot({path:'artifacts/ir/timeline.png'});
+ console.log('Captured current Bopok UI at 2x resolution');await b.close();
+})().catch(e=>{console.error(e);process.exit(1)});
