@@ -30,9 +30,10 @@ if [[ "$mode" == "--anonymous-ai" || "$mode" == "--experiment-ai" ]]; then
   options=(); [[ "$mode" != "--experiment-ai" ]] || options+=(--experiment)
   sudo -n python3 scripts/configure-anonymous-ai.py "$envfile" "${options[@]}"
 fi
+bash scripts/prepare-deploy-space.sh
 image="yeohaengit-preview:$(date +%s)-$$"
 echo 'Building the Next.js web app. The first build can take several minutes.'
-sudo -n docker build -t "$image" .
+sudo -n docker build --force-rm -t "$image" .
 # Validate inside the same image/network before stopping the previous deployment.
 # This performs one short paid Converse request using the instance profile.
 sudo -n docker run --rm --env-file "$envfile" -e AWS_EC2_METADATA_V1_DISABLED=true \

@@ -1,9 +1,9 @@
 FROM node:24-bookworm-slim AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci --no-audit --no-fund
+RUN npm ci --no-audit --no-fund && npm cache clean --force
 COPY . .
-RUN npm ci --prefix vendor/my-ai-lab --no-audit --no-fund
+RUN npm ci --prefix vendor/my-ai-lab --no-audit --no-fund && npm cache clean --force
 RUN npm run build && node_modules/.bin/esbuild scripts/verify-bedrock-role.ts --bundle --platform=node --format=cjs --outfile=bedrock-role-probe.cjs
 FROM node:24-bookworm-slim AS runtime
 WORKDIR /app
