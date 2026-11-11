@@ -3,6 +3,7 @@
 
 import { PLACES, FESTIVALS, REGIONS } from "./public/data.js";
 import { hoursFor, addDays, fmt } from "./public/planner.js";
+import { mobilityEligible } from './public/mobility.js';
 import { detectLang } from "./public/knowledge.js";
 
 export const AI_MODEL = "global.openai.gpt-6-sol";
@@ -49,19 +50,21 @@ const START_SCHEMA = {
     who: { type: "string", enum: ["solo", "couple", "family", "parents", "pet"] },
     likes: { type: "array", items: { type: "string", enum: CATS } },
     move: { type: "string", enum: ["car", "taxi", "transit"] },
+    access: {type:"array",items:{type:"string",enum:["shortwalk","wheelchair","toilet"]}},
     summary: { type: "string" },
   },
-  required: ["region", "date", "days", "who", "likes", "move", "summary"],
+  required: ["region", "date", "days", "who", "likes", "move", "access", "summary"],
   additionalProperties: false,
 };
 
-const START_SYSTEM = `강원도 여행 일정 앱의 입력 도우미다. 사용자가 한 줄로 말한 여행 계획을 앱의 선택값으로 바꾼다.
+const START_SYSTEM = `어르신 및 거동이 불편한 분을 위한 보폭의 강원 여행 입력 도우미다. 사용자가 한 줄로 말한 여행 계획을 앱의 선택값으로 바꾼다.
 - region: gangneung(강릉·동해·삼척·정동진), seorak(속초·양양·고성·설악산·인제), chuncheon(춘천·남이섬·화천·철원·홍천), pyeongchang(평창·대관령·정선·영월·태백), wonju(원주·횡성). 지역 언급이 없으면 취향에 가장 맞는 곳.
 - date: 오늘 날짜를 기준으로 "내일", "이번 주말", "다음 달 3일" 등을 실제 날짜로. 언급이 없으면 내일.
 - days: 당일=1, 1박 2일=2, 2박 3일=3, 3박 4일=4, 4박 5일 이상=5. 언급이 없으면 2.
-- who: 혼자=solo, 연인·친구=couple, 아이·가족=family, 부모님·어르신=parents. 언급이 없으면 couple.
+- who: 혼자=solo, 연인·친구=couple, 아이·가족=family, 부모님·어르신=parents. 언급이 없으면 parents.
 - likes: sea(바다), cafe(카페), food(맛집·시장), culture(역사·문화·전시), nature(자연·산책). 1~3개.
 - move: 자동차·렌터카=car, 택시=taxi, 기차·버스·뚜벅이=transit. 언급이 없으면 car.
+- access: 보행 부담·무릎 통증·지팡이·보행기·짧게 걷기는 shortwalk, 휠체어 사용은 wheelchair, 장애인 화장실 필요는 toilet. 명시한 조건을 모두 포함한다. 기본 shortwalk. 휠체어와 대여 여부를 혼동하지 않는다.
 - summary: 고른 내용을 20자 안팎 한국어로. 예) "속초 1박 2일 · 부모님과 · 자동차"`;
 
 // 질문(숙소 체크는 화면)이 영어·일본어·중국어면 사람에게 보이는 글(summary·answer·plain 등)만 그 언어로 받는다. 선택값·id는 그대로.
@@ -92,7 +95,7 @@ function candidatesFor(trip) {
   const r = trip.input.region;
   const regions = new Set([r, ...(trip.input.days > 1 ? NEIGHBORS[r] : [])]);
   const dates = Array.from({ length: trip.input.days }, (_, i) => addDays(trip.input.date, i));
-  const list = [...PLACES, ...FESTIVALS.filter((f) => f.start)].filter((p) => regions.has(p.region));
+  const list = [...PLACES, ...FESTIVALS.filter((f) => f.start)].filter((p) => regions.has(p.region) && mobilityEligible(p,trip.opts||{}));
   return { list, dates };
 }
 
@@ -119,8 +122,9 @@ export async function guide({ question, history, trip, lang: uiLang }) {
     additionalProperties: false,
   };
 
-  const system = `너는 강원도 여행 앱 "오늘강원"의 AI 가이드다. 사용자의 현재 일정과 아래 장소 데이터만 근거로 한국어로 답한다.
+  const system = `너는 강원도 여행 앱 "보폭"의 AI 가이드다. 사용자의 현재 일정과 아래 장소 데이터만 근거로 한국어로 답한다.
 규칙:
+- 어르신과 이동이 불편한 여행자의 조건을 우선한다. 선택한 접근성 조건은 해제하지 않는다. 휠체어 대여나 경사로만으로 이동 가능을 확정하지 않는다. 확인되지 않은 휴식 좌석·시설·보행 경로는 확인 필요로 설명한다.
 - 장소는 주어진 목록에 있는 것만 말한다. 목록에 없는 가게·가격·전화번호는 지어내지 말고 "앱 데이터로는 확인할 수 없어요"라고 한다.
 - 운영시간은 데이터에 적힌 날짜별 시간만 쓴다.
 - 답은 2~4문장, 친근하고 짧게. 목록·마크다운 없이.

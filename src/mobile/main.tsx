@@ -53,4 +53,4 @@ if(window.BopokAndroid){
     if(anchor?.getAttribute('href')==='/api/tourism/download'){event.preventDefault();window.BopokAndroid!.saveTourism();}
   });
 }
-createRoot(document.getElementById('root')!).render(<><aside className="mobile-notice">여행잇 · 여행·지역 행사·소상공인 홍보<br/>내장 관광·등록 행사는 오프라인 / 여행·홍보 AI는 서버 연결 필요</aside><Bopok/></>);
+createRoot(document.getElementById('root')!).render(<><aside className="mobile-notice">보폭 · 여행·지역 행사·소상공인 홍보<br/>내장 관광·등록 행사는 오프라인 / 여행·홍보 AI는 서버 연결 필요</aside><Bopok/></>);

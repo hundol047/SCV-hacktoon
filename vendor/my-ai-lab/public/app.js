@@ -127,7 +127,7 @@ $("#form").addEventListener("submit", async (e) => {
   const lessWalk = input.who === "parents";
   const access = accessNow();
   const v = pendingVoice; pendingVoice = null;
-  state = { input, opts: { pace: v?.pace || "normal", lessWalk: lessWalk || access.length > 0 || !!v?.lessWalk, prefer: [], avoid: [], exclude: [], rainDays: [], ...(access.length ? { access } : {}), ...(v?.people ? { people: bookingPeople(v.people) } : {}), ...startOpts(input) } };
+  state = { input, opts: { pace: v?.pace || "relaxed", lessWalk: lessWalk || access.length > 0 || !!v?.lessWalk, prefer: [], avoid: [], exclude: [], rainDays: [], ...(access.length ? { access } : {}), ...(v?.people ? { people: bookingPeople(v.people) } : {}), ...startOpts(input) } };
   if (v) { state.heard = v.heard; state.said = v.said; }
   // 반값여행 코스로 시작: 그 시군 장소·숙소만 쓴다 (링크에는 코스 id만)
   const hp = pendingPackage; pendingPackage = null;
@@ -196,7 +196,7 @@ function whyText() {
   const s = planStats(state.input, state.baseOpts), inp = state.input, acc = state.baseOpts.access || [];
   const parts = [t("후보 {n}곳 중 여행 날짜에 문 여는 {open}곳에서 골랐어요.", { n: s.candidates, open: s.open })];
   if (s.crowded) parts.push(t("붐빔 예상 {c}곳은 뒤로 미뤘어요.", { c: s.crowded }));
-  if (acc.length) parts.push(t("휠체어·유모차로 다니기 쉬운 곳을 먼저 넣었어요."));
+  if (acc.length) parts.push(t("선택한 이동 조건이 확인된 장소로 구성했어요."));
   else if (inp.who === "parents") parts.push(t("부모님과 함께라 걷기를 줄였어요."));
   else if (inp.who === "family") parts.push(t("아이와 함께라 오래 걷는 산길은 줄였어요."));
   else if (inp.who === "pet") parts.push(t("반려동물 동반이 확인된 곳을 먼저 넣었어요."));
@@ -423,7 +423,7 @@ $("#reportForm").addEventListener("submit", async (e) => {
   }
   if (!sent) {
     const title = `[장소 제보] ${p.name} (${p.id}) · ${REPORT_KIND[kind]}`;
-    const body = [`장소: ${p.name} (${p.id})`, `종류: ${REPORT_KIND[kind]}`, `내용: ${note || "-"}`, `여행 날짜: ${state?.input?.date || "-"}`, "", "(오늘강원 앱의 '정보가 달라요'에서 보냄)"].join("\n");
+    const body = [`장소: ${p.name} (${p.id})`, `종류: ${REPORT_KIND[kind]}`, `내용: ${note || "-"}`, `여행 날짜: ${state?.input?.date || "-"}`, "", "(보폭 앱의 '정보가 달라요'에서 보냄)"].join("\n");
     window.open(`https://github.com/hundol047/MY-AI-LAB/issues/new?labels=place-report&title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`, "_blank", "noopener");
   }
   store.set("reportedPlaces", [...new Set([...reported(), p.id])].slice(-200));
@@ -665,7 +665,7 @@ function render() {
   document.querySelectorAll("#quick button").forEach((b) => b.classList.toggle("on", !!active[b.dataset.q]));
 
   const day = trip.days[dayIdx];
-  $("#timeline").innerHTML = sunHTML(day) + busNoteHTML(day) + (day.items.length ? day.items.map((it, i) => itemHTML(it, i, day)).join("") : `<li class="empty">${t("조건에 맞는 장소가 없어요. 조건을 바꿔보세요.")}</li>`) + lodgingHTML(day) + backJamHTML(day);
+  $("#timeline").innerHTML = sunHTML(day) + busNoteHTML(day) + (day.items.length ? day.items.map((it, i) => itemHTML(it, i, day)).join("") : `<li class="empty">${t("선택한 이동 조건을 확인할 수 있는 장소가 부족해요. 다른 권역을 살펴보세요. 필수 조건은 유지합니다.")}</li>`) + lodgingHTML(day) + backJamHTML(day);
   if (canVote() && votes.key !== state.opts.voteKey) loadVotes(); // 다른 일정(또는 받은 링크)을 열면 그 일정의 표를 받는다
   renderOptions();
   renderHeard();
@@ -713,7 +713,8 @@ function itemHTML(it, i, day) {
   if (it.travelMode === "taxi" && it.km) leg += t(" · 약 {won}", { won: won(taxiFare(it.km)) });
   // 앞 장소를 나와 다음 장소에 도착하기까지 30분 넘게 비면 "자유 시간"으로 보여 준다 (저녁 시간 기다림·문 여는 시간 기다림)
   const prev = i > 0 ? day.items[i - 1] : null, free = prev ? it.start - it.travelMin - prev.end : 0;
-  if (free >= 30) leg = t("자유 시간 {min}분 · 근처 산책·쉬기", { min: free }) + " · " + leg;
+  if (free >= 20 && state.opts.access?.length) leg = `이동 전 여유 ${free}분 · 앉을 곳과 화장실은 방문 전 확인해 주세요 · ` + leg;
+  else if (free >= 30) leg = t("자유 시간 {min}분 · 근처 산책·쉬기", { min: free }) + " · " + leg;
   // 주말·연휴 고속도로 정체(예상)만큼 첫 도착이 늦다
   if (i === 0 && day.jam) leg += `<span class="jam">${t("고속도로 정체 예상 +{min}분 ({dep} 출발 · 주말·연휴에 자주 막히는 시간대) · 일찍 출발하면 덜 막혀요", { min: day.jam.min, dep: day.jam.dep })}</span>`;
   const hours = hoursLabel(p, trip.days[dayIdx].date);
@@ -1869,7 +1870,7 @@ async function runGuide(question, shown) {
   bubble("me", shown);
   const wait = bubble("ai pending", t("생각 중"));
   let r;const local=false;
-  try {r=await cloudAI('guide',{question,history:history.slice(-6),trip:{...before,input},lang:requestLang});}
+  try {r=await cloudAI('guide',{question,history:history.slice(-6),trip:{...before,input,opts:state.opts},lang:requestLang});}
   catch(error){wait.textContent=error.message;return;}
   if(state !== activeState) {wait.remove();return;}
   let applied = false, missed = [];
@@ -1956,7 +1957,7 @@ $("#aiStart").addEventListener("submit", async (e) => {
   const btn = $("#aiStart button[type=submit]"); btn.disabled = true; btn.textContent = "…";
   const { parseSpoken } = await voiceParser();
   let interpreted;try{interpreted=await cloudAI('start',{text,today:todayStr(),lang:getLang()});}catch(error){toast(error.message);btn.disabled=false;btn.textContent=t('만들기');return;}
-  const r = parseSpoken(text, todayStr());r.input={...r.input,...interpreted};
+  const r = parseSpoken(text, todayStr());r.input={...r.input,...interpreted};r.access=[...new Set([...(r.access||[]),...(interpreted.access||[])])];
   btn.disabled = false; btn.textContent = t("만들기");
   // 말한 조건을 폼에 옮기고(폼은 "직접 골라서 만들기"에 접혀 있다), 폼에 없는 조건(인원·속도)은 일정 만들 때 넘긴다
   fillForm(r.input);

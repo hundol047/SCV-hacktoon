@@ -756,3 +756,8 @@ body:not(.has-server) .place .acts .needs-server { display: none; }
 .for .linkish { font-size: 12px; color: var(--sub); text-decoration: underline; padding: 0; background: none; border: 0; cursor: pointer; }
 .for .intro { flex-basis: 100%; margin: 4px 0 0; font-size: 12px; font-weight: 400; color: var(--text); line-height: 1.5; }
 .for .intro small { color: var(--sub); }
+
+/* Bopok: readable controls and visible keyboard focus */
+button, .ghost { min-height:44px; }
+:focus-visible { outline:3px solid #086879; outline-offset:3px; }
+.mobility-note {font-size:1rem;line-height:1.7;color:#284e52;background:#e9f1ee;padding:16px;border-radius:12px;}

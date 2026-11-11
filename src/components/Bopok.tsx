@@ -421,11 +421,11 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
         <button
           className="brand"
           onClick={() => navigate("home")}
-          aria-label="여행잇 홈"
+          aria-label="보폭 홈"
         >
           <BrandMark size={32} />
           <span>
-            여행잇<span className="brand-dot">.</span>
+            보폭<span className="brand-dot">.</span>
           </span>
         </button>
         <nav aria-label="주요 메뉴">
@@ -503,7 +503,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
             <nav className="trip-journey" aria-label="여행 준비 순서"><span>1 조건 입력</span><span>2 일정·숙소 비교</span><span>3 가족 의견</span><span>4 확정</span></nav><details className="lab-library"><summary>더 둘러보기 · 관광지·행사·사용 방법</summary><div className="lab-explore">
               <DeferredPanel title="강원 관광지·맛집 찾아보기"><RegionDiscovery/></DeferredPanel>
               <DeferredPanel title="지역 축제·문화행사 찾아보기"><LocalEvents onTrip={t=>{setTrip(t);setDay(1);setProposal(null);navigate('result');}}/></DeferredPanel>
-              <DeferredPanel title="여행잇 사용 방법"><UsageVideo/></DeferredPanel>
+              <DeferredPanel title="보폭 사용 방법"><UsageVideo/></DeferredPanel>
 
             </div></details><a className="business-link" href="/business">사업자 홍보 도구</a>
           </>
@@ -764,7 +764,7 @@ export default function Bopok({initialCloud,accessToken}:{initialCloud?:CloudTri
       <footer className="site-footer no-print">
         <div className="footer-brand">
           <BrandMark size={24} />
-          <strong>여행잇.</strong>
+          <strong>보폭.</strong>
           <span>함께 떠나는 여행, 서로의 속도로.</span>
         </div>
         <div className="footer-meta"><Credits trip={trip??undefined}/>
@@ -952,7 +952,7 @@ function Timeline({
                 <details className="evidence">
                   <summary>장소 데이터 근거 보기</summary>
                   <p>
-                    {catalog.mode==='demo'?'여행잇 가상 시연 데이터 v1 · 실제 조사 없음 · 가상 시나리오 설정':catalog.sourceNotice}
+                    {catalog.mode==='demo'?'보폭 가상 시연 데이터 v1 · 실제 조사 없음 · 가상 시나리오 설정':catalog.sourceNotice}
                   </p>
                   {p && (
                     <p>

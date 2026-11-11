@@ -1,3 +1,4 @@
+import {mobilityEligible,mobilityOptions} from './mobility.js';
 // 일정 생성 엔진: 검증된 장소 데이터 + 영업시간/휴무/이동시간 제약을 모두 지키는 일정만 만든다.
 import { PLACES, AREAS, REGIONS, FESTIVALS, LODGING, LODGING_TYPES, BENEFITS } from "./data.js";
 
@@ -129,7 +130,7 @@ function candidates(input, opts = {}) {
   const okWho = (p) => input.who === "pet" ? p.pet !== false && (p.pet || (!p.indoor && !p.multi && (p.cat === "nature" || p.cat === "sea"))) : !p.petOnly; // pet: false = 동반 불가로 확인된 곳(식물원·국립공원 안 등)
   // 휠체어·유모차: 오래 걷거나 산길인 곳(walk 3)은 빼고, 휠체어는 무장애 정보 없이 걷기가 있는 곳(walk 2)도 뺀다
   const acc = opts.access || [];
-  const okAccess = (p) => !acc.length || p.cat === "festival" || (p.walk < 3 && !(acc.includes("wheelchair") && p.walk === 2 && !p.access?.ramp));
+  const okAccess = (p) => mobilityEligible(p,opts);
   const ok = (p) => okWho(p) && okAccess(p);
   // 반값여행 코스(opts.halfPkg)처럼 정해 둔 장소만 쓸 때 (축제는 그 시군 것인지 알 수 없어 뺀다)
   const onlyIds = opts.onlyIds || halfPackage(opts.halfPkg)?.placeIds;
@@ -139,7 +140,7 @@ function candidates(input, opts = {}) {
     const petMeal = (p) => input.who === "pet" && p.cat === "food" && p.pet && inScope(input, p.region);
     return PLACES.filter((p) => (only.has(p.id) || petMeal(p)) && ok(p));
   }
-  return [...PLACES.filter((p) => inScope(input, p.region) && ok(p)), ...fests];
+  return [...PLACES.filter((p) => inScope(input, p.region) && ok(p)), ...fests.filter(ok)];
 }
 
 // 여행 기간과 겹치는 강원 축제 (확정 + 예정)
@@ -317,6 +318,7 @@ export function jamComing(start, dateStr, move) {
 
 // 하루 일정 생성. keep: 이미 확정된 앞부분 장소 id 목록
 export function planDay(input, opts, dayIdx, used, usedAreas, keep = [], exclude = new Set(), keepOnly = false, start = null) {
+  opts=mobilityOptions(opts);
   input = dayInput(input, dayIdx);
   const dateStr = addDays(input.date, dayIdx);
   const rain = !!(opts.rainDays || [])[dayIdx];
@@ -390,7 +392,7 @@ function reorderDay(items, startPt, dayStart, input, opts, end, dateStr) {
       out.push({ ...it, start: r.start, end: r.finish, travelMin: r.tr.min, travelMode: r.tr.mode, km: r.tr.km });
       cost += r.tr.min + r.wait * 0.5;
       if (cost >= bound) return null; // 이미 지금 순서보다 나쁘면 끝까지 계산하지 않는다
-      from = it.place; t = r.finish;
+      from = it.place; t = r.finish + (it.kind === "visit" ? (opts.restMin||0) : 0);
     }
     return { out, cost };
   };
@@ -421,6 +423,7 @@ function reorderDay(items, startPt, dayStart, input, opts, end, dateStr) {
 }
 
 function buildDay(input, opts, dayIdx, used, anchorKey, keep, exclude, keepOnly, start) {
+  opts=mobilityOptions(opts);
   input = dayInput(input, dayIdx);
   const dateStr = addDays(input.date, dayIdx);
   const rain = !!(opts.rainDays || [])[dayIdx];
@@ -452,7 +455,7 @@ function buildDay(input, opts, dayIdx, used, anchorKey, keep, exclude, keepOnly,
   const commit = (p, r, kind) => {
     items.push({ id: p.id, place: p, kind, start: r.start, end: r.finish, travelMin: r.tr.min, travelMode: r.tr.mode, km: r.tr.km });
     used.add(p.id);
-    from = p; t = r.finish;
+    from = p; t = r.finish + (kind === "visit" ? (opts.restMin||0) : 0);
     if (kind === "lunch") hasLunch = true;
     else if (kind === "dinner") hasDinner = true;
     else visits++;
@@ -574,6 +577,7 @@ function buildDay(input, opts, dayIdx, used, anchorKey, keep, exclude, keepOnly,
 
 // 숙소는 여행 내내 한 곳: 짐을 옮기지 않도록 모든 밤을 같은 숙소에서 묵는다
 export function planTrip(input, opts = {}) {
+  opts=mobilityOptions(opts);
   if (input.days < 2) return finalize(planDays(input, opts, null), null);
   const route = routeOf(input);
   if (route) return planRoute(input, opts, route);
@@ -714,7 +718,7 @@ const WHO_TYPES = {
   solo: ["guesthouse", "business"],
   couple: ["ocean", "pension", "hanok"],
   family: ["resort", "pension"],
-  parents: ["hanok", "resort", "ocean"],
+  parents: ["resort", "business", "ocean"],
   pet: ["pension", "resort"],
 };
 const TYPE_REASON = {
@@ -792,6 +796,7 @@ export function verify(days) {
 
 // 실제 도로 이동시간(분)으로 하루 일정 시간을 다시 계산. 운영시간을 지킬 수 없으면 null
 export function retimeDay(day, input, opts, legMins) {
+  opts=mobilityOptions(opts);
   const { end } = dayWindow(day.dayIdx ?? 0, input.days);
   let from = day.start || baseOf(input), t = day.items.length ? day.items[0].start - day.items[0].travelMin : 0;
   const items = [];
@@ -802,7 +807,7 @@ export function retimeDay(day, input, opts, legMins) {
     const r = tryPlace(it.place, from, Math.max(t, it.start - leg), input, opts, end + 60, day.date, leg);
     if (!r) return null;
     items.push({ ...it, start: r.start, end: r.finish, travelMin: leg, road: drives(it.travelMode) });
-    from = it.place; t = r.finish;
+    from = it.place; t = r.finish + (it.kind === "visit" ? (opts.restMin||0) : 0);
   }
   return { ...day, items, road: true };
 }
@@ -901,12 +906,12 @@ export function souvenirsFor(trip) {
 // 같은 조건으로 성격이 다른 일정 3개: 추천 / 여유롭게(이미 여유면 알차게) / 색다른 코스(추천에 든 곳을 빼고)
 // 돌려주는 값: [{ key, opts, trip, highlights: [장소 이름], totals }] — 앱이 카드로 보여 주고 고르면 opts로 다시 짠다
 export function planOptions(input, opts = {}) {
-  const base = { ...opts };
+  const base = { ...mobilityOptions(opts) };
   delete base.keep;
   const best = planTrip(input, base);
   const visits = (t) => t.days.flatMap((d) => d.items.filter((it) => it.kind === "visit" && it.place.cat !== "festival").map((it) => it.place));
   const second = base.pace === "relaxed"
-    ? { key: "packed", opts: { ...base, pace: "packed", lessWalk: !!(base.access?.length) } }
+    ? { key: "relaxed", opts: { ...base, pace: "relaxed", lessWalk: true, prefer:["culture","cafe"] } }
     : { key: "relaxed", opts: { ...base, pace: "relaxed", lessWalk: true } };
   // 색다른 코스: 추천의 관광지를 모두 빼 본다. 일정이 너무 비면(추천의 70% 미만) 인기 높은 절반만 뺀다. 꼭 넣을 곳(must)은 빼지 않는다
   const must = new Set(base.must || []);

@@ -33,6 +33,12 @@ export function setLang(l) {
 
 /* ---------- 고정 문구 ---------- */
 export const EN = {
+  "나의 보폭에 맞춰,<br>편안하게 떠나요": "Travel comfortably,<br>at your own pace",
+  "예) 어머니와 강릉으로, 많이 걷지 않고 쉬면서 다니고 싶어요": "For example: Gangneung with my mother, with less walking and time to rest",
+  "어르신과": "With older adults",
+  "나에게 필요한 이동 조건 <em>여러 개 선택</em>": "My mobility needs <em>Choose several</em>",
+  "♿ 휠체어 진입": "♿ Wheelchair entrance",
+  "선택한 이동 조건이 확인된 장소로 구성했어요.": "Places meet the selected mobility criteria in the available data.",
   "전화": "Call",
   "네이버 지도 방문자 후기": "Visitor reviews on Naver Map",
   "지금부터 다시 짜기": "Re-plan from now",
@@ -355,7 +361,7 @@ export const EN = {
   "대화 번역을 불러오지 못했어요. 원문을 표시합니다.": "Translation unavailable. Showing the original message.",
 
   // 머리글·첫 화면
-  "오늘강원": "Oneul Gangwon",
+  "보폭": "Bopok",
   "링크 공유": "Share",
   "캘린더 저장": "Calendar",
   "강원 여행 일정,<br>고르기만 하세요": "Your Gangwon trip,<br>just pick and go",
@@ -737,7 +743,7 @@ export function applyStatic(root = document) {
     el.title = t(el.dataset.koTitle);
     el.setAttribute("aria-label", el.title);
   });
-  document.title = t("오늘강원");
+  document.title = t("보폭");
   root.querySelectorAll("[data-lang]").forEach((b) => {
     const on = b.dataset.lang === lang;
     b.classList.toggle("on", on);
