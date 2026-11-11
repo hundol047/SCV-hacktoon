@@ -27,6 +27,8 @@ esac
  log=(p/'log').read_text()
  assert 'image rm yeohaengit-preview:old' in log
  assert 'image rm yeohaengit-preview:live' not in log
+ assert 'image prune -f' in log
+ assert 'image prune -a' not in log
  assert 'volume' not in log and 'stop' not in log
  env['MOCK_FREE']='100'
  r=subprocess.run(['bash','scripts/prepare-deploy-space.sh'],env=env,capture_output=True,text=True)
