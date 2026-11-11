@@ -131,7 +131,7 @@ function candidates(input, opts = {}) {
   // 휠체어·유모차: 오래 걷거나 산길인 곳(walk 3)은 빼고, 휠체어는 무장애 정보 없이 걷기가 있는 곳(walk 2)도 뺀다
   const acc = opts.access || [];
   const okAccess = (p) => mobilityEligible(p,opts);
-  const ok = (p) => okWho(p) && okAccess(p);
+  const ok = (p) => okWho(p) && okAccess(p) && !(input.who === "family" && (p.walk === 3 || p.tags?.includes("night")));
   // 반값여행 코스(opts.halfPkg)처럼 정해 둔 장소만 쓸 때 (축제는 그 시군 것인지 알 수 없어 뺀다)
   const onlyIds = opts.onlyIds || halfPackage(opts.halfPkg)?.placeIds;
   if (onlyIds) {
@@ -208,7 +208,7 @@ function baseScore(p, input, opts, rain, dateStr = null) {
   if ((opts.prefer || []).includes(p.cat)) s += 2.5;
   if ((opts.avoid || []).includes(p.cat)) s -= 6;
 
-  if (input.who === "family") { if (p.tags.includes("kids")) s += 1.5; if (p.walk === 3) s -= 3; }
+  if (input.who === "family") { if (p.tags.includes("kids")) s += 4; if (p.walk === 3) s -= 3; }
   if (input.who === "parents") { if (p.tags.includes("senior")) s += 1.5; if (p.walk >= 2) s -= 1; if (p.walk === 3) s -= 4; }
   if (input.who === "couple" && (p.cat === "cafe" || p.tags.includes("night"))) s += 0.5;
   if (input.who === "pet") s += p.pet ? 3 : -2; // 동반 가능이 확인된 곳 우선
@@ -391,6 +391,7 @@ function reorderDay(items, startPt, dayStart, input, opts, end, dateStr) {
       if (it.kind === "visit" && it.place.tags.includes("night") && seq.slice(0, i).some((x) => x.kind === "dinner") !== items.slice(0, items.indexOf(it)).some((x) => x.kind === "dinner")) return null; // 야경은 저녁 앞뒤를 바꾸지 않는다
       out.push({ ...it, start: r.start, end: r.finish, travelMin: r.tr.min, travelMode: r.tr.mode, km: r.tr.km });
       cost += r.tr.min + r.wait * 0.5;
+      if(i>=2 && seq[i-2].place.area===it.place.area && seq[i-1].place.area!==it.place.area)cost+=20;
       if (cost >= bound) return null; // 이미 지금 순서보다 나쁘면 끝까지 계산하지 않는다
       from = it.place; t = r.finish + (it.kind === "visit" ? (opts.restMin||0) : 0);
     }
@@ -528,7 +529,7 @@ function buildDay(input, opts, dayIdx, used, anchorKey, keep, exclude, keepOnly,
       if (r.tr.min > 50) v -= (r.tr.min - 50) * 0.12; // 한 번에 50분 넘는 이동은 더 피한다
       // 같은 지역 안에서 이어 가기: 지금 있는 지역(또는 이미 다녀온 지역)을 떠났다가 다시 오지 않게
       if (from.area && p.area === from.area) v += 1.2;
-      else if (items.some((x) => x.place.area === p.area) && items.length && items[items.length - 1].place.area !== p.area) v -= 2;
+      else if (items.some((x) => x.place.area === p.area) && items.length && items[items.length - 1].place.area !== p.area) v -= 4;
       // 빈 시간 채우기는 지금 있는 지역 안에서 (다른 지역에 들렀다 저녁 먹으러 되돌아오는 동선이 되지 않게)
       if (filler && from.area && p.area !== from.area) v -= 3;
       v -= r.wait * 0.05;
@@ -930,7 +931,15 @@ export function planOptions(input, opts = {}) {
     if (!thin(thirdTrip)) break;
   }
   third.opts.lodgingId = thirdTrip.lodging?.id;
-  const secondTrip = planTrip(input, second.opts);
+  let secondTrip = planTrip(input, second.opts);
+  const signature=t=>t.days.flatMap(d=>d.items.map(i=>i.id)).sort().join('|');
+  if(signature(secondTrip)===signature(best)){
+    for(const place of bestVisits){
+      const trialOpts={...second.opts,exclude:[...new Set([...(second.opts.exclude||[]),place.id])]};
+      const trial=planTrip(input,trialOpts);
+      if(signature(trial)!==signature(best) && !thin(trial)){second.opts=trialOpts;secondTrip=trial;break;}
+    }
+  }
   const pick = (t) => [...new Set(visits(t).sort((a, b) => b.pop - a.pop).map((p) => p.name))].slice(0, 3);
   return [
     { key: "best", opts: base, trip: best },

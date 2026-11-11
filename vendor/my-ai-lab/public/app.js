@@ -2287,3 +2287,14 @@ if (directoryAdd) {
     toast(t("{name}은(는) 이번 일정의 권역·영업시간에 맞지 않아 넣지 못했어요", { name: p.name }));
   }).catch(() => toast(t("탐색 목록을 불러오지 못했어요")));
 }
+
+// Explicit starting profiles; users review and adjust these conditions before generating.
+document.querySelectorAll('[data-profile]').forEach(button=>button.addEventListener('click',()=>{
+ const kind=button.dataset.profile;
+ document.querySelector(`.seg[data-name="who"] [data-v="${kind==='child'?'family':'parents'}"]`).click();
+ const needs=kind==='wheelchair'?['wheelchair']:['shortwalk'];
+ document.querySelectorAll('.chips[data-name="access"] button').forEach(b=>{b.classList.toggle('on',needs.includes(b.dataset.v));b.setAttribute('aria-pressed',String(needs.includes(b.dataset.v)));});
+ document.querySelector('#manual').open=true;
+ document.querySelector('#form').scrollIntoView({block:'start',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
+ document.querySelector('#date').focus({preventScroll:true});
+}));

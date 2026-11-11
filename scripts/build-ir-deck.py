@@ -2,10 +2,11 @@ from pptx import Presentation
 from pptx.util import Inches, Pt
 from pptx.dml.color import RGBColor
 from pptx.enum.shapes import MSO_SHAPE
+from pptx.enum.text import PP_ALIGN
 from pathlib import Path
 R=Path(__file__).resolve().parents[1]; out=R/'artifacts/ir'; out.mkdir(parents=True,exist_ok=True)
 p=Presentation();p.slide_width=Inches(13.333);p.slide_height=Inches(7.5)
-INK='153E44';TEAL='086879';BG='F5F5EF';MUTED='567175';GOLD='E9AB4F';WHITE='FFFFFF'
+INK='193C3B';TEAL='147862';BG='F5FAF7';MUTED='526C69';GOLD='FFBE55';WHITE='FFFFFF'
 def rect(s,x,y,w,h,color,r=False):
  a=s.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE if r else MSO_SHAPE.RECTANGLE, Inches(x), Inches(y), Inches(w), Inches(h));a.fill.solid();a.fill.fore_color.rgb=RGBColor.from_string(color);a.line.fill.background();return a
 def text(s,x,y,w,h,t,size=22,color=INK,bold=False):
@@ -13,10 +14,14 @@ def text(s,x,y,w,h,t,size=22,color=INK,bold=False):
  for i,line in enumerate(t.split('\n')):
   q=f.paragraphs[0] if i==0 else f.add_paragraph();q.text=line;q.font.name='맑은 고딕';q.font.size=Pt(size);q.font.bold=bold;q.font.color.rgb=RGBColor.from_string(color);q.space_after=Pt(12)
  return a
+def centerText(*args,**kwargs):
+ a=text(*args,**kwargs)
+ for q in a.text_frame.paragraphs:q.alignment=PP_ALIGN.CENTER
+ return a
 def slide(k,title,sub=''):
- s=p.slides.add_slide(p.slide_layouts[6]);s.background.fill.solid();s.background.fill.fore_color.rgb=RGBColor.from_string(BG);text(s,.55,.28,12,.3,'보폭  /  '+k,11,TEAL,True);text(s,.55,.9,12,1,title,30,INK,True)
+ s=p.slides.add_slide(p.slide_layouts[6]);s.background.fill.solid();s.background.fill.fore_color.rgb=RGBColor.from_string(BG);text(s,.55,.28,12,.3,'보폭  /  '+k,11,TEAL,True);text(s,.55,.9,12,1,title,28,INK,True)
  if sub:text(s,.58,1.75,12,.6,sub,16,MUTED)
- rect(s,.6,7.05,12.1,.015,'CFDAD5');text(s,.6,7.15,11,.2,'MENTOR IR  ·  2026.11  ·  어르신·거동이 불편한 분의 이동 부담을 줄이는 여행',9,MUTED);text(s,12,7.12,.6,.3,f'{len(p.slides):02}',10,TEAL)
+ rect(s,.6,7.05,12.1,.015,'CFDAD5');text(s,.6,7.15,11,.2,'MENTOR IR  ·  2026.11  ·  어르신과 아이, 서로의 보폭에 맞추는 여행',9,MUTED);text(s,12,7.12,.6,.3,f'{len(p.slides):02}',10,TEAL)
  return s
 def cards(s,items,y=2.55):
  w=12.1/len(items)-.18
@@ -27,23 +32,33 @@ def pic(s,name,x,y,w,h):
  from PIL import Image
  im=Image.open(out/name); iw,ih=im.size;scale=min(w/iw,h/ih);s.shapes.add_picture(str(out/name),Inches(x+(w-iw*scale)/2),Inches(y),width=Inches(iw*scale),height=Inches(ih*scale))
 s=slide('INVESTMENT STORY','함께 떠날 수 있도록, 여행의 부담을 줄이다')
-text(s,.65,2.35,6.5,1.4,'어르신과 거동이 불편한 분의\n보폭에 맞는 여행',31,TEAL,True);text(s,.65,4.05,6.1,1.3,'AI가 여행 의도를 이해하고, 일정 엔진이\n장소·시간·동선을 연결합니다.',23);text(s,.65,5.8,6,.5,'보폭 · 어르신·거동이 불편한 분을 위한 이동 조건 기반 추천',15,MUTED);pic(s,'home.png',7.1,2.15,5.5,4.55)
+text(s,.65,2.35,6.5,1.4,'어르신과 아이의 보폭에 맞춰\n함께 떠나는 편안한 여행',31,TEAL,True);text(s,.65,4.05,6.1,1.3,'AI가 여행 의도를 이해하고, 일정 엔진이\n장소·시간·동선을 연결합니다.',23);text(s,.65,5.8,6,.5,'보폭 · 어르신·거동이 불편한 분을 위한 이동 조건 기반 추천',15,MUTED);pic(s,'home.png',7.1,2.15,5.5,4.55)
 s=slide('PROBLEM','여행을 포기하게 만드는 것은 검색보다 조율입니다','핵심 고객 문제 가설 — 사용자 인터뷰로 우선 검증')
 cards(s,[('이동 부담','많은 장소보다 적절한 보행량과\n휴식 간격이 중요합니다.\n\n동행자의 체력을 일정에\n반영하기 어렵습니다.'),('정보의 분산','장소·운영시간·숙소·교통을\n여러 서비스에서 확인합니다.\n\n계획이 바뀌면 다시\n맞춰야 합니다.'),('가족의 합의','여행을 준비하는 사람과\n함께 가는 사람의 조건이 다릅니다.\n\n보행 능력과 필수 시설 조건을\n한 일정에 모아야 합니다.')])
 s=slide('STP · SEGMENTATION','어르신·이동약자의 이동 조건과 동행 상황으로 나눕니다')
-cards(s,[('어르신 여행','어르신과 이동이 불편한 여행자\n함께 계획하는 가족·보호자\n\n중요 조건: 걷기·휴식·식사·숙소'),('이동 편의','휠체어·유모차 등 이동 편의\n정보가 필요한 동행자\n\n중요 조건: 진입·시설·정보 근거'),('지역 체류','강원에서 1~2박 여행하는\n소규모 여행자\n\n중요 조건: 동선·운영시간·비용')])
-s=slide('STP · TARGETING & POSITIONING','사용자는 어르신·이동약자, 계획은 본인과 동행자가 함께')
+cards(s,[('어르신 여행','어르신과 이동이 불편한 여행자\n함께 계획하는 가족·보호자\n\n중요 조건: 걷기·휴식·식사·숙소'),('이동 편의','휠체어·유모차 등 이동 편의\n정보가 필요한 동행자\n\n중요 조건: 진입·시설·정보 근거'),('아이 동반','아이와 강원 여행을 준비하는 가족\n\n중요 조건: 아이 동반 장소\n긴 보행 제외 · 유모차 진입')])
+s=slide('STP · TARGETING & POSITIONING','어르신·이동약자를 먼저, 아이 동반 가족으로 확장')
 rect(s,.6,2.5,7.8,3.65,TEAL,True);text(s,.95,2.85,7.1,2.5,'“나의 이동 조건으로 함께할 수 있는\n강원 여행을 짜고 싶다.”\n\n조건을 말하면 비교하고 고를 수 있는\n일정으로 정리하는 여행 도우미',26,WHITE,True);text(s,8.8,2.7,3.8,3.5,'초기 타깃\n수도권 출발 · 어르신·이동약자\n강원 1~2박 · 소규모 자유여행\n\n포지셔닝\n보행·접근성 조건을 지키는\n동행 여행 계획 서비스',20)
 s=slide('PRODUCT · ACTUAL SCREEN','말하거나 고르면, 여행 조건을 일정으로 연결합니다')
-pic(s,'mobility-form.png',.6,2.1,5.3,4.7);text(s,6.35,2.65,6,3.6,'01  음성·텍스트로 이동 조건 전달\n02  짧은 보행·휠체어·화장실 선택\n03  조건이 확인된 장소로 일정 구성\n04  필수 조건을 유지하며 일정 변경',24,INK,True)
+pic(s,'mobility-form.png',.6,2.1,5.3,4.7);text(s,6.35,2.65,6,3.6,'01  어르신·아이·휠체어 시작 유형\n02  보행·휠체어·유모차·화장실 선택\n03  조건이 확인된 장소로 일정 구성\n04  필수 조건을 유지하며 일정 변경',24,INK,True)
 s=slide('PRODUCT · ACTUAL SCREEN','코스와 숙소를 같은 여행 흐름에서 비교합니다')
 pic(s,'result.png',.6,2.05,8,4.85);text(s,9,2.55,3.65,3.7,'추천 / 여유롭게 / 색다른 코스\n\n권역 내 숙소와 예약 검색\n\n예상 비용은 범위로 표시\n\n날짜별 일정과 가족 의견',19);note(s,'화면: 이번에 이식한 앱에서 직접 생성한 일정. 숙소 예약 링크는 검색 연결이며 실시간 최저가 확정이 아닙니다.')
 s=slide('DIFFERENTIATION','차별성은 이동 조건을 지키며 일정을 다시 맞추는 데 있습니다')
 cards(s,[('검색 → 실행 일정','짧게 걷기·휠체어 진입·화장실\n필수 조건으로 장소를 선별\n\n휠체어 대여와 진입 정보를 구분'),('대화 → 조건 변경','AI가 필요한 이동 조건을 해석\n\n코스를 바꿔도 필수 조건 유지\n관광 뒤 20분의 여유 시간 확보'),('개인 → 가족 결정','확인된 시설 원문을 함께 표시\n\n좌석·실제 경사·숙소 객실은\n현장 확인으로 정보 보완')]);note(s,'경쟁 범주: 지도·검색 / 예약 플랫폼 / 범용 AI. 특정 경쟁 서비스의 기능 부재를 주장하지 않습니다.')
 s=slide('MARKET · TAM / SAM / SOM','시장 규모와 우리가 확보할 규모를 분리합니다','금액 기준: 연간 여행 소비액. 플랫폼 매출과 구분합니다.')
-cards(s,[('TAM  39.5조 원','2025년 국내여행 총지출\n\n공식 통계 [1]\n\n국내 여행 계획·소비의\n전체 시장 규모'),('SAM  5,858억 원','강원 여행 지출 5.858조 원 [2]\n× 핵심 고객 비중 10% 가정\n\n어르신·이동 편의 중심\n서비스 대상 시장 추정'),('SOM  10억 원','연간 2,000팀 × 50만 원\n\n초기 12개월 계획지원\n여행 소비액 목표\n\nSAM의 약 0.17%')]);note(s,'[1] 문체부 2025 국민여행조사(2026.6.30). [2] 동 조사 인용 경북일보(2026.7.5). 10%·팀 수·객단가는 사업 가정입니다.')
+# Three touching circles: market hierarchy, not area-proportional values.
+for x,d,c,label,value,detail in [(.65,3.9,'147862','TAM','39.5조 원','국내여행 총지출'),(4.35,3.3,'D9EEE0','SAM','5,858억 원','강원 핵심 고객 시장'),(7.45,2.8,'FFE4AE','SOM','10억 원','초기 12개월 목표')]:
+ y=4.05-d/2
+ a=s.shapes.add_shape(MSO_SHAPE.OVAL,Inches(x),Inches(y),Inches(d),Inches(d));a.fill.solid();a.fill.fore_color.rgb=RGBColor.from_string(c);a.line.color.rgb=RGBColor.from_string(BG);a.line.width=Pt(3)
+ color=WHITE if label=='TAM' else INK
+ centerText(s,x+.25,3.05,d-.5,.45,label,23,color,True)
+ centerText(s,x+.25,3.65,d-.5,.6,value,28,color,True)
+ centerText(s,x+.25,4.4,d-.5,.55,detail,16,color)
+text(s,10.6,2.7,2.1,2.9,'공식 통계와\n사업 가정 분리\n\n원 크기는 금액에\n비례하지 않습니다.',16,MUTED)
+text(s,.7,6.05,12,.5,'TAM: 공식 통계 [1]   /   SAM: 강원 5.858조 × 10% 가정 [2]   /   SOM: 2,000팀 × 50만 원 목표',14,INK)
+note(s,'[1] 문체부 2025 국민여행조사. [2] 동 조사 인용 경북일보. SAM의 10%는 어르신·이동약자·아이 동반 수요를 중복 제외한 가정입니다.')
 s=slide('MARKET · ASSUMPTIONS','SAM은 고객 비중, SOM은 실제 전환율로 검증합니다')
-cards(s,[('보수적 · 5%','SAM 2,929억 원\n\n강원 소비액의 5%가\n핵심 여행 조건에 해당한다고 가정'),('기준 · 10%','SAM 5,858억 원\n\n어르신 여행·이동 부담 수요를\n인터뷰와 사용 데이터로 검증'),('확장 · 15%','SAM 8,787억 원\n\n재활·보행 보조기 이용 등\n인접 고객군으로 확대')]);note(s,'세 수치는 독립적인 공식 통계가 아닌 민감도 분석입니다. 대상 고객 조사 후 핵심 고객 비중을 갱신합니다.')
+cards(s,[('보수적 · 5%','SAM 2,929억 원\n\n강원 소비액의 5%가\n핵심 여행 조건에 해당한다고 가정'),('기준 · 10%','SAM 5,858억 원\n\n어르신 여행·이동 부담 수요를\n인터뷰와 사용 데이터로 검증'),('확장 · 15%','SAM 8,787억 원\n\n아이·유모차 동반 가족 등\n인접 고객군으로 확대')]);note(s,'세 수치는 독립적인 공식 통계가 아닌 민감도 분석입니다. 대상 고객 조사 후 핵심 고객 비중을 갱신합니다.')
 s=slide('BUSINESS MODEL','여행 계획의 가치를 먼저 검증하고 수익을 연결합니다')
 cards(s,[('초기 · 무료 사용','이동 조건 기반 일정·비교·공유\n\n완성된 일정 비율과\n여행 실행 여부를 측정'),('제휴 · 접근성 정보','시설 정보를 함께 확인한\n숙소·체험 제휴가 성립하면\n예약 전환에 따른 수수료\n\n정산 가능한 거래부터 적용'),('확장 · 지역 파트너','숙소·관광 사업자·복지기관 협업\n지역 맞춤 코스와 정보 관리\n\n유료 파일럿으로 지불 의사 검증')]);note(s,'수익 시나리오: 계획지원 소비 10억 × 제휴 거래 전환 30% × 수수료 5% = 연 1,500만 원. 계약·실적이 아닌 가정입니다.')
 s=slide('GO TO MARKET','강릉·속초에서 반복 사용을 만들고 권역을 넓힙니다')
@@ -61,7 +76,7 @@ refs=[('1  TAM · 국내여행 지출 39.5조 원','문화체육관광부, 2025�
 for i,(a,b,u) in enumerate(refs):
  y=2.2+i*1.1;text(s,.65,y,12,.35,a,18,TEAL,True);text(s,.65,y+.4,12,.35,b,14);t=text(s,.65,y+.74,12,.24,u,10,MUTED);t.text_frame.paragraphs[0].runs[0].hyperlink.address=u
 text(s,.65,5.7,12,.8,'SAM = 5.858조 × 10%. SOM = 2,000팀 × 50만 원.\n고객 비중·팀 수·객단가·전환율·수수료는 검증 전 가정. 자료 확인일: 2026.11.11.',15)
-p.save(out/'보폭_IR_STP_TAM_SAM_SOM.pptx')
+p.save(out/'보폭_IR_맞춤추천_리디자인.pptx')
 # Basic artifact integrity: all shapes fit inside the slide.
 for i,s in enumerate(p.slides):
  for a in s.shapes:

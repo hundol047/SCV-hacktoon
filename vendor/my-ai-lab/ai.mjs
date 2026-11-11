@@ -50,7 +50,7 @@ const START_SCHEMA = {
     who: { type: "string", enum: ["solo", "couple", "family", "parents", "pet"] },
     likes: { type: "array", items: { type: "string", enum: CATS } },
     move: { type: "string", enum: ["car", "taxi", "transit"] },
-    access: {type:"array",items:{type:"string",enum:["shortwalk","wheelchair","toilet"]}},
+    access: {type:"array",items:{type:"string",enum:["shortwalk","wheelchair","toilet","stroller"]}},
     summary: { type: "string" },
   },
   required: ["region", "date", "days", "who", "likes", "move", "access", "summary"],
@@ -64,7 +64,7 @@ const START_SYSTEM = `어르신 및 거동이 불편한 분을 위한 보폭의 
 - who: 혼자=solo, 연인·친구=couple, 아이·가족=family, 부모님·어르신=parents. 언급이 없으면 parents.
 - likes: sea(바다), cafe(카페), food(맛집·시장), culture(역사·문화·전시), nature(자연·산책). 1~3개.
 - move: 자동차·렌터카=car, 택시=taxi, 기차·버스·뚜벅이=transit. 언급이 없으면 car.
-- access: 보행 부담·무릎 통증·지팡이·보행기·짧게 걷기는 shortwalk, 휠체어 사용은 wheelchair, 장애인 화장실 필요는 toilet. 명시한 조건을 모두 포함한다. 기본 shortwalk. 휠체어와 대여 여부를 혼동하지 않는다.
+- access: 보행 부담·무릎 통증·지팡이·보행기·짧게 걷기는 shortwalk, 휠체어 사용은 wheelchair, 장애인 화장실 필요는 toilet, 유모차 진입은 stroller. 아이 동반은 who=family이며 아이에게 맞는 장소를 우선한다. 명시한 조건을 모두 포함한다. 기본 shortwalk. 휠체어와 대여 여부를 혼동하지 않는다.
 - summary: 고른 내용을 20자 안팎 한국어로. 예) "속초 1박 2일 · 부모님과 · 자동차"`;
 
 // 질문(숙소 체크는 화면)이 영어·일본어·중국어면 사람에게 보이는 글(summary·answer·plain 등)만 그 언어로 받는다. 선택값·id는 그대로.

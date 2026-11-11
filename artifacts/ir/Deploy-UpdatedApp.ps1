@@ -1,4 +1,4 @@
-$ErrorActionPreference = 'Stop'
+﻿$ErrorActionPreference = 'Stop'
 $KeyPath = 'C:\Users\AISEMI003\Desktop\2조\hackathon-e5-t02.pem'
 if (!(Test-Path -LiteralPath $KeyPath)) { throw "PEM 파일을 찾을 수 없습니다: $KeyPath" }
 $DeployCode = @'

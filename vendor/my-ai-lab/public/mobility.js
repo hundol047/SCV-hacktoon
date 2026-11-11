@@ -11,11 +11,11 @@ export function mobilityEligible(p,opts={}) {
   if(a.includes('shortwalk') && !(Number.isFinite(p.walk)&&p.walk<=1))return false;
   if(a.includes('wheelchair') && (!stepFreeEvidence(p)||!(p.walk<3)))return false;
   if(a.includes('toilet') && p.access?.toilet!==true)return false;
-  if(a.includes('stroller') && !(p.walk<3))return false;
+  if(a.includes('stroller') && (!stepFreeEvidence(p)||!(p.walk<3)))return false;
   return true;
 }
 export function mobilityOptions(opts={}) {
   const access=opts.access||[];
-  return access.some(x=>['shortwalk','wheelchair','toilet'].includes(x))
+  return access.some(x=>['shortwalk','wheelchair','toilet','stroller'].includes(x))
     ? {...opts,pace:'relaxed',lessWalk:true,restMin:20}:opts;
 }
