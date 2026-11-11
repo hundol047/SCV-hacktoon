@@ -14,4 +14,4 @@ bash deploy-server.sh 8000
 '@
 $DeployCode | ssh -i "$KeyPath" -o ConnectTimeout=20 ubuntu@52.65.9.104 "tr -d '\r' | bash -s"
 if ($LASTEXITCODE -ne 0) { throw '배포가 중단됐습니다. 위 오류를 확인해 주세요.' }
-Start-Process 'http://52.65.9.104:8000/'
+Start-Process 'http://52.65.9.104:8000/lab/?release=bopok-bright-v4'

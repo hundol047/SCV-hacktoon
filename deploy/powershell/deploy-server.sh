@@ -57,13 +57,13 @@ sudo -n docker run -d --name "$name" --label "app.deployer=$owner" \
   -p "$port:3000" "$image"
 ready=false
 for attempt in {1..30}; do
-  if sudo -n docker exec "$name" node -e 'fetch("http://127.0.0.1:3000/").then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))' >/dev/null 2>&1; then ready=true; break; fi
+  if sudo -n docker exec "$name" node -e 'fetch("http://127.0.0.1:3000/lab/").then(async r=>{const html=await r.text();const css=await fetch("http://127.0.0.1:3000/lab/bopok-bright.css").then(x=>x.text());process.exit(r.ok&&html.includes("bopok-bright-v4")&&css.includes("color-scheme:only light")?0:1)}).catch(()=>process.exit(1))' >/dev/null 2>&1; then ready=true; break; fi
   sleep 2
 done
 [[ "$ready" == true ]]
 trap - ERR
 if [[ -n "$old" ]]; then sudo -n docker rm "$old" >/dev/null; fi
-echo "Web home page responded successfully. Port: $port"
+echo "Verified Bopok bright-v4 HTML and light stylesheet. Port: $port"
 echo 'Logs: sudo -n docker logs --tail 100 yeohaengit-web'
 echo 'Stop: sudo -n docker stop yeohaengit-web'
 echo 'Restart: sudo -n docker start yeohaengit-web'

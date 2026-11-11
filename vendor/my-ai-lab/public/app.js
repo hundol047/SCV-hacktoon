@@ -740,7 +740,7 @@ function itemHTML(it, i, day) {
       </div>
       <div class="acts place-acts">
         <a class="ghost small" href="${esc(routeLink(i === 0 ? { name: startName(day.start, lodgingForDay(trip, dayIdx - 1) || trip.lodging), lat: day.start.lat, lng: day.start.lng } : { name: placeName(day.items[i - 1].place), lat: day.items[i - 1].place.lat, lng: day.items[i - 1].place.lng }, { name: placeName(p), lat: p.lat, lng: p.lng }))}" target="_blank" rel="noopener" title="${esc(t("{from}에서 여기까지 길찾기", { from: i === 0 ? startName(day.start, trip.lodging) : placeName(day.items[i - 1].place) }))}">${t("길찾기")}</a>
-        <button class="ghost small" type="button" data-swap="${i}">${t("바꾸기")}</button><button class="ghost small" type="button" data-report="${p.id}">${reported().has(p.id) ? t("제보함") : t("정보가 달라요")}</button><a class="ghost small needs-server" href="reviews.html?place=${encodeURIComponent(p.id)}">${t("후기")}</a><a class="ghost small no-server" href="https://map.naver.com/p/search/${encodeURIComponent(p.name)}" target="_blank" rel="noopener" title="${t("네이버 지도 방문자 후기")}">${t("후기")}</a>${voteHTML(p.id)}
+        <button class="ghost small" type="button" data-swap="${i}">${t("바꾸기")}</button><details class="place-extra"><summary>후기·의견</summary><div class="extra-actions"><button class="ghost small" type="button" data-report="${p.id}">${reported().has(p.id) ? t("제보함") : t("정보가 달라요")}</button><a class="ghost small needs-server" href="reviews.html?place=${encodeURIComponent(p.id)}">${t("후기")}</a><a class="ghost small no-server" href="https://map.naver.com/p/search/${encodeURIComponent(p.name)}" target="_blank" rel="noopener" title="${t("네이버 지도 방문자 후기")}">${t("후기")}</a>${voteHTML(p.id)}</div></details>
       </div>
     </article>
   </li>`;
@@ -873,13 +873,8 @@ function forLine(p) {
   const head = m?.first ? `<span>대표 메뉴 · ${esc(m.first)}</span>` : who.length ? `<span>${t("이런 분께")} · ${who.slice(0, 2).join(" · ")}</span>` : "";
   const body = [intro && esc(intro), more && `${m.first ? "그 밖에 " : ""}${esc(more)}`, m?.tel && !p.tel && `<a href="tel:${esc(m.tel)}">${t("전화")} ${esc(m.tel)}</a>`].filter(Boolean).join("<br>");
   if (!head && !body) return "";
-  return `<div class="for">${head}${body ? `<button type="button" class="linkish" data-intro="${p.id}">${t(m && !intro ? "메뉴" : "소개")}</button><p class="intro" hidden>${body} <small>${t("관광공사")}</small></p>` : ""}</div>`;
+  return `<div class="for">${head}${body ? `<p class="intro">${body}</p>` : ""}</div>`;
 }
-document.addEventListener("click", (e) => {
-  const b = e.target.closest("[data-intro]"); if (!b) return;
-  const pEl = b.parentElement.querySelector(".intro"); pEl.hidden = !pEl.hidden;
-  b.setAttribute("aria-expanded", String(!pEl.hidden));
-});
 
 // 사진 아래 짧은 주차 표시 (자세한 내용은 눌러서): 관광공사 원문 → 근처 주차장 순
 function parkingShort(p) {
@@ -1219,7 +1214,7 @@ function nearPhoto(h) {
   return best;
 }
 function staysHTML(l) {
-  const list = staysFor(l);
+  const list = staysFor(l).slice(0,3);
   if (!list.length) return "";
   const byType = lodgingPlaces?.[l.id] || {};
   const type = byType[l.type]?.length ? l.type : Object.keys(byType).find((k) => byType[k]?.length) || l.type; // staysFor가 고른 목록의 종류
@@ -1250,17 +1245,17 @@ function renderLodging() {
   const plan = multi ? `<ol class="stay-plan">${trip.lodgings.map((x) => `<li class="${x === l ? "on" : ""}"><button type="button" class="linkish" data-goday="${x.from}">${t("{d}일차 밤", { d: x.from + 1 })}</button> ${esc(lodgingName(x))} · ${t("{n}박", { n: x.nights })}</li>`).join("")}</ol>` : "";
   box.innerHTML = `
     ${plan}
-    <div class="info">
+    <div class="stay-summary"><div class="info">
       <div class="meta"><span class="tag" style="--c:var(--brand)">${tag}</span></div>
       <h3>${esc(lodgingName(l))} · ${typeLabel(l.type, l.typeLabel)}</h3>
       <p>${esc(lodgingDesc(l))}</p>
       <div class="why">${lodgingReason(l)}${l.others.length ? t(" · 다른 선택: {o}", { o: l.others.map(typeLabelFromKo).join(", ") }) : ""}</div>
     </div>
-    <div class="booking-options"><label>${t("객실")}<input id="bookingRooms" type="number" min="1" max="${peopleNow().adults}" value="${bookingPeople(peopleNow()).rooms}"></label>
+    <div class="stay-booking"><div class="booking-options"><label>${t("객실")}<input id="bookingRooms" type="number" min="1" max="${peopleNow().adults}" value="${bookingPeople(peopleNow()).rooms}"></label>
     ${bookingPeople(peopleNow()).ages.map((age,i)=>`<label>${t("어린이 {n} 나이",{n:i+1})}<select data-child-age="${i}"><option value="">${t("선택 필요")}</option>${Array.from({length:18},(_,a)=>`<option value="${a}" ${age===a?'selected':''}>${a}</option>`).join('')}</select></label>`).join('')}</div>
-    ${bookingReason(l.query)}
+    ${bookingReason(l.query)}</div></div>
     ${staysHTML(l)}
-    <div class="stay-main">
+    <details class="stay-tools"><summary>숙소 검색·가격 비교</summary><div class="stay-main">
       ${priceLinks(l.query, false)}
       <button class="ghost small" type="button" id="safeOpen">${t("예약 전 안심 체크")}</button>
     </div>
@@ -1268,7 +1263,7 @@ function renderLodging() {
       <textarea id="safeText" rows="5" maxlength="6000" placeholder="${t("예약하려는 숙소 페이지의 가격, 취소·환불 규정, 후기를 그대로 붙여넣으세요")}"></textarea>
       <button type="submit" class="primary">${t("확인")}</button>
       <div class="safe-result" id="safeResult"></div>
-    </form>`;
+    </form></details>`;
 }
 
 document.addEventListener("change",e=>{
@@ -2243,7 +2238,7 @@ fetchT("api/shops?region=gangneung", {}, 3000)
 
 // 오프라인용 파일 받기(지도 엔진 1MB 포함)는 첫 화면과 첫 일정이 다 뜬 뒤에 한다
 if ("serviceWorker" in navigator) {
-  const reg = () => setTimeout(() => navigator.serviceWorker.register("sw.js").catch(() => {}), 4000);
+  const reg = () => setTimeout(() => navigator.serviceWorker.register("sw.js",{updateViaCache:"none"}).then(r=>r.update()).catch(() => {}), 4000);
   if (document.readyState === "complete") reg(); else addEventListener("load", reg, { once: true });
 }
 // 첫 화면을 그린 뒤 한가할 때 무료 간단 모드를 미리 받아 둔다 (질문할 때 바로 답하게)
