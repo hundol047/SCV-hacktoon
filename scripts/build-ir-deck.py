@@ -2,17 +2,39 @@ from pptx import Presentation
 from pptx.util import Inches, Pt
 from pptx.dml.color import RGBColor
 from pptx.enum.shapes import MSO_SHAPE
-from pptx.enum.text import PP_ALIGN
+from pptx.enum.text import PP_ALIGN, MSO_ANCHOR, MSO_AUTO_SIZE
+from PIL import ImageFont
 from pathlib import Path
 R=Path(__file__).resolve().parents[1]; out=R/'artifacts/ir'; out.mkdir(parents=True,exist_ok=True)
 p=Presentation();p.slide_width=Inches(13.333);p.slide_height=Inches(7.5)
 INK='193C3B';TEAL='147862';BG='F5FAF7';MUTED='526C69';GOLD='FFBE55';WHITE='FFFFFF'
 def rect(s,x,y,w,h,color,r=False):
  a=s.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE if r else MSO_SHAPE.RECTANGLE, Inches(x), Inches(y), Inches(w), Inches(h));a.fill.solid();a.fill.fore_color.rgb=RGBColor.from_string(color);a.line.fill.background();return a
+FONT_PATH='/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc'
+FIT_REPORT=[]
+def wrapped_lines(value,size,width):
+ font=ImageFont.truetype(FONT_PATH,round(size*4))
+ lines=1;current=''
+ for ch in value:
+  if current and font.getlength(current+ch)/4>width:
+   lines+=1;current=ch
+  else:current+=ch
+ return lines
+
 def text(s,x,y,w,h,t,size=22,color=INK,bold=False):
+ # Measure against the actual Korean font, reserving room for Office font substitution.
+ requested=size
+ width=w*72-10;height=h*72-4
+ def needed(fs):
+  return sum((wrapped_lines(line,fs,width)*fs*1.2+2) if line else fs*.55 for line in t.split('\n'))
+ while needed(size)>height and size>8:size-=.5
+ FIT_REPORT.append({'slide':len(p.slides),'text':t[:50],'requested':requested,'size':size,'needed':needed(size),'height':height})
  a=s.shapes.add_textbox(Inches(x),Inches(y),Inches(w),Inches(h));f=a.text_frame;f.word_wrap=True
+ f.margin_left=f.margin_right=Pt(4);f.margin_top=f.margin_bottom=Pt(1)
+ f.vertical_anchor=MSO_ANCHOR.TOP;f.auto_size=MSO_AUTO_SIZE.NONE
  for i,line in enumerate(t.split('\n')):
-  q=f.paragraphs[0] if i==0 else f.add_paragraph();q.text=line;q.font.name='맑은 고딕';q.font.size=Pt(size);q.font.bold=bold;q.font.color.rgb=RGBColor.from_string(color);q.space_after=Pt(12)
+  q=f.paragraphs[0] if i==0 else f.add_paragraph();q.text=line;q.font.name='Noto Sans CJK KR';q.font.size=Pt(size if line else size*.5);q.font.bold=bold;q.font.color.rgb=RGBColor.from_string(color)
+  q.space_before=Pt(0);q.space_after=Pt(2 if line else 0);q.line_spacing=1.12
  return a
 def centerText(*args,**kwargs):
  a=text(*args,**kwargs)
@@ -21,12 +43,12 @@ def centerText(*args,**kwargs):
 def slide(k,title,sub=''):
  s=p.slides.add_slide(p.slide_layouts[6]);s.background.fill.solid();s.background.fill.fore_color.rgb=RGBColor.from_string(BG);text(s,.55,.28,12,.3,'보폭  /  '+k,11,TEAL,True);text(s,.55,.9,12,1,title,28,INK,True)
  if sub:text(s,.58,1.75,12,.6,sub,16,MUTED)
- rect(s,.6,7.05,12.1,.015,'CFDAD5');text(s,.6,7.15,11,.2,'MENTOR IR  ·  2026.11  ·  어르신과 아이, 서로의 보폭에 맞추는 여행',9,MUTED);text(s,12,7.12,.6,.3,f'{len(p.slides):02}',10,TEAL)
+ rect(s,.6,7.05,12.1,.015,'CFDAD5');text(s,.6,7.13,11,.28,'MENTOR IR  ·  2026.11  ·  어르신과 아이, 서로의 보폭에 맞추는 여행',9,MUTED);text(s,12,7.12,.6,.3,f'{len(p.slides):02}',10,TEAL)
  return s
 def cards(s,items,y=2.55):
  w=12.1/len(items)-.18
  for i,(head,body) in enumerate(items):
-  x=.6+i*(w+.18);rect(s,x,y,w,3.7,WHITE,True);text(s,x+.22,y+.25,w-.44,.8,head,23,TEAL,True);text(s,x+.22,y+1.15,w-.44,2.4,body,19)
+  x=.6+i*(w+.18);rect(s,x,y,w,3.7,WHITE,True);text(s,x+.22,y+.25,w-.44,.8,head,22,TEAL,True);text(s,x+.22,y+1.15,w-.44,2.4,body,18)
 def note(s,t):text(s,.65,6.55,12,.4,t,11,MUTED)
 def pic(s,name,x,y,w,h):
  from PIL import Image
@@ -42,7 +64,7 @@ rect(s,.6,2.5,7.8,3.65,TEAL,True);text(s,.95,2.85,7.1,2.5,'“나의 이동 조�
 s=slide('PRODUCT · ACTUAL SCREEN','말하거나 고르면, 여행 조건을 일정으로 연결합니다')
 pic(s,'mobility-form.png',.6,2.1,5.3,4.7);text(s,6.35,2.65,6,3.6,'01  어르신·아이·휠체어 시작 유형\n02  보행·휠체어·유모차·화장실 선택\n03  조건이 확인된 장소로 일정 구성\n04  필수 조건을 유지하며 일정 변경',24,INK,True)
 s=slide('PRODUCT · ACTUAL SCREEN','코스와 숙소를 같은 여행 흐름에서 비교합니다')
-pic(s,'result.png',.6,2.05,8,4.85);text(s,9,2.55,3.65,3.7,'추천 / 여유롭게 / 색다른 코스\n\n권역 내 숙소와 예약 검색\n\n예상 비용은 범위로 표시\n\n날짜별 일정과 가족 의견',19);note(s,'화면: 이번에 이식한 앱에서 직접 생성한 일정. 숙소 예약 링크는 검색 연결이며 실시간 최저가 확정이 아닙니다.')
+pic(s,'result.png',.6,2.05,8,4.3);text(s,9,2.55,3.65,3.7,'추천 / 여유롭게 / 색다른 코스\n\n권역 내 숙소와 예약 검색\n\n예상 비용은 범위로 표시\n\n날짜별 일정과 가족 의견',19);note(s,'화면: 이번에 이식한 앱에서 직접 생성한 일정. 숙소 예약 링크는 검색 연결이며 실시간 최저가 확정이 아닙니다.')
 s=slide('DIFFERENTIATION','차별성은 이동 조건을 지키며 일정을 다시 맞추는 데 있습니다')
 cards(s,[('검색 → 실행 일정','짧게 걷기·휠체어 진입·화장실\n필수 조건으로 장소를 선별\n\n휠체어 대여와 진입 정보를 구분'),('대화 → 조건 변경','AI가 필요한 이동 조건을 해석\n\n코스를 바꿔도 필수 조건 유지\n관광 뒤 20분의 여유 시간 확보'),('개인 → 가족 결정','확인된 시설 원문을 함께 표시\n\n좌석·실제 경사·숙소 객실은\n현장 확인으로 정보 보완')]);note(s,'경쟁 범주: 지도·검색 / 예약 플랫폼 / 범용 AI. 특정 경쟁 서비스의 기능 부재를 주장하지 않습니다.')
 s=slide('MARKET · TAM / SAM / SOM','시장 규모와 우리가 확보할 규모를 분리합니다','금액 기준: 연간 여행 소비액. 플랫폼 매출과 구분합니다.')
@@ -76,7 +98,19 @@ refs=[('1  TAM · 국내여행 지출 39.5조 원','문화체육관광부, 2025�
 for i,(a,b,u) in enumerate(refs):
  y=2.2+i*1.1;text(s,.65,y,12,.35,a,18,TEAL,True);text(s,.65,y+.4,12,.35,b,14);t=text(s,.65,y+.74,12,.24,u,10,MUTED);t.text_frame.paragraphs[0].runs[0].hyperlink.address=u
 text(s,.65,5.7,12,.8,'SAM = 5.858조 × 10%. SOM = 2,000팀 × 50만 원.\n고객 비중·팀 수·객단가·전환율·수수료는 검증 전 가정. 자료 확인일: 2026.11.11.',15)
-p.save(out/'보폭_IR_맞춤추천_리디자인.pptx')
+# Remove theme-inherited shadows; keep cards, rules and circles clean.
+from pptx.oxml.xmlchemy import OxmlElement
+for page in p.slides:
+ for shape in page.shapes:
+  spPr=getattr(shape._element,'spPr',None)
+  if spPr is not None:
+   spPr.append(OxmlElement('a:effectLst'))
+  for effect in shape._element.xpath('.//a:effectRef'):effect.set('idx','0')
+  if shape.shape_type==1 and shape.auto_shape_type==MSO_SHAPE.ROUNDED_RECTANGLE:shape.adjustments[0]=.08
+assert all(item['needed']<=item['height'] for item in FIT_REPORT), 'Text exceeds its frame'
+p.save(out/'보폭_IR_글자크기_정렬수정.pptx')
+import json
+(out/'typography-check.json').write_text(json.dumps(FIT_REPORT,ensure_ascii=False,indent=2))
 # Basic artifact integrity: all shapes fit inside the slide.
 for i,s in enumerate(p.slides):
  for a in s.shapes:
