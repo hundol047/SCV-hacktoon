@@ -114,11 +114,11 @@ export function estimateTrip(trip, input, people, fees = {}, benefits = [], long
   }
 
   const total = { low: rows.reduce((s, r) => s + r.low, 0), high: rows.reduce((s, r) => s + r.high, 0) };
-  // 5) 돌려받는 돈: 입장권만 내면 바로 주는 장소 환급(지역 상품권)은 확실한 몫으로 빼고,
+  // 5) 지역 상품권은 현금 결제 할인과 다르므로 결제 예상액에서 빼지 않는다.
   //    신청·심사가 필요한 지원 사업은 "조건이 맞으면 최대"로 따로 보여 준다 (합계에서 빼지 않음)
   const sure = benefits.filter((b) => b.kind === "place" && b.status === "auto").map((b) => ({ id: b.id, title: b.title, amount: b.amount * n }));
   const maybe = benefits.filter((b) => b.kind === "program" && b.status !== "closed").map((b) => ({ id: b.id, title: b.title, amount: b.amount, unconfirmed: !!b.unconfirmed }));
   const back = sure.reduce((s, b) => s + b.amount, 0);
-  const net = { low: Math.max(0, total.low - back), high: Math.max(0, total.high - back) };
+  const net = { ...total }; // Compatibility alias: no unreceived benefits deducted.
   return { rows, total, net, refund: { sure, maybe, back }, perPerson: { low: round100(net.low / n), high: round100(net.high / n) }, unknownFees, farBus, people: { ...people }, n };
 }

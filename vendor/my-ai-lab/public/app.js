@@ -1325,7 +1325,11 @@ function lodgingHTML(day) {
 }
 
 /* ---------- 혜택 내비 + 증빙 보관함 ---------- */
-const proofKey = () => `proofs:${state.input.region}:${state.input.date}`;
+const legacyProofKey = () => `proofs:${state.input.region}:${state.input.date}`;
+const proofKey = () => {
+  state.opts.voteKey ||= randomKey(16);
+  return `proofs:v2:${state.opts.voteKey}:${state.input.region}:${state.input.date}`;
+};
 const loadProofs = () => store.get(proofKey()) || {};
 // 반값여행 예상 환급: 이 일정의 예상 경비(교통·입장·식사·숙박) 50%, 1명 최대 10만 원·2명 이상 최대 20만 원.
 // 경비 중 대상 시군에서 쓴 몫만 인정되므로 "최대"로 보여 준다
@@ -1343,12 +1347,14 @@ function renderBenefits() {
   if (!list.length) { box.hidden = true; return; }
   box.hidden = false;
   const proofs = loadProofs();
+  const legacyProofs = store.get(legacyProofKey()) || {};
   const docKey = `half-document:${state.opts.voteKey || proofKey()}:${trip.days.flatMap(d=>d.items.map(i=>i.id)).join(",")}`;
   const drafts=store.get(docKey)||{};
   const total = list.filter((b) => b.kind === "place").reduce((a, b) => a + b.amount, 0);
   const badge = { auto: t("일정에 포함 · 현장에서 받기"), check: t("시군 공고에서 회차 확인") };
   box.innerHTML = `
     <h3>${t("이 일정으로 받는 혜택")}${total ? ` <span class="sum">${t("현장 환급 {n}원", { n: total.toLocaleString() })}</span>` : ""}</h3>
+    ${Object.values(legacyProofs).some(a=>Array.isArray(a)&&a.length) ? `<p>이 지역·날짜로 보관한 이전 증빙이 있어요. 현재 여행의 증빙인지 확인한 뒤 옮겨 주세요.</p><button type="button" class="ghost small" data-import-proof>이전 증빙을 이 여행으로 옮기기</button>` : ""}
     <ul class="benefit-list">${list.map((b) => {
       const need = b.proofs || [];
       const have = need.filter((p) => (proofs[b.id + ":" + p] || []).length).length;
@@ -1413,6 +1419,13 @@ $("#benefits").addEventListener("change", async (e) => {
   renderBenefits();
 });
 $("#benefits").addEventListener("click", (e) => {
+  if(e.target.closest('[data-import-proof]')) {
+    const old=store.get(legacyProofKey())||{}, current=loadProofs();
+    for(const [key,photos] of Object.entries(old))if(Array.isArray(photos))current[key]=[...new Set([...(current[key]||[]),...photos])];
+    if(!store.set(proofKey(),current))return toast("저장 공간이 부족해 옮기지 못했어요. 기존 증빙은 유지됩니다.");
+    try{localStorage.removeItem(legacyProofKey());}catch{}
+    renderBenefits();persist();return toast("이 여행의 증빙 보관함으로 옮겼어요");
+  }
   const d = e.target.dataset.del; if (!d) return;
   const [key, i] = d.split("|");
   const all = loadProofs(); all[key].splice(Number(i), 1); store.set(proofKey(), all);
@@ -1507,9 +1520,9 @@ function renderCosts() {
     return "";
   };
   box.innerHTML = `
-    <h3>${t("예상 비용")}</h3>
-    <div class="cost-total"><b>${range(e.net.low, e.net.high)}</b><span>${t("1인당 {r}", { r: range(e.perPerson.low, e.perPerson.high) })}</span></div>
-    ${e.refund.back ? `<p class="cost-refund">${t("환급 {won} 뺀 금액 (돌려받는 지역 상품권: {list})", { won: won(e.refund.back), list: e.refund.sure.map((b) => esc(benefitText(b, "title"))).join(", ") })}</p>` : ""}
+    <h3>${t("결제 예상액")}</h3>
+    <div class="cost-total"><b>${range(e.total.low, e.total.high)}</b><span>${t("1인당 {r}", { r: range(e.perPerson.low, e.perPerson.high) })}</span></div>
+    ${e.refund.back ? `<p class="cost-refund">${t("별도 혜택: 지역상품권 {won} 상당 ({list}) · 결제 예상액에서 차감하지 않았어요. 사용처와 지급 조건을 확인하세요.", { won: won(e.refund.back), list: e.refund.sure.map((b) => esc(benefitText(b, "title"))).join(", ") })}</p>` : ""}
     ${e.refund.maybe.length ? `<p class="cost-refund maybe">${t("신청하면 더 돌려받을 수 있어요: {list}", { list: e.refund.maybe.map((b) => t("{title} 최대 {won}", { title: esc(benefitText(b, "title")), won: won(b.amount) }) + (b.unconfirmed ? t(" (공고 확인 필요)") : "")).join(" · ") })}</p>` : ""}
     <div class="cost-people">
       <span>${t("어른")}</span><button type="button" class="ghost small" data-ppl="adults:-1" aria-label="-">−</button><b>${people.adults}</b><button type="button" class="ghost small" data-ppl="adults:1" aria-label="+">+</button>
@@ -2122,14 +2135,29 @@ document.addEventListener("click", async (e) => {
 });
 
 /* ---------- 공유 / 캘린더 ---------- */
+function showShareLink(url) {
+  let dialog=$("#shareLinkDialog");
+  if(!dialog){
+    dialog=document.createElement("dialog");dialog.id="shareLinkDialog";dialog.className="report-dlg";
+    dialog.innerHTML=`<form method="dialog"><h3>여행 링크 공유</h3><p>자동 복사를 사용할 수 없어요. 아래 링크를 선택한 뒤 복사해 주세요.</p><label for="shareLinkText">공유할 링크</label><textarea id="shareLinkText" readonly rows="4" style="width:100%;box-sizing:border-box"></textarea><button type="submit" class="ghost">닫기</button></form>`;
+    document.body.append(dialog);
+  }
+  const field=dialog.querySelector("textarea");field.value=url;
+  dialog.showModal();field.focus();field.select();
+}
 $("#shareBtn").addEventListener("click", async () => {
   track("share");
   const url = location.href;
   const vote = document.body.classList.contains("has-server") && state?.opts?.voteKey;
-  try {
-    if (navigator.share) await navigator.share({ title: t("강원 여행 일정"), ...(vote ? { text: t("장소마다 👍👎로 같이 골라요") } : {}), url });
-    else { await navigator.clipboard.writeText(url); toast(vote ? t("링크를 복사했어요 · 받은 사람이 장소마다 👍👎를 남길 수 있어요") : t("링크를 복사했어요")); }
-  } catch {}
+  if(navigator.share){
+    try{await navigator.share({title:t("강원 여행 일정"),...(vote?{text:t("장소마다 👍👎로 같이 골라요")}:{}),url});return;}
+    catch(error){if(error.name==="AbortError")return;}
+  }
+  try{
+    if(!navigator.clipboard?.writeText)throw Error("Clipboard unavailable");
+    await navigator.clipboard.writeText(url);
+    toast(vote?t("링크를 복사했어요 · 받은 사람이 장소마다 👍👎를 남길 수 있어요"):t("링크를 복사했어요"));
+  }catch{showShareLink(url);}
 });
 
 // 캘린더 파일 규칙: 쉼표·세미콜론·역슬래시는 앞에 역슬래시
@@ -2236,6 +2264,7 @@ function openSnapshot(saved, extra = {}) {
   trip = planTrip(state.input, state.opts);
   dayIdx = 0;
   show("result"); render();
+  persist(); // Persist a generated trip ID for older links, too.
   trip.days.forEach((_, i) => applyRoad(i));
   loadWeather();
 }
