@@ -6,7 +6,7 @@ import {savePlan,removePlan,savedPlans} from '../src/domain/course-plans';
 import {optimize} from '../src/domain/optimizer';
 import {settingFromTags,weatherAllowed} from '../src/domain/weather';
 import {placeSimilarity} from '../src/domain/place-similarity';
-const catalog=osmCatalog('서울',{elements:[...Array.from({length:6},(_,i)=>({type:'node',id:i+1,lat:37.5,lon:127+i/100,tags:{name:`관광${i}`,tourism:'museum',indoor:i===0?'no':i===1?'yes':undefined}})),{type:'node',id:10,lat:37.5,lon:127.01,tags:{name:'식당',amenity:'restaurant',indoor:'yes'}}].map(e=>({...e,tags:Object.fromEntries(Object.entries(e.tags).filter(([,v])=>v!==undefined))}))},new Date().toISOString());
+const catalog=osmCatalog('서울',{elements:[...Array.from({length:6},(_,i)=>({type:'node',id:i+1,lat:37.5,lon:127+i/100,tags:{name:`관광${i}`,tourism:'museum',indoor:i===0?'no':i===1?'yes':undefined}})),{type:'node',id:10,lat:37.5,lon:127.01,tags:{name:'향토음식점',amenity:'restaurant',indoor:'yes'}}].map(e=>({...e,tags:Object.fromEntries(Object.entries(e.tags).filter(([,v])=>v!==undefined))}))},new Date().toISOString());
 const b={...defaultBasics,mode:'real' as const,region:'서울',transport:'driving' as const,days:2,travelPriority:'budget' as const};
 const c={...defaultConditions,restInterval:null};
 it('출발 기준을 바꾸면 거리 우선 후보와 AI 입력 거리가 달라진다',()=>{

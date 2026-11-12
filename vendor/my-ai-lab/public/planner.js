@@ -226,11 +226,12 @@ function baseScore(p, input, opts, rain, dateStr = null) {
 }
 
 // 당일치기는 귀가를 생각해 19:30까지, 숙박하는 날은 밤 코스까지 21:00, 마지막 날은 18:00까지
-function dayWindow(dayIdx, totalDays) {
+function dayWindow(dayIdx, totalDays, input = {}, opts = {}) {
   const start = toMin("10:00");
   let end = toMin("21:00");
   if (totalDays === 1) end = toMin("19:30");
   else if (dayIdx === totalDays - 1) end = toMin("18:00");
+  if (["parents", "family"].includes(input.who) || opts.lessWalk || opts.access?.length) end = Math.min(end, toMin("20:00"));
   return { start, end };
 }
 
@@ -428,9 +429,9 @@ function buildDay(input, opts, dayIdx, used, anchorKey, keep, exclude, keepOnly,
   input = dayInput(input, dayIdx);
   const dateStr = addDays(input.date, dayIdx);
   const rain = !!(opts.rainDays || [])[dayIdx];
-  const win = dayWindow(dayIdx, input.days), end = win.end;
-  // 마지막 날·당일치기는 집에 가야 하므로 끝나는 시각을 넘기지 않는다
-  if (dayIdx === input.days - 1) opts = { ...opts, strictEnd: true };
+  const win = dayWindow(dayIdx, input.days, input, opts), end = win.end;
+  // 모든 일정은 해당 날짜의 종료 시각을 넘기지 않는다
+  opts = { ...opts, strictEnd: true };
   // 첫날 출발 시각을 정했으면 그 시각에 출발지를 떠난다 (06:00~12:00)
   const t0 = dayIdx === 0 && /^\d{2}:\d{2}$/.test(opts.startTime || "") ? toMin(opts.startTime) : null;
   // 06:00~18:00 (기차·버스 도착 시각으로 정한 경우 오후일 수 있다)
@@ -798,19 +799,19 @@ export function verify(days) {
 // 실제 도로 이동시간(분)으로 하루 일정 시간을 다시 계산. 운영시간을 지킬 수 없으면 null
 export function retimeDay(day, input, opts, legMins) {
   opts=mobilityOptions(opts);
-  const { end } = dayWindow(day.dayIdx ?? 0, input.days);
+  const { end } = dayWindow(day.dayIdx ?? 0, input.days, input, opts);
   let from = day.start || baseOf(input), t = day.items.length ? day.items[0].start - day.items[0].travelMin : 0;
   const items = [];
   for (let i = 0; i < day.items.length; i++) {
     const it = day.items[i];
     const leg = it.travelMode === "walk" || it.travelMode === "same" ? it.travelMin : legMins[i];
     // 계획보다 앞당기지는 않고, 도로 사정으로 늦어질 때만 뒤로 민다
-    const r = tryPlace(it.place, from, Math.max(t, it.start - leg), input, opts, end + 60, day.date, leg);
+    const r = tryPlace(it.place, from, Math.max(t, it.start - leg), input, { ...opts, strictEnd: true }, end, day.date, leg);
     if (!r) return null;
     items.push({ ...it, start: r.start, end: r.finish, travelMin: leg, road: drives(it.travelMode) });
     from = it.place; t = r.finish + (it.kind === "visit" ? (opts.restMin||0) : 0);
   }
-  return { ...day, items, road: true };
+  return { ...day, items, road: true, roadIssue: false };
 }
 
 export function summarize(days, lodging = null, from = null) {
@@ -933,13 +934,27 @@ export function planOptions(input, opts = {}) {
   third.opts.lodgingId = thirdTrip.lodging?.id;
   let secondTrip = planTrip(input, second.opts);
   const signature=t=>t.days.flatMap(d=>d.items.map(i=>i.id)).sort().join('|');
-  if(signature(secondTrip)===signature(best)){
-    for(const place of bestVisits){
-      const trialOpts={...second.opts,exclude:[...new Set([...(second.opts.exclude||[]),place.id])]};
+  // Compare each day too: a gentler total must not hide a harder individual day.
+  const gentler = t => count(t) <= count(best) && t.totals.moveMin <= best.totals.moveMin && t.totals.walkKm <= best.totals.walkKm &&
+    t.days.every((d,i) => { const a=finalize([d],null).totals,b=finalize([best.days[i]],null).totals;
+      return a.moveMin<=b.moveMin && a.walkKm<=b.walkKm &&
+        sights(d)>=Math.min(2,sights(best.days[i])) &&
+        d.items.filter(it=>it.kind!=="visit").length>=best.days[i].items.filter(it=>it.kind!=="visit").length; });
+  if (!gentler(secondTrip) || signature(secondTrip)===signature(best)) {
+    let found=false;
+    // Preserve meals and route; omit an optional visit rather than detouring.
+    for (const place of [...bestVisits].reverse()) {
+      const trialOpts={...base,pace:'relaxed',lessWalk:true,lodgingId:best.lodging?.id,
+        keep:best.days.map(d=>d.items.filter(i=>i.id!==place.id).map(i=>i.id))};
+      if(trialOpts.keep.some(ids=>!ids.length))continue;
       const trial=planTrip(input,trialOpts);
-      if(signature(trial)!==signature(best) && !thin(trial)){second.opts=trialOpts;secondTrip=trial;break;}
+      if(gentler(trial) && signature(trial)!==signature(best)) {
+        second.opts=trialOpts;secondTrip=trial;found=true;break;
+      }
     }
+    if(!found){second.opts={...base,lodgingId:best.lodging?.id};secondTrip=best;}
   }
+  second.sameAsBest=signature(secondTrip)===signature(best);
   const pick = (t) => [...new Set(visits(t).sort((a, b) => b.pop - a.pop).map((p) => p.name))].slice(0, 3);
   return [
     { key: "best", opts: base, trip: best },

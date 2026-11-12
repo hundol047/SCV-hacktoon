@@ -92,8 +92,12 @@ assert.equal(hoursFor(P("solhyang"), "2026-12-01").close, 17 * 60);
   const input = { date: "2026-11-12", days: 1, who: "couple", likes: ["sea", "cafe"], move: "car" };
   const trip = planTrip(input, {});
   const day = trip.days[0];
-  const re = retimeDay(day, input, {}, day.items.map((i) => i.travelMin + 3));
+  // A full day may no longer spill past 19:30 when road travel is slower.
+  assert.equal(retimeDay(day, input, {}, day.items.map((i) => i.travelMin + 3)), null);
+  const shorter = { ...day, items: day.items.slice(0, 2) };
+  const re = retimeDay(shorter, input, {}, shorter.items.map((i) => i.travelMin + 3));
   assert.ok(re);
+  assert.ok(re.items.every(i => i.end <= 19 * 60 + 30));
   assert.equal(verify([re]), 0);
   assert.ok(re.items[0].start >= day.items[0].start);
 }

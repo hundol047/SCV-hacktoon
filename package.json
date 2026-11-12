@@ -24,7 +24,9 @@
     "photos:collect": "node scripts/collect-korea-photos.mjs",
     "photos:verify": "node scripts/verify-photos.mjs",
     "prebuild": "node scripts/prepare-map-worker.mjs",
-    "predev": "node scripts/prepare-map-worker.mjs"
+    "predev": "node scripts/prepare-map-worker.mjs",
+    "test:lab": "npm --prefix vendor/my-ai-lab test",
+    "test:lab:browser": "playwright test --config playwright.active-lab.config.ts"
   },
   "dependencies": {
     "@aws-sdk/client-bedrock-runtime": "^3.1161.0",

@@ -17,5 +17,12 @@ export function mobilityEligible(p,opts={}) {
 export function mobilityOptions(opts={}) {
   const access=opts.access||[];
   return access.some(x=>['shortwalk','wheelchair','toilet','stroller'].includes(x))
-    ? {...opts,pace:'relaxed',lessWalk:true,restMin:20}:opts;
+    ? {...opts,pace:'relaxed',lessWalk:true,restMin:Math.max(20, Number(opts.restMin)||0)}:opts;
+}
+
+// Name a rest location only when the source explicitly supports seating and a toilet.
+export function restEvidence(place) {
+  const text=Object.values(place?.access?.text || {}).join(' ');
+  const seat=/벤치|의자|좌석|앉을/.test(text) && !/(벤치|의자|좌석).{0,8}(없|불가)/.test(text);
+  return {seat, toilet:place?.access?.toilet===true, stepFree:stepFreeEvidence(place || {})};
 }

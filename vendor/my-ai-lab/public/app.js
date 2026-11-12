@@ -1,3 +1,5 @@
+import { halfDocumentDraft } from "./half-documents.js";
+import { restEvidence } from "./mobility.js";
 // Integration: retain the deployed Yeohaengit Bedrock model and instance-role credentials.
 async function cloudAI(action,payload){const response=await fetch('api/'+action,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:AbortSignal.timeout(65000)});const data=await response.json();if(!response.ok)throw Error(data.error||'AI 요청 실패');return data;}
 import { recommendBooking, bookingPeople, bookingScope } from "./booking-links.js";
@@ -211,11 +213,12 @@ function renderOptions() {
   box.hidden = false;
   box.innerHTML = `<h3>${t("일정 3개 중에서 고르세요")}</h3><p class="why">${esc(whyText())}</p>
     <div class="opt-list">${list.map((o) => `<button type="button" class="opt${state.choice === o.key ? " on" : ""}" data-opt="${o.key}">
-      <b>${t(OPT_NAME[o.key])}</b><span class="opt-sub">${t(OPT_SUB[o.key])}</span>
-      <span class="opt-stats">${t("{n}곳 · 이동 {m} · 걷기 {km}km", { n: o.places, m: minutesLabel(o.totals.moveMin), km: o.totals.walkKm })}</span>
+      <b>${t(OPT_NAME[o.key])}</b><span class="opt-sub">${o.sameAsBest ? "현재 조건에서는 추천 일정이 가장 여유로워요" : t(OPT_SUB[o.key])}</span>
+      <span class="opt-stats">${t("{n}곳 · 이동 {m} · 예상 보행 {km}km", { n: o.places, m: minutesLabel(o.totals.moveMin), km: o.totals.walkKm })}</span>
       <span class="opt-hl">${o.highlights.map((n) => esc(placeName(PLACES.find((p) => p.name === n) || { name: n }))).join(" · ")}</span>
       ${halfPriceIn(o.trip) ? `<span class="opt-half">${t("💰 반값여행 대상 지역 포함")}</span>` : ""}
       <span class="opt-pick">${state.choice === o.key ? t("지금 보는 일정") : t("이 일정으로")}</span></button>`).join("")}</div>`;
+  box.insertAdjacentHTML("beforeend", `<p class="why">예상 보행은 장소별 보행 부담 등급과 이동거리로 계산한 추정값이며 실제 측정 거리와 다를 수 있어요.</p>`);
 }
 document.addEventListener("click", (e) => {
   const b = e.target.closest("[data-opt]"); if (!b || !state?.baseOpts) return;
@@ -223,10 +226,9 @@ document.addEventListener("click", (e) => {
   if (!o || state.choice === o.key) return;
   state.choice = o.key;
   state.opts = { ...o.opts, rainDays: state.baseOpts.rainDays };
-  if (o.key !== "different") delete state.opts.lodgingId;
   dayIdx = 0;
   track("plan_option", o.key);
-  rebuild();
+  rebuild(true);
   toast(t("{name} 일정으로 바꿨어요", { name: t(OPT_NAME[o.key]) }));
 });
 
@@ -386,7 +388,7 @@ document.addEventListener("click", (e) => {
     $("#compareBox").innerHTML = `<div class="cmp-wrap"><table class="cmp"><thead><tr><th></th>${rows.map((x) => `<th>${esc(savedName(x))}</th>`).join("")}</tr></thead><tbody>
       <tr><th>${t("장소")}</th>${rows.map((x) => `<td${bp(x)}>${x.sum.places}</td>`).join("")}</tr>
       <tr><th>${t("이동")}</th>${rows.map((x) => `<td${bm(x)}>${minutesLabel(x.sum.moveMin)}</td>`).join("")}</tr>
-      <tr><th>${t("걷기")}</th>${rows.map((x) => `<td${bw(x)}>${x.sum.walkKm}km</td>`).join("")}</tr>
+      <tr><th>${t("예상 보행")}</th>${rows.map((x) => `<td${bw(x)}>${x.sum.walkKm}km</td>`).join("")}</tr>
       <tr><th>${t("예상 비용")}</th>${rows.map((x) => `<td${bc(x)}>${x.sum.cost ? `${won(x.sum.cost.low)}~${won(x.sum.cost.high)}` : "-"}</td>`).join("")}</tr>
       <tr><th>${t("주요 장소")}</th>${rows.map((x) => `<td>${x.sum.stops.map((n) => esc(placeName(PLACES.find((p) => p.name === n) || { name: n }))).join(", ")}</td>`).join("")}</tr>
     </tbody></table></div>`;
@@ -650,7 +652,7 @@ function render() {
   $("#stats").innerHTML = `
     <span>${t("{n}곳", { n: tot.places })}</span>
     <span>${t("이동 {t}", { t: minutesLabel(tot.moveMin) })}</span>
-    <span class="${tot.conflicts ? "warn" : "ok"}">${tot.conflicts ? t("영업시간 충돌 {n}건", { n: tot.conflicts }) : t("영업시간·휴무 확인 완료")}</span>
+    <span class="${tot.conflicts ? "warn" : "ok"}">${tot.conflicts ? t("영업시간 충돌 {n}건", { n: tot.conflicts }) : t("등록된 영업시간·휴무 기준 충돌 없음")}</span>
     ${trip.days.every((d) => d.road) && drives(state.input.move) ? `<span>${t("실제 도로 기준")}</span>` : ""}`;
 
   $("#tabs").innerHTML = trip.days.map((d, i) => {
@@ -665,7 +667,7 @@ function render() {
   document.querySelectorAll("#quick button").forEach((b) => b.classList.toggle("on", !!active[b.dataset.q]));
 
   const day = trip.days[dayIdx];
-  $("#timeline").innerHTML = sunHTML(day) + busNoteHTML(day) + (day.items.length ? day.items.map((it, i) => itemHTML(it, i, day)).join("") : `<li class="empty">${t("선택한 이동 조건을 확인할 수 있는 장소가 부족해요. 다른 권역을 살펴보세요. 필수 조건은 유지합니다.")}</li>`) + lodgingHTML(day) + backJamHTML(day);
+  $("#timeline").innerHTML = (day.roadIssue ? `<li class="empty" role="status">실제 도로 이동시간을 반영하면 운영시간 또는 종료시간을 넘어요. 장소를 줄이거나 가까운 곳으로 변경해 주세요. 현재 시간표는 추정 이동시간 기준입니다.</li>` : "") + sunHTML(day) + busNoteHTML(day) + (day.items.length ? day.items.map((it, i) => itemHTML(it, i, day)).join("") : `<li class="empty">${t("선택한 이동 조건을 확인할 수 있는 장소가 부족해요. 다른 권역을 살펴보세요. 필수 조건은 유지합니다.")}</li>`) + lodgingHTML(day) + backJamHTML(day);
   if (canVote() && votes.key !== state.opts.voteKey) loadVotes(); // 다른 일정(또는 받은 링크)을 열면 그 일정의 표를 받는다
   renderOptions();
   renderHeard();
@@ -713,7 +715,13 @@ function itemHTML(it, i, day) {
   if (it.travelMode === "taxi" && it.km) leg += t(" · 약 {won}", { won: won(taxiFare(it.km)) });
   // 앞 장소를 나와 다음 장소에 도착하기까지 30분 넘게 비면 "자유 시간"으로 보여 준다 (저녁 시간 기다림·문 여는 시간 기다림)
   const prev = i > 0 ? day.items[i - 1] : null, free = prev ? it.start - it.travelMin - prev.end : 0;
-  if (free >= 20 && state.opts.access?.length) leg = `이동 전 여유 ${free}분 · 앉을 곳과 화장실은 방문 전 확인해 주세요 · ` + leg;
+  if (free >= 20 && (state.opts.access?.length || ["parents","family"].includes(state.input.who))) {
+    const evidence=restEvidence(prev.place);
+    const needsEntrance=state.opts.access?.some(a=>["wheelchair","stroller"].includes(a));
+    const confirmed=evidence.seat && evidence.toilet && (!needsEntrance || evidence.stepFree);
+    leg = (confirmed ? `${esc(placeName(prev.place))}에서 휴식 ${free}분 · 자료에 좌석·화장실 정보 있음 · 현장 운영 확인 필요 · `
+      : `휴식 확보 ${free}분 · ${esc(placeName(prev.place))} 주변 휴식 장소 확인 필요 (좌석·화장실·접근성 미확정) · `) + leg;
+  }
   else if (free >= 30) leg = t("자유 시간 {min}분 · 근처 산책·쉬기", { min: free }) + " · " + leg;
   // 주말·연휴 고속도로 정체(예상)만큼 첫 도착이 늦다
   if (i === 0 && day.jam) leg += `<span class="jam">${t("고속도로 정체 예상 +{min}분 ({dep} 출발 · 주말·연휴에 자주 막히는 시간대) · 일찍 출발하면 덜 막혀요", { min: day.jam.min, dep: day.jam.dep })}</span>`;
@@ -1019,6 +1027,9 @@ async function applyRoad(i) {
       persist();
       return;
     }
+    day.roadIssue = true;
+    if (i === dayIdx) render();
+    persist();
   }
   if (i === dayIdx) drawMap(day);
 }
@@ -1321,12 +1332,10 @@ const loadProofs = () => store.get(proofKey()) || {};
 function halfPriceEstimate(b) {
   const ppl = peopleNow(), n = (ppl.adults || 0) + (ppl.kids || 0);
   const cap = n >= 2 ? b.caps.group : b.caps.one;
-  let est = null;
-  try { const c = estimateTrip(trip, state.input, ppl, feesData || {}, []); est = c?.total ? Math.round((c.total.low * b.rate) / 1000) * 1000 : null; } catch { /* 비용을 아직 못 셈 */ }
   const ids = new Set(b.placeIds || []);
   const stops = trip.days.flatMap((d) => d.items.filter((it) => ids.has(it.id)).map((it) => placeName(it.place)));
-  return t("대상 시군 장소 {n}곳 ({names}) · 승인되면 경비의 50%, 최대 {cap}원", { n: stops.length, names: [...new Set(stops)].slice(0, 3).join(", "), cap: cap.toLocaleString() })
-    + (est ? t(" · 이 일정 예상 경비로는 약 {won}원까지", { won: Math.min(cap, est).toLocaleString() }) : "");
+  return t("대상 시군 장소 {n}곳 ({names}) · 승인되면 경비의 50%, 최대 {cap}원", { n: new Set(stops).size, names: [...new Set(stops)].slice(0, 3).join(", "), cap: cap.toLocaleString() })
+    + " · 대상 시군의 인정 지출만 해당하며, 실제 환급액은 심사 후 결정됩니다.";
 }
 function renderBenefits() {
   const list = benefitsFor(trip, state.input).filter((b) => b.status !== "closed");
@@ -1334,6 +1343,8 @@ function renderBenefits() {
   if (!list.length) { box.hidden = true; return; }
   box.hidden = false;
   const proofs = loadProofs();
+  const docKey = `half-document:${state.opts.voteKey || proofKey()}:${trip.days.flatMap(d=>d.items.map(i=>i.id)).join(",")}`;
+  const drafts=store.get(docKey)||{};
   const total = list.filter((b) => b.kind === "place").reduce((a, b) => a + b.amount, 0);
   const badge = { auto: t("일정에 포함 · 현장에서 받기"), check: t("시군 공고에서 회차 확인") };
   box.innerHTML = `
@@ -1348,6 +1359,11 @@ function renderBenefits() {
         ${b.note ? `<p class="b-note">${benefitText(b, "note")}</p>` : ""}
         ${b.caps ? `<p class="b-est">${halfPriceEstimate(b)}</p>` : ""}
         ${b.link ? `<a class="ghost small" href="${esc(b.link)}" target="_blank" rel="noopener">${t("지금 진행 중인 회차·신청 날짜 보기")}</a>` : ""}
+        ${b.caps ? `<section class="half-document"><h4>반값여행 서류 준비</h4>
+          <p>일정과 증빙 목록을 초안으로 정리했어요. 실제 지출과 신청 자격은 공식 공고에서 확인하세요. 작성 내용은 이 기기에 저장됩니다.</p>
+          <label>신청 준비 메모<textarea data-half-draft="${esc(b.id)}" rows="9">${esc(drafts[b.id] ?? halfDocumentDraft(b,state.input,trip,peopleNow(),proofs))}</textarea></label>
+          <button type="button" class="ghost small" data-half-download="${esc(b.id)}">작성 내용 다운로드</button>
+          <span role="status" data-half-status="${esc(b.id)}"></span></section>` : ""}
         ${need.length ? `<div class="proofs"><span>${t("증빙 {a}/{b}", { a: have, b: need.length })}</span>${need.map((p) => {
           const n = (proofs[b.id + ":" + p] || []).length;
           return `<label class="proof ${n ? "ok" : ""}">${n ? "✓ " : "+ "}${t(p)}${n > 1 ? t(" {n}장", { n }) : ""}<input type="file" accept="image/*" capture="environment" data-proof="${b.id}:${p}" hidden></label>`;
@@ -1356,6 +1372,20 @@ function renderBenefits() {
     }).join("")}</ul>
     ${Object.values(proofs).some((a) => a.length) ? `<details class="proof-box"><summary>${t("증빙 보관함 보기")}</summary><div class="proof-grid">${Object.entries(proofs).flatMap(([k, arr]) => arr.map((src, i) => `<figure><img src="${src}" alt=""><figcaption>${t(k.split(":").slice(1).join(":"))}</figcaption><button type="button" data-del="${k}|${i}">${t("삭제")}</button></figure>`)).join("")}</div></details>` : ""}`;
 }
+function halfDraftKey(){return `half-document:${state.opts.voteKey || proofKey()}:${trip.days.flatMap(d=>d.items.map(i=>i.id)).join(",")}`;}
+$("#benefits").addEventListener("input",e=>{
+  const id=e.target.dataset.halfDraft;if(!id)return;
+  const drafts=store.get(halfDraftKey())||{};drafts[id]=e.target.value;
+  const saved=store.set(halfDraftKey(),drafts);
+  const status=[...$("#benefits").querySelectorAll('[data-half-status]')].find(el=>el.dataset.halfStatus===id);
+  if(status)status.textContent=saved?"이 기기에 저장됨":"저장 공간 부족 · 다운로드로 보관하세요";
+});
+$("#benefits").addEventListener("click",e=>{
+  const id=e.target.closest('[data-half-download]')?.dataset.halfDownload;if(!id)return;
+  const field=[...$("#benefits").querySelectorAll('[data-half-draft]')].find(el=>el.dataset.halfDraft===id);if(!field)return;
+  const url=URL.createObjectURL(new Blob(['\ufeff'+field.value],{type:'text/plain;charset=utf-8'}));
+  const a=document.createElement('a');a.href=url;a.download=`보폭_반값여행_신청준비_${state.input.date}.txt`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+});
 // 영수증 사진은 줄여서 이 기기에만 저장
 function shrink(file, max = 1200) {
   return new Promise((resolve, reject) => {
@@ -1972,7 +2002,7 @@ let pendingVoice = null;
 const VOICE_LANG = { ko: "ko-KR", en: "en-US", ja: "ja-JP", zh: "zh-CN" };
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 const nativeVoice = () => !!(window.OhneulApp && window.OhneulApp.startVoice && (!window.OhneulApp.hasVoice || window.OhneulApp.hasVoice()));
-const canVoice = () => navigator.onLine !== false && (nativeVoice() || !!SR);
+const canVoice = () => navigator.onLine !== false && (nativeVoice() || (window.isSecureContext && !!SR));
 let listening = null; // { button, input, done }
 function listen(button, input, done) {
   if (listening) { stopListening(); return; }
@@ -2012,7 +2042,9 @@ window.__voiceResult = (text) => voiceDone(String(text || "").trim());
 function setupMics() {
   const ok = canVoice();
   for (const id of ["micBtn", "askMic"]) { const b = $("#" + id); if (b) b.hidden = !ok; }
-  if (!ok) $("#voiceHint").textContent = t("가고 싶은 여행을 글로 써 주세요");
+  if (!ok) $("#voiceHint").textContent = !window.isSecureContext
+    ? "음성 입력은 HTTPS 보안 연결에서 사용할 수 있어요. 지금은 아래에 여행 조건을 글로 입력해 주세요."
+    : t("가고 싶은 여행을 글로 써 주세요");
 }
 $("#micBtn").addEventListener("click", () => listen($("#micBtn"), $("#aiStartInput"), () => $("#aiStart").requestSubmit()));
 $("#askMic")?.addEventListener("click", () => listen($("#askMic"), $("#askInput"), () => $("#askForm").requestSubmit()));
