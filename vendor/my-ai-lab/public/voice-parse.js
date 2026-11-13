@@ -1,3 +1,4 @@
+import {parseCompanions} from './companions.js';
 // 말로 한 여행 요청 → 일정 조건. "다음 주 토요일 어른 둘 아이 하나랑 강릉 2박, 서울역에서 기차로 아침 일찍"
 // 지역·동행·이동·취향·여러 권역은 기존 한 줄 해석(startLocal)을 쓰고, 말로 할 때 흔한 표현을 원문에서 직접 읽어 덮어쓴다:
 // 날짜(요일·이번/다음 주·주말·N일 뒤), 일수(사흘·N일 동안·N nights), 인원(어른·아이 수), 휠체어·유모차, 출발지, 출발 시각, 여유/알차게, 덜 걷기
@@ -102,17 +103,12 @@ export function parseAccess(raw) {
 const ORIGIN_WORDS = [
   [/서울역|seoulstation|ソウル駅|首尔站|首爾站/, "서울역"], [/청량리|cheongnyangni|清凉里|清涼里/, "청량리역"], [/상봉|sangbong/, "상봉역"],
   [/동서울|dongseoul|東ソウル|东首尔/, "동서울종합터미널"], [/고속터미널|강남터미널|expressbusterminal|高速ターミナル|高速巴士客运站/, "서울고속버스터미널"],
-  [/인천공항|incheon|仁川/, "인천국제공항"], [/김포|gimpo|金浦/, "김포국제공항"], [/양양공항|yangyangairport|襄阳机场|襄陽空港/, "양양국제공항"],
+  [/인천공항|incheonairport|仁川空港/, "인천국제공항"], [/김포공항|gimpoairport|金浦空港/, "김포국제공항"], [/양양공항|yangyangairport|襄阳机场|襄陽空港/, "양양국제공항"],
 ];
-// 도시 이름만 말하면 "~에서/from/から/从"이 붙을 때만 출발지로 본다 (그 도시 안의 대표 역·터미널)
-const CITY_FROM = [[/(부산|busan|釜山)/, "부전역"], [/(대구|daegu|大邱)/, "동대구역"], [/(대전|daejeon|大田)/, "대전복합터미널"], [/(서울|seoul|ソウル|首尔|首爾)/, "서울역"]];
+// A city alone is not an exact departure location. Ask the user to choose.
 export function parseStart(raw) {
   const s = raw.toLowerCase().replace(/\s+/g, "");
   for (const [re, name] of ORIGIN_WORDS) if (re.test(s)) return ORIGINS.find((o) => o.name === name) || null;
-  for (const [re, name] of CITY_FROM) {
-    const city = re.source; // "(부산|busan|釜山)" — 괄호째 써야 "|"가 뒤 낱말까지 묶이지 않는다
-    if (new RegExp(`${city}(에서|출발)|from${city}|${city}から|从${city}|從${city}|${city}出发`).test(s)) return ORIGINS.find((o) => o.name === name) || null;
-  }
   return null;
 }
 
@@ -142,6 +138,8 @@ export function parseSpoken(text, today) {
   const people = parsePeople(raw);
   if (people?.kids && !["pet", "parents"].includes(input.who)) input.who = "family";
   else if (people && !people.kids && input.who === "couple" && people.adults === 1) input.who = "solo";
+  const selected=parseCompanions(raw);
+  input.companions=[...new Set([...(selected.length?selected:[input.who]),...(people?.kids?["family"]:[])])];
   const access = parseAccess(raw);
   const start = parseStart(raw);
   const startTime = parseStartTime(raw);

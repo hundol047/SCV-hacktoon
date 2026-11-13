@@ -60,3 +60,9 @@ body {background-image:radial-gradient(ellipse at 8% 15%,#fff2ba 0,transparent 4
 .photo-retry { position:relative; z-index:2; max-width:100%; padding:8px 6px; border:1px solid #bed4df; border-radius:8px; background:#fff; color:#164e6b; font-size:12px; cursor:pointer; }
 #mapStatus { padding:16px; margin:12px 0; border:1px solid #e8ce8e; border-radius:14px; background:#fff8e8; color:#584622; font-size:14px; line-height:1.6; }
 #mapStatus p { margin:0 0 10px; }
+
+.seg[data-name="who"] { flex-wrap:wrap; gap:8px; padding:8px; }
+.seg[data-name="who"] button { flex:1 1 110px; min-height:44px; }
+#startLabel { overflow-wrap:anywhere; }
+#startResults small { display:block; margin-top:5px; font-size:12px; color:var(--sub); white-space:normal; }
+#startPanel .start-acts { flex-wrap:wrap; gap:8px; }

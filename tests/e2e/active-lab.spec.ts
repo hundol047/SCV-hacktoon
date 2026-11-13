@@ -1,6 +1,11 @@
 import {test,expect} from '@playwright/test';
 import {readFile} from 'node:fs/promises';
 
+test.beforeEach(async({page},info)=>{
+  if(info.title.includes('departure'))return;
+  await page.addInitScript(()=>localStorage.setItem('startPoint',JSON.stringify({name:'강릉역',lat:37.764,lng:128.899,confirmed:true})));
+});
+
 test('active app preserves half-price drafts and selected courses on mobile',async({page})=>{
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto('/lab/',{waitUntil:'domcontentloaded'});
@@ -119,5 +124,37 @@ test('explicit rest confirmation is assigned and survives reload',async({page})=
   await page.locator('[data-rest-config]').first().click();
   await page.locator('[data-rest-clear]').click();
   await expect(page.locator('#timeline')).not.toContainText('사용자가 시설 확인');
+  expect(errors).toEqual([]);
+});
+
+test('combined companions and departure require explicit selection',async({page})=>{
+  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
+  await page.addInitScript(()=>Object.defineProperty(navigator,'geolocation',{value:{getCurrentPosition:(_ok:any,error:any)=>error({code:1})},configurable:true}));
+  await page.route('**/api/location',route=>route.fulfill({json:{locations:[{id:'selected',name:'직접 선택한 출발지',address:'강릉 테스트 주소',latitude:37.764,longitude:128.899}]}}));
+  await page.goto('/lab/',{waitUntil:'domcontentloaded'});
+  await page.locator('#manual summary').click();
+  await expect(page.locator('#startLabel')).toContainText('출발지를 알려');
+  const group=page.locator('.seg[data-name="who"]');
+  await group.locator('[data-v="family"]').click();await group.locator('[data-v="pet"]').click();
+  await expect(group.locator('.on')).toHaveCount(3);
+  await group.locator('[data-v="solo"]').click();await expect(group.locator('.on')).toHaveCount(1);
+  await group.locator('[data-v="parents"]').click();await group.locator('[data-v="family"]').click();await group.locator('[data-v="pet"]').click();
+  await page.locator('#date').fill('2026-11-20');
+  await page.locator('#form button[type="submit"]').click();
+  await expect(page.locator('#result')).not.toBeVisible();
+  await expect(page.locator('#startPanel')).toBeVisible();
+  await page.locator('#startGps').click();
+  await expect(page.locator('#startLabel')).toContainText('출발지를 알려');
+  await page.locator('#startSearch').fill('테스트 주소');await page.locator('#startAddress').click();
+  await page.locator('#startResults [data-start]').first().click();
+  await expect(page.locator('#startLabel')).toHaveText('직접 선택한 출발지');
+  await page.locator('#form button[type="submit"]').click();
+  await expect(page.locator('#result')).toBeVisible({timeout:30000});
+  const snap=()=>page.evaluate(()=>JSON.parse(decodeURIComponent(escape(atob(location.hash.slice(1))))));
+  expect((await snap()).input.companions.sort()).toEqual(['family','parents','pet']);
+  expect((await snap()).opts.start.name).toBe('직접 선택한 출발지');
+  await page.reload({waitUntil:'domcontentloaded'});
+  await expect(page.locator('#result')).toBeVisible();
+  expect((await snap()).input.companions.sort()).toEqual(['family','parents','pet']);
   expect(errors).toEqual([]);
 });

@@ -1,3 +1,4 @@
+import {companions,hasCompanion,primaryCompanion,parseCompanions} from "./companions.js";
 import { halfDocumentDraft } from "./half-documents.js";
 import { restStop } from "./rest-plan.js";
 // Integration: retain the deployed Yeohaengit Bedrock model and instance-role credentials.
@@ -73,6 +74,11 @@ $("#date").min = addDays(tomorrow(), -1); // 오늘 (기기 시간대 기준)
 document.querySelectorAll(".seg").forEach((seg) => {
   seg.addEventListener("click", (e) => {
     const b = e.target.closest("button"); if (!b) return;
+    if(seg.dataset.name === "who"){
+      if(b.dataset.v==='solo'){seg.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));}
+      else {seg.querySelector('[data-v="solo"]').classList.remove('on');b.classList.toggle('on');}
+      seg.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',String(x.classList.contains('on'))));return;
+    }
     seg.querySelectorAll("button").forEach((x) => { x.classList.toggle("on", x === b); x.setAttribute("aria-pressed", x === b); });
   });
 });
@@ -80,6 +86,7 @@ document.querySelectorAll(".seg").forEach((seg) => {
 document.querySelector('.chips[data-name="access"]').addEventListener("click", (e) => {
   const b = e.target.closest("button"); if (b) b.classList.toggle("on");
 });
+const companionsNow=()=>[...document.querySelectorAll('.seg[data-name="who"] .on')].map(b=>b.dataset.v);
 const accessNow = () => [...document.querySelectorAll('.chips[data-name="access"] .on')].map((b) => b.dataset.v);
 document.querySelector('.chips[data-name="likes"]').addEventListener("click", (e) => {
   const b = e.target.closest("button"); if (b) b.classList.toggle("on");
@@ -116,17 +123,20 @@ renderRouteRow();
 
 $("#form").addEventListener("submit", async (e) => {
   e.preventDefault();
+  if(!companionsNow().length){toast('함께 가는 동행자를 한 명 이상 선택해 주세요.');return;}
+  if(!savedStart()){requestDeparture();return;}
   const input = {
+    companions: companionsNow(),
     region: segValue("region"),
     date: $("#date").value || tomorrow(),
     days: Number(segValue("days")),
-    who: segValue("who"),
+    who: primaryCompanion({companions:companionsNow()}),
     likes: [...document.querySelectorAll('.chips[data-name="likes"] .on')].map((b) => b.dataset.v),
     move: segValue("move"),
   };
   const route = routeNow(input);
   if (route) input.route = route;
-  const lessWalk = input.who === "parents";
+  const lessWalk = hasCompanion(input,"parents") || hasCompanion(input,"family");
   const access = accessNow();
   const v = pendingVoice; pendingVoice = null;
   state = { input, opts: { pace: v?.pace || "relaxed", lessWalk: lessWalk || access.length > 0 || !!v?.lessWalk, prefer: [], avoid: [], exclude: [], rainDays: [], ...(access.length ? { access } : {}), ...(v?.people ? { people: bookingPeople(v.people) } : {}), ...startOpts(input) } };
@@ -199,9 +209,9 @@ function whyText() {
   const parts = [t("후보 {n}곳 중 여행 날짜에 문 여는 {open}곳에서 골랐어요.", { n: s.candidates, open: s.open })];
   if (s.crowded) parts.push(t("붐빔 예상 {c}곳은 뒤로 미뤘어요.", { c: s.crowded }));
   if (acc.length) parts.push(t("선택한 이동 조건이 확인된 장소로 구성했어요."));
-  else if (inp.who === "parents") parts.push(t("부모님과 함께라 걷기를 줄였어요."));
-  else if (inp.who === "family") parts.push(t("아이와 함께라 오래 걷는 산길은 줄였어요."));
-  else if (inp.who === "pet") parts.push(t("반려동물 동반이 확인된 곳을 먼저 넣었어요."));
+  else if (hasCompanion(inp,"parents")) parts.push(t("부모님과 함께라 걷기를 줄였어요."));
+  if (hasCompanion(inp,"family")) parts.push(t("아이와 함께라 오래 걷는 산길은 줄였어요."));
+  if (hasCompanion(inp,"pet")) parts.push(t("반려동물 동반이 확인된 곳을 먼저 넣었어요."));
   if (inp.move === "transit") parts.push(t("기차·버스 시간표와 걷는 거리에 맞췄어요."));
   if (s.festivals.length) parts.push(t("여행 기간 축제({f})도 살폈어요.", { f: s.festivals.slice(0, 2).map((f) => placeName(f)).join(", ") }));
   return parts.join(" ");
@@ -273,7 +283,7 @@ function renderHalfPkgs() {
 document.addEventListener("click", (e) => {
   const b = e.target.closest("[data-hp]"); if (!b) return;
   const pk = halfPackage(b.dataset.hp); if (!pk) return;
-  const cur = { region: pk.region, date: $("#date").value || tomorrow(), days: pk.days, who: segValue("who"), likes: [...document.querySelectorAll('.chips[data-name="likes"] .on')].map((x) => x.dataset.v), move: segValue("move") };
+  const cur = { region: pk.region, date: $("#date").value || tomorrow(), days: pk.days, who: primaryCompanion({companions:companionsNow()}), companions:companionsNow(), likes: [...document.querySelectorAll('.chips[data-name="likes"] .on')].map((x) => x.dataset.v), move: segValue("move") };
   fillForm({ ...cur, route: [] });
   pendingPackage = pk;
   track("half_package", pk.id);
@@ -436,14 +446,20 @@ $("#reportForm").addEventListener("submit", async (e) => {
 });
 
 /* ---------- 출발지 (이 기기에 저장) ----------
-   첫날은 고른 출발지에서 출발한다. 없으면 권역 기준점(역·터미널). 출발 시각 자동: 가까우면 10시, 60km 넘으면 8시 */
+   첫날은 사용자가 확인한 출발지에서 출발한다. 미선택이면 생성을 중단한다. 출발 시각 자동: 가까우면 10시, 60km 넘으면 8시 */
 const distKm = (a, b) => { const r = Math.PI / 180, x = Math.sin((b.lat - a.lat) * r / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin((b.lng - a.lng) * r / 2) ** 2; return 12742 * Math.asin(Math.sqrt(x)); };
-const savedStart = () => { const s = store.get("startPoint"); return s && Number.isFinite(s.lat) && Number.isFinite(s.lng) ? s : null; };
+let departureDraftChanged=false;
+const savedStart = () => { const s = store.get("startPoint"); return !departureDraftChanged && s?.confirmed===true && Number.isFinite(s.lat) && Number.isFinite(s.lng) && Math.abs(s.lat)<=90 && Math.abs(s.lng)<=180 ? s : null; };
+function requestDeparture(){
+  show('setup');$('#manual').open=true;$('#startPanel').hidden=false;$('#startEdit').setAttribute('aria-expanded','true');
+  renderStartRow();$('#startSearch').focus();$('#startPanel').scrollIntoView({block:'center',behavior:'smooth'});
+  toast('출발지를 알려 주세요. 현재 위치를 사용하거나 장소를 입력·말한 뒤 검색 결과를 선택해 주세요.');
+}
 function startOpts(input) {
   const s = savedStart(), base = REGIONS[input.region].base;
   const time = store.get("startTime") || (s && distKm(s, base) * 1.35 > 60 ? "08:00" : "");
   // 대중교통으로 서울 쪽 역·터미널에서 출발하면 실제 시간표(transit.json)에서 가장 일찍 도착하는 편을 골라, 도착 15분 뒤 기준점에서 첫날을 시작한다
-  const hub = input.move === "transit" && transitHub(s);
+  const hub = input.move === "transit" && TRANSIT_HUBS.includes(s?.name) && transitHub(s);
   if (hub && transitData && hasRoute(transitData, hub, input.region)) {
     // 출발 시각을 직접 정하지 않았으면 첫차부터 고른다 (먼 출발지의 기본값 08:00 때문에 07:50 열차를 놓치지 않게)
     const [h, m] = (store.get("startTime") || "05:00").split(":").map(Number);
@@ -500,15 +516,16 @@ function renderTransit() {
 }
 const isWeekendDate = (d) => { const w = new Date(d + "T00:00:00Z").getUTCDay(); return w === 0 || w === 6; };
 function renderStartRow() {
-  const s = savedStart(), region = segValue("region") || "gangneung";
-  const base = REGIONS[region].base;
-  $("#startLabel").textContent = s ? (isForeign() && s.nameEn ? s.nameEn : s.name) : t("{name} (기본)", { name: startName(base) });
+  const s = savedStart();
+  $("#startLabel").textContent = s ? (isForeign() && s.nameEn ? s.nameEn : s.name) : "출발지를 알려 주세요 · 현재 위치 또는 직접 입력";
   $("#startTime").value = store.get("startTime") || "";
   const recent = (store.get("startRecent") || []).filter((r) => !s || r.name !== s.name);
   renderStartResults($("#startSearch").value, recent);
 }
 function setStart(s) {
+  departureDraftChanged=false;
   if (s) {
+    s={...s,confirmed:true};
     store.set("startPoint", s);
     store.set("startRecent", [s, ...(store.get("startRecent") || []).filter((r) => r.name !== s.name)].slice(0, 5));
     toast(t("출발지를 {name}(으)로 정했어요", { name: isForeign() && s.nameEn ? s.nameEn : s.name }));
@@ -533,7 +550,7 @@ function renderStartResults(q, recent = []) {
   let list, head = "";
   if (query) {
     list = startCandidates().filter((o) => norm(o.name).includes(query) || norm(o.nameEn).includes(query)).slice(0, 8);
-    if (!list.length) { box.innerHTML = `<li class="none">${t("검색 결과가 없어요")}</li>`; return; }
+    if (!list.length) { box._list=[]; box.innerHTML = `<li class="none">장소가 목록에 없으면 주소 검색을 눌러 주세요.</li>`; return; }
   } else { list = recent; head = list.length ? `<li class="head">${t("최근 출발지")}</li>` : ""; }
   box.innerHTML = head + list.map((o, i) => `<li><button type="button" data-start="${i}">${esc(isForeign() && o.nameEn ? o.nameEn : o.name)}</button></li>`).join("");
   box._list = list;
@@ -542,28 +559,45 @@ $("#startEdit").addEventListener("click", () => {
   const p = $("#startPanel"); p.hidden = !p.hidden; $("#startEdit").setAttribute("aria-expanded", String(!p.hidden));
   if (!p.hidden) { renderStartRow(); $("#startSearch").focus(); }
 });
-$("#startSearch").addEventListener("input", (e) => renderStartResults(e.target.value, store.get("startRecent") || []));
+$("#startSearch").addEventListener("input", (e) => {departureDraftChanged=true;$('#startLabel').textContent='검색 결과에서 출발지를 선택해 주세요';renderStartResults(e.target.value,store.get("startRecent")||[]);});
+let addressSearchVersion=0;
+async function searchDeparture(){
+ const query=$('#startSearch').value.trim();if(query.length<2)return toast('장소명이나 주소를 2자 이상 입력해 주세요.');
+ const version=++addressSearchVersion;$('#startAddress').disabled=true;
+ try{
+  const r=await fetchT('/api/location',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query})},15000),data=await r.json();
+  if(version!==addressSearchVersion || $('#startSearch').value.trim()!==query)return;
+  if(!r.ok)throw Error(data.error||'주소 검색을 완료하지 못했어요.');
+  const list=(data.locations||[]).filter(x=>Number.isFinite(x.latitude)&&Number.isFinite(x.longitude)).map(x=>({name:x.name,address:x.address,lat:x.latitude,lng:x.longitude}));
+  $('#startResults')._list=list;$('#startResults').innerHTML=list.length?list.map((o,i)=>`<li><button type="button" data-start="${i}">${esc(o.name)}<small>${esc(o.address||'')}</small></button></li>`).join(''):'<li class="none">검색 결과가 없어요. 더 구체적인 장소나 주소를 입력해 주세요.</li>';
+ }catch(error){toast(error.message);}
+ finally{if(version===addressSearchVersion)$('#startAddress').disabled=false;}
+}
+$('#startAddress').addEventListener('click',searchDeparture);
+$('#startSearch').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();searchDeparture();}});
 $("#startResults").addEventListener("click", (e) => {
   const b = e.target.closest("[data-start]"); if (!b) return;
   const o = $("#startResults")._list[Number(b.dataset.start)];
+  if(!o)return;
   setStart({ name: o.name, ...(o.nameEn ? { nameEn: o.nameEn } : {}), lat: o.lat, lng: o.lng });
 });
-$("#startDefault").addEventListener("click", () => setStart(null));
+$("#startDefault").addEventListener("click", () => {setStart(null);requestDeparture();});
 $("#startTime").addEventListener("change", (e) => { if (e.target.value) store.set("startTime", e.target.value); else { try { localStorage.removeItem("startTime"); } catch { /* 없음 */ } } });
 $("#startGps").addEventListener("click", () => {
-  if (!navigator.geolocation) return toast(t("위치를 사용할 수 없어요"));
+  if (!navigator.geolocation || !window.isSecureContext) return toast("현재 연결에서는 위치를 가져올 수 없어요. 출발지 이름이나 주소를 직접 입력해 주세요.");
   toast(t("위치를 찾는 중…"));
   navigator.geolocation.getCurrentPosition((pos) => {
     setStart({ name: t("내 위치"), nameEn: "My location", lat: Math.round(pos.coords.latitude * 1e5) / 1e5, lng: Math.round(pos.coords.longitude * 1e5) / 1e5 });
-  }, () => toast(t("위치 권한을 허용해 주세요")), { enableHighAccuracy: true, timeout: 10000 });
+  }, () => toast("위치를 가져오지 못했어요. 권한을 확인하거나 출발지 이름·주소를 직접 입력해 주세요."), { enableHighAccuracy: true, timeout: 10000 });
 });
 document.querySelector('.seg[data-name="region"]').addEventListener("click", () => setTimeout(renderStartRow, 0));
 
 function fillForm(input) {
   $("#date").value = input.date;
-  for (const name of ["region", "days", "who", "move"]) {
+  for (const name of ["region", "days", "move"]) {
     document.querySelectorAll(`.seg[data-name="${name}"] button`).forEach((b) => b.classList.toggle("on", b.dataset.v === String(input[name])));
   }
+  document.querySelectorAll('.seg[data-name="who"] button').forEach(b=>{const selected=companions(input).includes(b.dataset.v);b.classList.toggle('on',selected);b.setAttribute('aria-pressed',String(selected));});
   document.querySelectorAll('.chips[data-name="likes"] button').forEach((b) => b.classList.toggle("on", input.likes.includes(b.dataset.v)));
   routePicks = (input.route || []).slice(1);
   renderRouteRow();
@@ -735,7 +769,7 @@ function itemHTML(it, i, day) {
   if (it.travelMode === "taxi" && it.km) leg += t(" · 약 {won}", { won: won(taxiFare(it.km)) });
   // 앞 장소를 나와 다음 장소에 도착하기까지 30분 넘게 비면 "자유 시간"으로 보여 준다 (저녁 시간 기다림·문 여는 시간 기다림)
   const prev = i > 0 ? day.items[i - 1] : null, free = prev ? it.start - it.travelMin - prev.end : 0;
-  if (free >= 20 && (state.opts.access?.length || ["parents","family"].includes(state.input.who))) {
+  if (free >= 20 && (state.opts.access?.length || companions(state.input).some(w=>["parents","family"].includes(w)))) {
     const rest=restStop(prev,it,day.date,state.opts,hoursFor);
     leg = (rest ? `${rest.position === "after" ? "이동 후 " : ""}${esc(placeName(rest.place))}에서 휴식 ${rest.minutes}분 (${fmt(rest.start)}–${fmt(rest.end)}) · ${rest.source === "user" ? "사용자가 시설 확인" : "자료상 시설 확인"} · 운영시간 범위 내 · 현장 이용 여부 확인 필요 · `
       : `휴식 확보 ${free}분 · 이 구간에서 좌석·화장실·접근성과 이용시간이 확인된 휴식 장소를 찾지 못했어요. 출발 전 장소 확인이 필요해요 · `) + leg + ` <button type="button" class="ghost small" data-rest-config="${i}">휴식 장소 확인·지정</button>`;
@@ -751,7 +785,7 @@ function itemHTML(it, i, day) {
     <article class="card place">
       <div class="side"><div class="thumb" data-photo="${p.id}" style="--c:${c.color}"><span>${i + 1}</span><em>${t(c.label)}</em>${p.photoAt ? `<i class="near" title="${esc(t("주변 사진 · {place}", { place: p.photoAt }))}">${t("주변 사진")}</i>` : ""}</div>${state.input.move === "car" ? parkingShort(p) : ""}</div>
       <div class="info">
-        <div class="meta"><span class="tag" style="--c:${c.color}">${t(KIND[it.kind] || c.label)}</span>${p.indoor ? `<span class="tag soft">${t("실내")}</span>` : ""}${state.input.who === "pet" && p.cat !== "festival" ? `<span class="tag ${p.pet ? "pet" : "soft"}">${p.pet ? t("🐾 동반 가능") : p.pet === false ? t("🐾 동반 불가") : t("🐾 동반 확인 필요")}</span>` : ""}</div>
+        <div class="meta"><span class="tag" style="--c:${c.color}">${t(KIND[it.kind] || c.label)}</span>${p.indoor ? `<span class="tag soft">${t("실내")}</span>` : ""}${hasCompanion(state.input,"pet") && p.cat !== "festival" ? `<span class="tag ${p.pet ? "pet" : "soft"}">${p.pet ? t("🐾 동반 가능") : p.pet === false ? t("🐾 동반 불가") : t("🐾 동반 확인 필요")}</span>` : ""}</div>
         <h3>${esc(placeName(p))}</h3>
         <p>${esc(placeDesc(p))}</p>
         ${forLine(p)}
@@ -950,7 +984,7 @@ function busLine(p, it) {
 let petData = null;
 function renderPet() {
   const box = $("#pet"); if (!box) return;
-  if (state.input.who !== "pet" || !trip) { box.hidden = true; return; }
+  if (!hasCompanion(state.input,"pet") || !trip) { box.hidden = true; return; }
   if (!petData) { fetchT("pet.json", {}, 6000).then((r) => r.json()).then((j) => { petData = j; renderPet(); }).catch(() => {}); return; }
   const SG_EN = { 춘천: "Chuncheon", 원주: "Wonju", 강릉: "Gangneung", 동해: "Donghae", 태백: "Taebaek", 속초: "Sokcho", 삼척: "Samcheok", 홍천: "Hongcheon", 횡성: "Hoengseong", 영월: "Yeongwol", 평창: "Pyeongchang", 정선: "Jeongseon", 철원: "Cheorwon", 화천: "Hwacheon", 양구: "Yanggu", 인제: "Inje", 고성: "Goseong", 양양: "Yangyang" };
   const sgName = (s) => (isForeign() ? `${SG_EN[s] || s} (${s})` : s);
@@ -1534,7 +1568,7 @@ const wonShort = (n) => {
   return n >= 10000 ? `${(Math.round(n / 1000) / 10).toLocaleString("ko-KR")}만 원` : `${Math.round(n).toLocaleString("ko-KR")}원`;
 };
 const range = (lo, hi) => (lo === hi ? wonShort(lo) : `${wonShort(lo)} ~ ${wonShort(hi)}`);
-function peopleNow() { return state.opts.people || defaultPeople(state.input.who); }
+function peopleNow() { return state.opts.people || defaultPeople(state.input); }
 function renderCosts() {
   const box = $("#costs");
   if (!trip?.days?.length) { box.hidden = true; return; }
@@ -2058,12 +2092,14 @@ $("#aiStart").addEventListener("submit", async (e) => {
   const btn = $("#aiStart button[type=submit]"); btn.disabled = true; btn.textContent = "…";
   const { parseSpoken } = await voiceParser();
   let interpreted;try{interpreted=await cloudAI('start',{text,today:todayStr(),lang:getLang()});}catch(error){toast(error.message);btn.disabled=false;btn.textContent=t('만들기');return;}
-  const r = parseSpoken(text, todayStr());r.input={...r.input,...interpreted};r.access=[...new Set([...(r.access||[]),...(interpreted.access||[])])];
+  const r = parseSpoken(text, todayStr());r.input={...r.input,...interpreted,companions:parseCompanions(text).length?parseCompanions(text):companions(interpreted)};r.input.who=primaryCompanion(r.input);r.access=[...new Set([...(r.access||[]),...(interpreted.access||[])])];
   btn.disabled = false; btn.textContent = t("만들기");
   // 말한 조건을 폼에 옮기고(폼은 "직접 골라서 만들기"에 접혀 있다), 폼에 없는 조건(인원·속도)은 일정 만들 때 넘긴다
   fillForm(r.input);
   document.querySelectorAll('.chips[data-name="access"] button').forEach((b) => b.classList.toggle("on", r.access.includes(b.dataset.v)));
-  if (r.start) setStart({ name: r.start.name, nameEn: r.start.nameEn, lat: r.start.lat, lng: r.start.lng });
+  if (r.start) {
+    setStart(null);$('#startSearch').value=r.start.name;renderStartResults(r.start.name);
+  } else if(/에서|출발|from|から|出发|出發/i.test(text)){setStart(null);}
   if (r.startTime) { store.set("startTime", r.startTime); $("#startTime").value = r.startTime; }
   pendingVoice = { people: r.people, pace: r.pace, lessWalk: r.lessWalk, heard: r.heard, said: r.said };
   track("voice_plan");
@@ -2117,11 +2153,12 @@ function voiceDone(text) {
 window.__voiceResult = (text) => voiceDone(String(text || "").trim());
 function setupMics() {
   const ok = canVoice();
-  for (const id of ["micBtn", "askMic"]) { const b = $("#" + id); if (b) b.hidden = !ok; }
+  for (const id of ["micBtn", "askMic", "startMic"]) { const b = $("#" + id); if (b) b.hidden = !ok; }
   if (!ok) $("#voiceHint").textContent = !window.isSecureContext
     ? "음성 입력은 HTTPS 보안 연결에서 사용할 수 있어요. 지금은 아래에 여행 조건을 글로 입력해 주세요."
     : t("가고 싶은 여행을 글로 써 주세요");
 }
+$('#startMic').addEventListener('click',()=>listen($('#startMic'),$('#startSearch'),()=>{departureDraftChanged=true;renderStartResults($('#startSearch').value);toast('인식한 출발지를 확인하고 검색 결과를 선택해 주세요.');}));
 $("#micBtn").addEventListener("click", () => listen($("#micBtn"), $("#aiStartInput"), () => $("#aiStart").requestSubmit()));
 $("#askMic")?.addEventListener("click", () => listen($("#askMic"), $("#askInput"), () => $("#askForm").requestSubmit()));
 window.addEventListener("online", setupMics);
@@ -2139,7 +2176,7 @@ function heardLabel(h) {
     case "region": return (inp.route || [inp.region]).map((r) => regionLabel(r, REGIONS[r].label)).join(" → ");
     case "date": return h.ko ? dateLabel(inp.date) : t("날짜 못 들음 · {d}", { d: dateLabel(inp.date) });
     case "days": return t(DAYS_KO[inp.days]);
-    case "who": return t(WHO_KO[inp.who]);
+    case "who": return companions(inp).map(w=>t(WHO_KO[w])).join(" · ");
     case "people": { const [a, k] = h.ko.split(":").map(Number); return k ? t("어른 {a} · 아이 {k}", { a, k }) : t("어른 {a}", { a }); }
     case "move": return t(MOVE_KO[inp.move]);
     case "likes": return inp.likes.map((l) => t(LIKE_KO[l])).join(" · ");
@@ -2323,6 +2360,7 @@ if (getLang() !== "ko") renderHalfPkgs(); // 외국어 이름·문구를 받은 
 function openSnapshot(saved, extra = {}) {
   restoredFromLink = true;
   state = { input: saved.input, opts: { rainDays: [], exclude: [], prefer: [], avoid: [], ...saved.opts }, ...extra };
+  if(!state.opts.start && !state.opts.arrival){fillForm(saved.input);requestDeparture();return;}
   state.baseOpts = extra.baseOpts || saved.baseOpts || {...state.opts};
   delete state.baseOpts.keep;
   state.choice = extra.choice || saved.choice || "restored";
@@ -2377,11 +2415,12 @@ if(directoryPlace && PLACES.some(p=>p.id===directoryPlace)) {
   const p=PLACES.find(p=>p.id===directoryPlace);
   if(!state || !trip) {
     const last=store.get('lastTrip');
-    if(last?.input) {state={input:{...last.input,date:last.input.date<tomorrow()?tomorrow():last.input.date},opts:{rainDays:[],exclude:[],...last.opts}};registerCustom(state.opts);trip=planTrip(state.input,state.opts);show('result');render();}
+    if(last?.input && last.opts?.start) {state={input:{...last.input,date:last.input.date<tomorrow()?tomorrow():last.input.date},opts:{rainDays:[],exclude:[],...last.opts}};registerCustom(state.opts);trip=planTrip(state.input,state.opts);show('result');render();}
     else {fillForm({region:p.region,date:tomorrow(),days:2,who:'couple',likes:[p.cat],move:'car'});$('#form').requestSubmit();}
   }
+  if(!trip){requestDeparture();}
   history.replaceState(null,'',location.pathname+location.hash);
-  askGuide(`${p.name} 넣어줘`);
+  if(trip)askGuide(`${p.name} 넣어줘`);
 }
 
 // 탐색 목록의 관광공사 장소 넣기 (앱이 검토하지 않은 곳): 가장 가까운 날에 넣고, 못 넣으면 이유를 알려 준다
@@ -2398,6 +2437,7 @@ if (directoryAdd) {
       fillForm({ region: p.region, date: tomorrow(), days: 2, who: "couple", likes: [p.cat === "food" ? "food" : p.cat], move: "car" });
       $("#form").requestSubmit();
     }
+    if(!trip){requestDeparture();return;}
     if (p.unverified) state.opts.custom = [...(state.opts.custom || []).filter((x) => x.id !== p.id), p];
     registerCustom(state.opts);
     // 그 장소와 가장 가까운 날부터 넣어 본다
@@ -2413,7 +2453,8 @@ if (directoryAdd) {
 // Explicit starting profiles; users review and adjust these conditions before generating.
 document.querySelectorAll('[data-profile]').forEach(button=>button.addEventListener('click',()=>{
  const kind=button.dataset.profile;
- document.querySelector(`.seg[data-name="who"] [data-v="${kind==='child'?'family':'parents'}"]`).click();
+ const who=kind==='child'?'family':'parents';
+ document.querySelectorAll('.seg[data-name="who"] button').forEach(b=>{const on=b.dataset.v===who;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on));});
  const needs=kind==='wheelchair'?['wheelchair']:['shortwalk'];
  document.querySelectorAll('.chips[data-name="access"] button').forEach(b=>{b.classList.toggle('on',needs.includes(b.dataset.v));b.setAttribute('aria-pressed',String(needs.includes(b.dataset.v)));});
  document.querySelector('#manual').open=true;

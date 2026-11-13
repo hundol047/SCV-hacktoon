@@ -1,3 +1,4 @@
+import {companions} from './companions.js';
 // 예상 비용: 일정이 다 짜인 뒤 교통·입장료·식사·숙박을 더해 범위(낮은 값~높은 값)로 보여 준다.
 // 근거가 있는 값과 앱이 정한 가정값을 나눠 적는다. 화면은 이 결과를 그대로 그린다.
 
@@ -29,6 +30,7 @@ export const ASSUME = {
 
 // 동행 선택으로 시작하는 인원 (카드에서 바꿀 수 있음)
 export function defaultPeople(who) {
+  if(typeof who==='object'){const groups=companions(who).map(defaultPeople);return {adults:Math.max(...groups.map(p=>p.adults)),kids:Math.max(...groups.map(p=>p.kids))};}
   return { solo: { adults: 1, kids: 0 }, couple: { adults: 2, kids: 0 }, family: { adults: 2, kids: 2 }, parents: { adults: 3, kids: 0 }, pet: { adults: 2, kids: 0 } }[who] || { adults: 2, kids: 0 };
 }
 

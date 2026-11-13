@@ -48,6 +48,7 @@ const START_SCHEMA = {
     date: { type: "string", description: "YYYY-MM-DD" },
     days: { type: "integer", enum: [1, 2, 3, 4, 5] },
     who: { type: "string", enum: ["solo", "couple", "family", "parents", "pet"] },
+    companions: {type:"array",items:{type:"string",enum:["solo","couple","family","parents","pet"]}},
     likes: { type: "array", items: { type: "string", enum: CATS } },
     move: { type: "string", enum: ["car", "taxi", "transit"] },
     access: {type:"array",items:{type:"string",enum:["shortwalk","wheelchair","toilet","stroller"]}},
@@ -61,6 +62,7 @@ const START_SYSTEM = `어르신 및 거동이 불편한 분을 위한 보폭의 
 - region: gangneung(강릉·동해·삼척·정동진), seorak(속초·양양·고성·설악산·인제), chuncheon(춘천·남이섬·화천·철원·홍천), pyeongchang(평창·대관령·정선·영월·태백), wonju(원주·횡성). 지역 언급이 없으면 취향에 가장 맞는 곳.
 - date: 오늘 날짜를 기준으로 "내일", "이번 주말", "다음 달 3일" 등을 실제 날짜로. 언급이 없으면 내일.
 - days: 당일=1, 1박 2일=2, 2박 3일=3, 3박 4일=4, 4박 5일 이상=5. 언급이 없으면 2.
+- companions: 동행자가 여러 유형이면 모두 배열에 포함한다. 아이와 어르신과 반려견이면 ["family","parents","pet"]. solo는 다른 유형과 함께 쓰지 않는다.
 - who: 혼자=solo, 연인·친구=couple, 아이·가족=family, 부모님·어르신=parents. 언급이 없으면 parents.
 - likes: sea(바다), cafe(카페), food(맛집·시장), culture(역사·문화·전시), nature(자연·산책). 1~3개.
 - move: 자동차·렌터카=car, 택시=taxi, 기차·버스·뚜벅이=transit. 언급이 없으면 car.
@@ -139,7 +141,7 @@ export async function guide({ question, history, trip, lang: uiLang }) {
   // 장소 데이터는 같은 여행이면 매번 같으므로 앞쪽에 두고 캐시한다
   const user = [
     { text: `장소 데이터 (id | 이름 | 분류 | 실내/야외 | 걷는 양 | 설명 | 날짜별 운영):\n${placeLines}`, cache: true },
-    { text: `여행 조건: ${JSON.stringify({ region: REGIONS[trip.input.region].label, who: trip.input.who, likes: trip.input.likes, move: trip.input.move, ...trip.opts })}
+    { text: `여행 조건: ${JSON.stringify({ region: REGIONS[trip.input.region].label, who: trip.input.who, companions: trip.input.companions, likes: trip.input.likes, move: trip.input.move, ...trip.opts })}
 숙소: ${trip.lodging ? `${trip.lodging.name} ${trip.lodging.typeLabel} (여행 내내 같은 숙소)` : "없음(당일)"}
 현재 일정:
 ${planLines}

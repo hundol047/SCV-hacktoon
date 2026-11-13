@@ -1,3 +1,4 @@
+import {companions,hasCompanion} from './companions.js';
 import {mobilityEligible,mobilityOptions} from './mobility.js';
 // 일정 생성 엔진: 검증된 장소 데이터 + 영업시간/휴무/이동시간 제약을 모두 지키는 일정만 만든다.
 import { PLACES, AREAS, REGIONS, FESTIVALS, LODGING, LODGING_TYPES, BENEFITS } from "./data.js";
@@ -127,17 +128,17 @@ function candidates(input, opts = {}) {
   }));
   // 반려동물 동행: 목록에 있는 곳(pet) + 확인은 안 됐지만 야외인 자연·바다(카드에 "동반 확인 필요")만. 실내·식당·카페·문화시설은 목록에 있을 때만
   // 반려동물 동행 전용 장소(petOnly)는 반려동물 동행일 때만 쓴다
-  const okWho = (p) => input.who === "pet" ? p.pet !== false && (p.pet || (!p.indoor && !p.multi && (p.cat === "nature" || p.cat === "sea"))) : !p.petOnly; // pet: false = 동반 불가로 확인된 곳(식물원·국립공원 안 등)
+  const okWho = (p) => hasCompanion(input,"pet") ? p.pet !== false && (p.pet || (!p.indoor && !p.multi && (p.cat === "nature" || p.cat === "sea"))) : !p.petOnly; // pet: false = 동반 불가로 확인된 곳(식물원·국립공원 안 등)
   // 휠체어·유모차: 오래 걷거나 산길인 곳(walk 3)은 빼고, 휠체어는 무장애 정보 없이 걷기가 있는 곳(walk 2)도 뺀다
   const acc = opts.access || [];
   const okAccess = (p) => mobilityEligible(p,opts);
-  const ok = (p) => okWho(p) && okAccess(p) && !(input.who === "family" && (p.walk === 3 || p.tags?.includes("night")));
+  const ok = (p) => okWho(p) && okAccess(p) && !(hasCompanion(input,"family") && (p.walk === 3 || p.tags?.includes("night")));
   // 반값여행 코스(opts.halfPkg)처럼 정해 둔 장소만 쓸 때 (축제는 그 시군 것인지 알 수 없어 뺀다)
   const onlyIds = opts.onlyIds || halfPackage(opts.halfPkg)?.placeIds;
   if (onlyIds) {
     const only = new Set(onlyIds);
     // 반려동물 동행은 그 시군에 동반 식당이 드물어(영월 등) 끼니가 빠지므로, 식사만은 근처 시군의 동반 확인 식당도 쓴다 (그 끼니는 환급 대상이 아님)
-    const petMeal = (p) => input.who === "pet" && p.cat === "food" && p.pet && inScope(input, p.region);
+    const petMeal = (p) => hasCompanion(input,"pet") && p.cat === "food" && p.pet && inScope(input, p.region);
     return PLACES.filter((p) => (only.has(p.id) || petMeal(p)) && ok(p));
   }
   return [...PLACES.filter((p) => inScope(input, p.region) && ok(p)), ...fests.filter(ok)];
@@ -208,10 +209,10 @@ function baseScore(p, input, opts, rain, dateStr = null) {
   if ((opts.prefer || []).includes(p.cat)) s += 2.5;
   if ((opts.avoid || []).includes(p.cat)) s -= 6;
 
-  if (input.who === "family") { if (p.tags.includes("kids")) s += 4; if (p.walk === 3) s -= 3; }
-  if (input.who === "parents") { if (p.tags.includes("senior")) s += 1.5; if (p.walk >= 2) s -= 1; if (p.walk === 3) s -= 4; }
-  if (input.who === "couple" && (p.cat === "cafe" || p.tags.includes("night"))) s += 0.5;
-  if (input.who === "pet") s += p.pet ? 3 : -2; // 동반 가능이 확인된 곳 우선
+  if (hasCompanion(input,"family")) { if (p.tags.includes("kids")) s += 4; if (p.walk === 3) s -= 3; }
+  if (hasCompanion(input,"parents")) { if (p.tags.includes("senior")) s += 1.5; if (p.walk >= 2) s -= 1; if (p.walk === 3) s -= 4; }
+  if (hasCompanion(input,"couple") && (p.cat === "cafe" || p.tags.includes("night"))) s += 0.5;
+  if (hasCompanion(input,"pet")) s += p.pet ? 3 : -2; // 동반 가능이 확인된 곳 우선
   const acc = opts.access || [];
   if (acc.length && p.access) s += (p.access.ramp ? 2 : 0) + (p.access.toilet ? 1 : 0) + (acc.includes("wheelchair") && p.access.wheel ? 1 : 0) + (acc.includes("stroller") && (p.access.stroller || p.access.nursing) ? 1 : 0);
   else if (acc.length && p.cat !== "festival") s -= 1; // 무장애 정보가 없는 곳은 뒤로
@@ -231,7 +232,7 @@ function dayWindow(dayIdx, totalDays, input = {}, opts = {}) {
   let end = toMin("21:00");
   if (totalDays === 1) end = toMin("19:30");
   else if (dayIdx === totalDays - 1) end = toMin("18:00");
-  if (["parents", "family"].includes(input.who) || opts.lessWalk || opts.access?.length) end = Math.min(end, toMin("20:00"));
+  if (companions(input).some(w=>["parents","family"].includes(w)) || opts.lessWalk || opts.access?.length) end = Math.min(end, toMin("20:00"));
   return { start, end };
 }
 
@@ -733,7 +734,8 @@ const TYPE_REASON = {
 };
 // 모든 밤의 "그날 마지막 장소 → 숙소 → 다음 날 첫 장소" 거리 합이 가장 작고, 동행·취향에 맞는 숙소 지역
 export function chooseLodging(input, days, only = null, allow = null) {
-  const wanted = WHO_TYPES[input.who] || WHO_TYPES.solo;
+  const groups=companions(input);
+  const wanted=[...new Set(groups.flatMap(w=>WHO_TYPES[w]||[]))].sort((a,b)=>groups.filter(w=>WHO_TYPES[w]?.includes(b)).length-groups.filter(w=>WHO_TYPES[w]?.includes(a)).length);
   const legs = [];
   const regions = new Set([regionOf(input)]);
   for (let i = 0; i < days.length; i++) {
@@ -763,7 +765,8 @@ export function chooseLodging(input, days, only = null, allow = null) {
 }
 
 function lodgingInfo(input, l) {
-  const wanted = WHO_TYPES[input.who] || WHO_TYPES.solo;
+  const groups=companions(input);
+  const wanted=[...new Set(groups.flatMap(w=>WHO_TYPES[w]||[]))].sort((a,b)=>groups.filter(w=>WHO_TYPES[w]?.includes(b)).length-groups.filter(w=>WHO_TYPES[w]?.includes(a)).length);
   const type = wanted.find((t) => l.types.includes(t)) || l.types[0];
   return {
     id: l.id, name: l.name, lat: l.lat, lng: l.lng, desc: l.desc, nights: input.days - 1,
