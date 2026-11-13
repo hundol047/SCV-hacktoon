@@ -64,3 +64,60 @@ test('manual share fallback and trip-isolated evidence with explicit legacy migr
   await expect(page.locator('#costs h3')).toHaveText('결제 예상액');
   expect(errors).toEqual([]);
 });
+
+test('restores comparison cards, retries failed photos and explains map failures',async({page})=>{
+  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
+  await page.addInitScript(()=>{
+    const original=HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext=function(this:HTMLCanvasElement,type:any,...args:any[]){if(String(type).startsWith('webgl')||type==='experimental-webgl')return null;return original.apply(this,[type,...args] as any);} as any;
+  });
+  let photosRecover=false;
+  const originals=JSON.parse(await readFile('vendor/my-ai-lab/public/photos.json','utf8'));
+  const broken=Object.fromEntries(Object.keys(originals).map(id=>[id,`https://bopok-image.test/${id}.png`]));
+  await page.route('**/photos.json',route=>route.fulfill({json:broken}));
+  await page.route('https://bopok-image.test/**',route=>route.abort());
+  await page.route('**/api/photo?*',route=>route.fulfill({json:{url:photosRecover?'data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"><rect width="20" height="20" fill="green"/></svg>'):''}}));
+  await page.route('https://ko.wikipedia.org/**',route=>route.abort());
+  await page.route('https://tile.openstreetmap.org/**',route=>route.abort());
+  await page.goto('/lab/',{waitUntil:'domcontentloaded'});
+  await page.locator('#halfPkgs summary').click();await page.locator('[data-hp]').first().click();
+  await expect(page.locator('[data-opt]')).toHaveCount(3);
+  await page.locator('[data-opt="relaxed"]').click();
+  await page.reload({waitUntil:'domcontentloaded'});
+  await expect(page.locator('[data-opt]')).toHaveCount(3);
+  await expect(page.locator('[data-opt="relaxed"]')).toHaveClass(/on/);
+  const oldLink=await page.evaluate(()=>{const s=JSON.parse(decodeURIComponent(escape(atob(location.hash.slice(1)))));delete s.baseOpts;delete s.choice;return location.origin+location.pathname+'#'+btoa(unescape(encodeURIComponent(JSON.stringify(s))));});
+  await page.goto(oldLink);await page.reload({waitUntil:'domcontentloaded'});
+  await expect(page.locator('[data-opt]')).toHaveCount(3);
+  await expect(page.locator('#options')).toContainText('저장한 일정');
+  await page.locator('#timeline').scrollIntoViewIfNeeded();
+  const retry=page.locator('[data-photo-retry]').first();await expect(retry).toBeVisible({timeout:20000});
+  const photoId=await retry.locator('..').getAttribute('data-photo');
+  const photo=page.locator(`[data-photo="${photoId}"]`).first();photosRecover=true;await retry.click();await expect(photo).toHaveClass(/has-img/);
+  await page.locator('#map').scrollIntoViewIfNeeded();
+  await expect(page.locator('#mapStatus')).toBeVisible({timeout:20000});
+  await expect(page.locator('[data-map-retry="2d"]')).toBeVisible();
+  await page.locator('[data-map-retry="2d"]').click();
+  await expect(page.locator('#mapStatus')).toBeVisible({timeout:20000});
+  expect(errors).toEqual([]);
+});
+
+test('explicit rest confirmation is assigned and survives reload',async({page})=>{
+  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
+  await page.goto('/lab/',{waitUntil:'domcontentloaded'});
+  await page.locator('[data-profile="senior"]').click();
+  await page.locator('#date').fill('2026-11-20');
+  await page.locator('#form button[type="submit"]').click();
+  await page.locator('[data-rest-config]').first().click();
+  await page.locator('#restDialog [name="seat"]').check();
+  await page.locator('#restDialog [name="toilet"]').check();
+  await page.locator('#restDialog button[type="submit"]').click();
+  await expect(page.locator('#restDialog')).not.toBeVisible();
+  await expect(page.locator('#timeline')).toContainText('사용자가 시설 확인');
+  await page.reload({waitUntil:'domcontentloaded'});
+  await expect(page.locator('#timeline')).toContainText('사용자가 시설 확인');
+  await page.locator('[data-rest-config]').first().click();
+  await page.locator('[data-rest-clear]').click();
+  await expect(page.locator('#timeline')).not.toContainText('사용자가 시설 확인');
+  expect(errors).toEqual([]);
+});

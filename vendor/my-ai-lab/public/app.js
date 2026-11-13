@@ -1,5 +1,5 @@
 import { halfDocumentDraft } from "./half-documents.js";
-import { restEvidence } from "./mobility.js";
+import { restStop } from "./rest-plan.js";
 // Integration: retain the deployed Yeohaengit Bedrock model and instance-role credentials.
 async function cloudAI(action,payload){const response=await fetch('api/'+action,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:AbortSignal.timeout(65000)});const data=await response.json();if(!response.ok)throw Error(data.error||'AI 요청 실패');return data;}
 import { recommendBooking, bookingPeople, bookingScope } from "./booking-links.js";
@@ -54,7 +54,7 @@ const store = {
 function encodeState(s) { return btoa(unescape(encodeURIComponent(JSON.stringify(s)))); }
 function decodeState(h) { try { return JSON.parse(decodeURIComponent(escape(atob(h)))); } catch { return null; } }
 function snapshot() {
-  return { input: state.input, opts: { ...state.opts, keep: trip.days.map((d) => d.items.map((i) => i.id)) } };
+  return { input: state.input, opts: { ...state.opts, keep: trip.days.map((d) => d.items.map((i) => i.id)) }, baseOpts: state.baseOpts, choice: state.choice };
 }
 function persist() {
   const snap = snapshot();
@@ -211,7 +211,7 @@ function renderOptions() {
   if (!state.baseOpts) { box.hidden = true; return; }
   const list = optionsFor(state.input, state.baseOpts);
   box.hidden = false;
-  box.innerHTML = `<h3>${t("일정 3개 중에서 고르세요")}</h3><p class="why">${esc(whyText())}</p>
+  box.innerHTML = `<h3>${t("일정 3개 중에서 고르세요")}</h3>${state.choice === "restored" ? `<p class="why">저장한 일정이 표시되어 있어요. 아래에서 새 비교안을 선택할 수 있어요.</p>` : ""}<p class="why">${esc(whyText())}</p>
     <div class="opt-list">${list.map((o) => `<button type="button" class="opt${state.choice === o.key ? " on" : ""}" data-opt="${o.key}">
       <b>${t(OPT_NAME[o.key])}</b><span class="opt-sub">${o.sameAsBest ? "현재 조건에서는 추천 일정이 가장 여유로워요" : t(OPT_SUB[o.key])}</span>
       <span class="opt-stats">${t("{n}곳 · 이동 {m} · 예상 보행 {km}km", { n: o.places, m: minutesLabel(o.totals.moveMin), km: o.totals.walkKm })}</span>
@@ -708,6 +708,26 @@ function sunHTML(day) {
   }
   return `<li class="sun">☀️ ${t("일출 {r} · 일몰 {s}", { r: s.rise, s: s.set })}${rise}</li>`;
 }
+document.addEventListener('click',e=>{
+  const button=e.target.closest('[data-rest-config]');if(!button||!trip)return;
+  const index=Number(button.dataset.restConfig),day=trip.days[dayIdx],previous=day.items[index-1],next=day.items[index];
+  if(!previous||!next)return;
+  let dlg=$('#restDialog');if(!dlg){dlg=document.createElement('dialog');dlg.id='restDialog';dlg.className='report-dlg';document.body.append(dlg);}
+  const needsEntry=state.opts.access?.some(a=>['wheelchair','stroller'].includes(a));
+  dlg.innerHTML=`<form><h3>휴식 장소 확인·지정</h3><p>공식 안내나 시설에 문의해 확인한 항목만 체크해 주세요. 확인은 7일간 유지되며 방문 당일 다시 확인해 주세요.</p><label>기존 동선의 장소<select name="place">${[previous.place,next.place].map(p=>`<option value="${esc(p.id)}">${esc(placeName(p))}</option>`).join('')}</select></label><p><label><input name="seat" type="checkbox" required> 어른이 앉아 쉴 수 있는 좌석과 이용 조건 확인</label></p><p><label><input name="toilet" type="checkbox" required> 이용 가능한 화장실 확인</label></p><p><label><input name="stepFree" type="checkbox" ${needsEntry?'required':''}> 휠체어·유모차가 진입할 수 있는 동선 확인</label></p><p role="status" id="restFeedback"></p><button type="submit" class="primary small">확인한 장소 적용</button> <button type="button" data-rest-clear class="ghost small">사용자 확인 해제</button> <button type="button" data-rest-close class="ghost small">닫기</button></form>`;
+  const form=dlg.querySelector('form');
+  dlg.querySelector('[data-rest-close]').onclick=()=>dlg.close();
+  dlg.querySelector('[data-rest-clear]').onclick=()=>{const id=form.elements.place.value;delete state.opts.restConfirmations?.[id];render();persist();dlg.close();};
+  form.onsubmit=event=>{
+    event.preventDefault();const id=form.elements.place.value;
+    const confirmation={seat:form.elements.seat.checked,toilet:form.elements.toilet.checked,stepFree:form.elements.stepFree.checked,checkedAt:Date.now()};
+    const opts={...state.opts,restConfirmations:{...state.opts.restConfirmations,[id]:confirmation},restPreferred:{...state.opts.restPreferred,[previous.place.id+':'+next.place.id]:id}};
+    const rest=restStop(previous,next,day.date,opts,hoursFor);
+    if(!rest||rest.place.id!==id){$('#restFeedback').textContent='이 장소의 운영시간 또는 휴식 조건이 맞지 않아 배정할 수 없어요. 다른 장소를 선택해 주세요.';return;}
+    state.opts=opts;render();persist();dlg.close();toast('확인한 장소를 휴식 시간에 배정했어요');
+  };
+  dlg.showModal();
+});
 function itemHTML(it, i, day) {
   const p = it.place, c = CAT[p.cat];
   const mode = t(MODE[it.travelMode]);
@@ -716,11 +736,9 @@ function itemHTML(it, i, day) {
   // 앞 장소를 나와 다음 장소에 도착하기까지 30분 넘게 비면 "자유 시간"으로 보여 준다 (저녁 시간 기다림·문 여는 시간 기다림)
   const prev = i > 0 ? day.items[i - 1] : null, free = prev ? it.start - it.travelMin - prev.end : 0;
   if (free >= 20 && (state.opts.access?.length || ["parents","family"].includes(state.input.who))) {
-    const evidence=restEvidence(prev.place);
-    const needsEntrance=state.opts.access?.some(a=>["wheelchair","stroller"].includes(a));
-    const confirmed=evidence.seat && evidence.toilet && (!needsEntrance || evidence.stepFree);
-    leg = (confirmed ? `${esc(placeName(prev.place))}에서 휴식 ${free}분 · 자료에 좌석·화장실 정보 있음 · 현장 운영 확인 필요 · `
-      : `휴식 확보 ${free}분 · ${esc(placeName(prev.place))} 주변 휴식 장소 확인 필요 (좌석·화장실·접근성 미확정) · `) + leg;
+    const rest=restStop(prev,it,day.date,state.opts,hoursFor);
+    leg = (rest ? `${rest.position === "after" ? "이동 후 " : ""}${esc(placeName(rest.place))}에서 휴식 ${rest.minutes}분 (${fmt(rest.start)}–${fmt(rest.end)}) · ${rest.source === "user" ? "사용자가 시설 확인" : "자료상 시설 확인"} · 운영시간 범위 내 · 현장 이용 여부 확인 필요 · `
+      : `휴식 확보 ${free}분 · 이 구간에서 좌석·화장실·접근성과 이용시간이 확인된 휴식 장소를 찾지 못했어요. 출발 전 장소 확인이 필요해요 · `) + leg + ` <button type="button" class="ghost small" data-rest-config="${i}">휴식 장소 확인·지정</button>`;
   }
   else if (free >= 30) leg = t("자유 시간 {min}분 · 근처 산책·쉬기", { min: free }) + " · " + leg;
   // 주말·연휴 고속도로 정체(예상)만큼 첫 도착이 늦다
@@ -1044,6 +1062,7 @@ const DAY_MS = 864e5;
 const imgCache = store.get("img4") || {};
 let baked = {};
 const bakedReady = fetchT("photos.json", {}, 3000).then((r) => (r.ok ? r.json() : {})).catch(() => ({})).then((j) => { baked = j; if (trip?.lodging && !$("#result").hidden) renderLodging(); return j; }); // 사진 없는 숙소의 주변 사진
+const failedPhotoURLs = new Set();
 let photoApi = true; // 서버에 사진 키가 없으면 첫 요청 뒤로 건너뜀
 // 화면에 보일 이름: id나 한국어 이름으로 장소를 찾아 현재 언어로
 const nameOf = (id, ko) => { const p = (id && placeById(id)) || PLACES.find((x) => x.name === ko); return p ? placeName(p) : ko; };
@@ -1052,32 +1071,55 @@ const placeById = (id) => PLACES.find((p) => p.id === id) || trip?.days.flatMap(
 async function getJSON(url, ms = 3500) {
   try { const r = await fetchT(url, {}, ms); return r.ok ? await r.json() : null; } catch { return null; }
 }
-async function photoFor(p) {
+async function photoFor(p, excluded = []) {
   if (!p) return "";
   await bakedReady;
-  if (baked[p.id]) return baked[p.id]; // 검증된 사진이 언제나 먼저
+  if (baked[p.id] && !excluded.includes(baked[p.id]) && !failedPhotoURLs.has(baked[p.id])) return baked[p.id]; // 검증된 사진이 언제나 먼저
   const hit = imgCache[p.id];
-  if (hit && (hit.url || Date.now() - hit.t < DAY_MS)) return hit.url || "";
+  if (hit && !excluded.includes(hit.url) && !failedPhotoURLs.has(hit.url) && Date.now()-hit.t < (hit.url ? DAY_MS : 30000)) return hit.url || "";
   let src = "";
   if (!src && photoApi) {
     try {
       const r = await fetchT(`api/photo?id=${encodeURIComponent(p.id)}&name=${encodeURIComponent(p.name)}&lat=${p.lat}&lng=${p.lng}`, {}, 3500);
-      if (r.ok) src = (await r.json()).url || ""; else if (r.status === 404 || r.status === 405) photoApi = false;
-    } catch { photoApi = false; }
+      if (r.ok) src = (await r.json()).url || ""; else if (r.status === 405) photoApi = false;
+      if(excluded.includes(src))src="";
+    } catch { /* A transient failure must not disable photos for other places. */ }
   }
   if (!src && p.wiki && !p.multi) {
     src = (await getJSON(`https://ko.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(p.wiki)}`))?.thumbnail?.source || "";
   }
+  if(excluded.includes(src))src="";
   imgCache[p.id] = { url: src, t: Date.now() };
   store.set("img4", imgCache);
   return src;
 }
-function setPhoto(el, src) {
-  const img = new Image();
-  img.decoding = "async";
-  img.onload = () => { el.style.backgroundImage = `url("${src}")`; el.classList.add("has-img"); };
-  img.src = src;
+function photoFailure(el) {
+  if(!el.isConnected)return;
+  el.classList.add("photo-failed");
+  if(!el.querySelector('[data-photo-retry]')){
+    const button=document.createElement('button');button.type='button';button.dataset.photoRetry='';button.className='photo-retry';button.textContent='사진 다시 불러오기';el.append(button);
+  }
 }
+function setPhoto(el, src, attempted = []) {
+  if(!src){photoFailure(el);return;}
+  const img = new Image();img.decoding="async";
+  img.onload=()=>{if(!el.isConnected)return;el.style.backgroundImage=`url("${src}")`;el.classList.add("has-img");el.classList.remove("photo-failed");el.querySelector('[data-photo-retry]')?.remove();};
+  img.onerror=async()=>{
+    if(!el.isConnected)return;
+    failedPhotoURLs.add(src);
+    const tried=[...attempted,src];delete imgCache[el.dataset.photo];store.set('img4',imgCache);
+    if(tried.length>=2){photoFailure(el);return;}
+    const alternate=await photoFor(placeById(el.dataset.photo),tried);
+    if(alternate && !tried.includes(alternate))setPhoto(el,alternate,tried);else photoFailure(el);
+  };
+  img.src=src;
+}
+async function retryPhoto(el){
+  if(el.dataset.retrying)return;el.dataset.retrying='1';failedPhotoURLs.delete(baked[el.dataset.photo]);delete imgCache[el.dataset.photo];
+  try{setPhoto(el,await photoFor(placeById(el.dataset.photo)));}finally{delete el.dataset.retrying;}
+}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-photo-retry]');if(b){e.preventDefault();e.stopPropagation();retryPhoto(b.closest('[data-photo]'));}});
+window.addEventListener('online',()=>document.querySelectorAll('.photo-failed[data-photo]').forEach(retryPhoto));
 // 동시에 4개까지만 찾기
 const photoQueue = [];
 let photoActive = 0;
@@ -1085,7 +1127,7 @@ function pumpPhotos() {
   while (photoActive < 4 && photoQueue.length) {
     const el = photoQueue.shift();
     photoActive++;
-    photoFor(placeById(el.dataset.photo)).then((src) => { if (src && el.isConnected) setPhoto(el, src); })
+    photoFor(placeById(el.dataset.photo)).then((src) => { if (el.isConnected) setPhoto(el, src); })
       .finally(() => { photoActive--; pumpPhotos(); });
   }
 }
@@ -1096,7 +1138,8 @@ const photoObserver = "IntersectionObserver" in window
   : null;
 function loadImages() {
   document.querySelectorAll(".thumb[data-photo]").forEach((el) => {
-    const cached = baked[el.dataset.photo] || imgCache[el.dataset.photo]?.url;
+    const bakedURL=baked[el.dataset.photo];
+    const cached = (bakedURL && !failedPhotoURLs.has(bakedURL) ? bakedURL : "") || imgCache[el.dataset.photo]?.url;
     if (cached) return setPhoto(el, cached); // 이미 찾은 사진은 바로
     if (photoObserver) photoObserver.observe(el); else { photoQueue.push(el); pumpPhotos(); }
   });
@@ -1655,6 +1698,23 @@ function placePin(el, dx, dy) {
   el.classList.toggle("moved", len > 1);
 }
 
+let mapLoadTimer, mapHadError=false;
+function mapMessage(message) {
+  let box=$("#mapStatus");
+  if(!box){box=document.createElement('div');box.id='mapStatus';box.setAttribute('role','status');$('#map').after(box);}
+  box.hidden=!message;
+  if(!message)return;
+  box.innerHTML=`<p>${esc(message)}</p><button type="button" class="ghost small" data-map-retry="3d">다시 불러오기</button> <button type="button" class="ghost small" data-map-retry="2d">2D 지도로 보기</button><p>장소 목록과 각 장소의 길찾기는 계속 사용할 수 있어요.</p>`;
+}
+function watchMapLoading(){mapHadError=false;clearTimeout(mapLoadTimer);mapLoadTimer=setTimeout(()=>mapMessage('지도를 불러오는 데 시간이 걸리고 있어요. 연결을 확인하거나 다시 불러오세요.'),12000);}
+function mapLoaded(){clearTimeout(mapLoadTimer);if(!mapHadError)mapMessage("");}
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-map-retry]');if(!b||!trip)return;
+  clearTimeout(mapLoadTimer);if(ml){ml.remove();ml=null;}if(map){map.remove();map=null;layer=null;}
+  mlMarkers=[];leafletPins=[];lastMapViewKey=null;$('#map').replaceChildren();mapInteractive=false;
+  $('#mapInteract').setAttribute('aria-pressed','false');$('#mapInteract').textContent=t('지도 이동 켜기');
+  mapKind=b.dataset.mapRetry==='2d'?'2d':null;mapMessage('');drawMap(trip.days[dayIdx]);
+});
 function drawMap(day) {
   if (mapKind === null) {
     if (!hasWebGL()) mapKind = "2d";
@@ -1664,9 +1724,9 @@ function drawMap(day) {
       return;
     }
   }
-  if (mapKind === "3d") return drawMap3D(day);
+  if (mapKind === "3d") {try{return drawMap3D(day);}catch{clearTimeout(mapLoadTimer);mapMessage("3D 지도를 시작하지 못했어요. 2D 지도로 전환해 주세요.");return;}}
   if (!window.L) {
-    loadLeaflet().then(() => { if (trip && !$("#result").hidden) drawMap(trip.days[dayIdx]); }).catch(() => {});
+    loadLeaflet().then(() => { if (trip && !$("#result").hidden) drawMap(trip.days[dayIdx]); }).catch(() => mapMessage("지도 기능을 불러오지 못했어요. 연결을 확인하고 다시 시도하세요."));
     return;
   }
   drawMap2D(day);
@@ -1679,6 +1739,7 @@ function drawMap3D(day) {
   const model = mapModel(day);
   if (!day.items.length) return;
   if (!ml) {
+    watchMapLoading();
     ml = new maplibregl.Map({
       container: "map", attributionControl: { compact: true }, pitch: 55, bearing: -12, maxPitch: 75,
       center: [model.line[0][1], model.line[0][0]], zoom: 11,
@@ -1711,7 +1772,8 @@ function drawMap3D(day) {
     ml.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "bottom-right");
     ml.addControl({ onAdd: () => locateButton((ll) => { ml.flyTo({ center: [ll[1], ll[0]], zoom: 14 }); return new maplibregl.Marker({ color: "#2563eb" }).setLngLat([ll[1], ll[0]]).addTo(ml); }), onRemove() {} }, "bottom-right");
     // 건물 자료를 못 받아도(오프라인 등) 지형 지도는 그대로 보인다
-    ml.on("error", (e) => console.warn("지도", e?.error?.message || e));
+    ml.on("error", () => {mapHadError=true;mapLoaded();mapMessage("일부 지도 또는 지형 자료를 불러오지 못했어요. 다시 불러오거나 2D 지도로 확인해 주세요.");});
+    ml.on("load",mapLoaded);
     ml.on("move", () => spread3D());
   }
   // 번호·시점은 바로, 경로선은 지도 스타일이 준비되면 (타일을 다 받을 때까지 기다리지 않는다)
@@ -1772,7 +1834,8 @@ function drawMap2D(day) {
   if (!map) {
     map = L.map("map", { zoomControl: false, dragging: false, touchZoom: false, scrollWheelZoom: false, doubleClickZoom: false, boxZoom: false, keyboard: false });
     map.attributionControl.setPrefix(false);
-    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "© OpenStreetMap" }).addTo(map);
+    watchMapLoading();
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "© OpenStreetMap" }).on("tileerror",()=>{mapHadError=true;mapLoaded();mapMessage("지도 이미지를 불러오지 못했어요. 연결을 확인하고 다시 불러오세요.");}).on("load",mapLoaded).addTo(map);
     L.control.zoom({ position: "bottomright" }).addTo(map);
     const Ctl = L.Control.extend({ onAdd: () => locateButton((ll) => { map.setView(ll, 14); return L.circleMarker(ll, { radius: 8, color: "#fff", weight: 3, fillColor: "#2563eb", fillOpacity: 1 }).addTo(map); }) });
     new Ctl({ position: "bottomright" }).addTo(map);
@@ -2260,6 +2323,9 @@ if (getLang() !== "ko") renderHalfPkgs(); // 외국어 이름·문구를 받은 
 function openSnapshot(saved, extra = {}) {
   restoredFromLink = true;
   state = { input: saved.input, opts: { rainDays: [], exclude: [], prefer: [], avoid: [], ...saved.opts }, ...extra };
+  state.baseOpts = extra.baseOpts || saved.baseOpts || {...state.opts};
+  delete state.baseOpts.keep;
+  state.choice = extra.choice || saved.choice || "restored";
   registerCustom(state.opts);
   trip = planTrip(state.input, state.opts);
   dayIdx = 0;

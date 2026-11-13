@@ -22,7 +22,11 @@ export function mobilityOptions(opts={}) {
 
 // Name a rest location only when the source explicitly supports seating and a toilet.
 export function restEvidence(place) {
-  const text=Object.values(place?.access?.text || {}).join(' ');
-  const seat=/벤치|의자|좌석|앉을/.test(text) && !/(벤치|의자|좌석).{0,8}(없|불가)/.test(text);
+  const seat=Object.entries(place?.access?.text || {}).some(([key,value])=>{
+    if(/유아|아기|수유|보조의자|화장실/.test(key+String(value)))return false;
+    const text=String(value).replace(/\s/g,'');
+    return /(벤치|의자|좌석|앉을곳).{0,12}(있|설치|마련|제공|가능)/.test(text) &&
+      !/(벤치|의자|좌석|앉을곳).{0,12}(없|불가|미설치|않)/.test(text);
+  });
   return {seat, toilet:place?.access?.toilet===true, stepFree:stepFreeEvidence(place || {})};
 }
