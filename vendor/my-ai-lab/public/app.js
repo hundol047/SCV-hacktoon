@@ -206,14 +206,15 @@ const OPT_NAME = { best: "추천", relaxed: "여유롭게", packed: "알차게",
 const OPT_SUB = { best: "가장 균형 잡힌 동선", relaxed: "장소를 줄이고 덜 걷고 덜 이동", packed: "하루에 더 많이 보기", different: "추천 일정에 없는 곳 위주" };
 function whyText() {
   const s = planStats(state.input, state.baseOpts), inp = state.input, acc = state.baseOpts.access || [];
-  const parts = [t("후보 {n}곳 중 여행 날짜에 문 여는 {open}곳에서 골랐어요.", { n: s.candidates, open: s.open })];
+  const parts = [`후보 ${s.candidates}곳 중 등록된 운영일 기준으로 방문 가능한 ${s.open}곳에서 골랐어요. 임시 휴무는 방문 전 확인해 주세요.`];
   if (s.crowded) parts.push(t("붐빔 예상 {c}곳은 뒤로 미뤘어요.", { c: s.crowded }));
-  if (acc.length) parts.push(t("선택한 이동 조건이 확인된 장소로 구성했어요."));
+  if (acc.length) parts.push("선택한 이동 조건으로 걸렀어요. 짧은 보행은 장소의 부담 분류 기준이며, 주차장부터 입구까지의 거리·경사는 방문 전 확인해 주세요.");
   else if (hasCompanion(inp,"parents")) parts.push(t("부모님과 함께라 걷기를 줄였어요."));
   if (hasCompanion(inp,"family")) parts.push(t("아이와 함께라 오래 걷는 산길은 줄였어요."));
   if (hasCompanion(inp,"pet")) parts.push(t("반려동물 동반이 확인된 곳을 먼저 넣었어요."));
   if (inp.move === "transit") parts.push(t("기차·버스 시간표와 걷는 거리에 맞췄어요."));
   if (s.festivals.length) parts.push(t("여행 기간 축제({f})도 살폈어요.", { f: s.festivals.slice(0, 2).map((f) => placeName(f)).join(", ") }));
+  if(state.baseOpts.lessWalk || hasCompanion(inp,"parents") || hasCompanion(inp,"family")) parts.push("좌석·화장실 근거가 있는 장소를 우선했어요. 휴식 장소가 확인되지 않은 여유 시간은 휴식 확정으로 표시하지 않아요.");
   return parts.join(" ");
 }
 function renderOptions() {

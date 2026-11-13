@@ -1,5 +1,5 @@
 import {companions,hasCompanion} from './companions.js';
-import {mobilityEligible,mobilityOptions} from './mobility.js';
+import {mobilityEligible,mobilityOptions,restEvidence} from './mobility.js';
 // 일정 생성 엔진: 검증된 장소 데이터 + 영업시간/휴무/이동시간 제약을 모두 지키는 일정만 만든다.
 import { PLACES, AREAS, REGIONS, FESTIVALS, LODGING, LODGING_TYPES, BENEFITS } from "./data.js";
 
@@ -33,10 +33,11 @@ export const drives = (move) => move === "car" || move === "taxi";
 
 // 직선거리 × 도로 보정계수로 실제 이동시간 추정
 // 자동차는 주차·출발 준비 8분, 택시는 부르고 기다리는 4분을 더한다
-export function travel(a, b, move) {
+export function travel(a, b, move, opts = {}) {
   const road = distanceKm(a, b) * 1.35;
   if (road < 0.05) return { min: 0, mode: "same", km: 0 };
-  if (road <= 1.2) return { min: round5(road / 4.2 * 60), mode: "walk", km: road };
+  const limited = opts.lessWalk || opts.access?.some(a=>["shortwalk","wheelchair","stroller"].includes(a));
+  if (road <= (limited && drives(move) ? 0.3 : 1.2)) return { min: round5(road / (limited ? 2.8 : 4.2) * 60), mode: "walk", km: road };
   // 시내 구간은 느리고, 먼 거리는 국도·고속도로 속도
   // 먼 거리(60km 넘음, 예: 서울에서 출발): 자동차는 고속도로 85km/h, 그 밖(택시·대중교통)은 KTX·고속버스 80km/h + 타고 내리는 40분
   if (road > 60) {
@@ -132,7 +133,7 @@ function candidates(input, opts = {}) {
   // 휠체어·유모차: 오래 걷거나 산길인 곳(walk 3)은 빼고, 휠체어는 무장애 정보 없이 걷기가 있는 곳(walk 2)도 뺀다
   const acc = opts.access || [];
   const okAccess = (p) => mobilityEligible(p,opts);
-  const ok = (p) => okWho(p) && okAccess(p) && !(hasCompanion(input,"family") && (p.walk === 3 || p.tags?.includes("night")));
+  const ok = (p) => okWho(p) && okAccess(p) && !((hasCompanion(input,"family") || hasCompanion(input,"parents")) && (!Number.isFinite(p.walk) || p.walk < 0 || p.walk >= 3 || p.tags?.includes("night")));
   // 반값여행 코스(opts.halfPkg)처럼 정해 둔 장소만 쓸 때 (축제는 그 시군 것인지 알 수 없어 뺀다)
   const onlyIds = opts.onlyIds || halfPackage(opts.halfPkg)?.placeIds;
   if (onlyIds) {
@@ -217,6 +218,11 @@ function baseScore(p, input, opts, rain, dateStr = null) {
   if (acc.length && p.access) s += (p.access.ramp ? 2 : 0) + (p.access.toilet ? 1 : 0) + (acc.includes("wheelchair") && p.access.wheel ? 1 : 0) + (acc.includes("stroller") && (p.access.stroller || p.access.nursing) ? 1 : 0);
   else if (acc.length && p.cat !== "festival") s -= 1; // 무장애 정보가 없는 곳은 뒤로
 
+  if (opts.lessWalk || hasCompanion(input,"parents") || hasCompanion(input,"family")) {
+    const rest=restEvidence(p);
+    if(rest.seat && rest.toilet) s+=3;
+    if(rest.stepFree) s+=1;
+  }
   if (opts.lessWalk) { if (p.walk === 3) s -= 5; else if (p.walk === 2) s -= 1; }
   if (rain || opts.indoor) {
     if (p.indoor) s += 3;
@@ -257,7 +263,7 @@ function pickAnchors(input, opts, rain, used, usedAreas, dateStr, from) {
     // 숙소·출발지에서 그 지역까지 예상 이동이 50분을 넘으면 더 피한다 (대중교통은 같은 거리라도 훨씬 오래 걸린다)
     // 서울 등 권역 밖에서 출발하는 첫날은 어디든 멀기 때문에 권역 기준점(역·터미널)에서 잰다
     const legMin = travel(distanceKm(BASE, baseOf(input)) > 60 ? baseOf(input) : BASE, area, input.move).min;
-    if (legMin > 50) total -= (legMin - 50) * 0.3;
+    if (legMin > 50) total -= (legMin - 50) * 0.5;
     ranked.push({ key, total });
   }
   ranked.sort((a, b) => b.total - a.total);
@@ -276,8 +282,9 @@ function stayOf(p, opts) {
 }
 
 function tryPlace(p, from, t, input, opts, end, dateStr, legMin = null) {
-  const tr = travel(from, p, input.move);
-  if (legMin !== null) tr.min = legMin;
+  const tr = travel(from, p, input.move, opts);
+  if (opts.lessWalk && tr.mode === "walk" && tr.km > 0.6) return null;
+  if (legMin !== null) { if(!Number.isFinite(legMin)||legMin<0)return null; tr.min = legMin; }
   const arrive = t + tr.min;
   const h = hoursFor(p, dateStr);
   const stay = stayOf(p, opts);
