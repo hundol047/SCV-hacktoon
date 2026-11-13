@@ -32,3 +32,27 @@ body {background-image:radial-gradient(ellipse at 8% 15%,#fff2ba 0,transparent 4
 .half-document { margin-top:16px; padding:16px; border:1px solid #c9dfe9; border-radius:14px; background:#f5fbff; }
 .half-document textarea { display:block; width:100%; box-sizing:border-box; min-height:180px; margin:8px 0; padding:12px; line-height:1.6; font:inherit; color:#16384a; background:white; border:1px solid #afcbd9; border-radius:10px; resize:vertical; }
 .half-document [role="status"] { margin-left:8px; font-size:13px; }
+
+/* Departure checks: give the heading, links and note their own space. */
+#checks { padding:28px; margin-top:24px; border-radius:24px; }
+#checks .checks-head { align-items:center; gap:16px; margin-bottom:22px; }
+#checks .checks-head h3 { font-size:20px; line-height:1.5; }
+#checks .checks-head>span { padding:6px 12px; border-radius:999px; background:#eef7fb; font-size:13px; line-height:1.5; white-space:nowrap; }
+#checks .check-tiles { gap:16px; }
+#checks .check-tile { min-width:0; min-height:126px; box-sizing:border-box; align-content:center; padding:22px 16px; gap:10px; border-radius:18px; background:#f8fbfd; }
+#checks .check-tile b { font-size:28px; }
+#checks .check-tile span { font-size:16px; line-height:1.5; overflow-wrap:anywhere; }
+#checks .check-tile small { font-size:12px; line-height:1.5; }
+#checks .check-tile:hover { background:#edf7fc; border-color:#91bed4; }
+#checks .check-tile:focus-visible { outline:3px solid #146b99; outline-offset:4px; }
+#checks .sub { margin:20px 0 0; text-align:left; font-size:13px; line-height:1.7; }
+@media(max-width:600px) {
+  #checks { padding:20px; border-radius:20px; }
+  #checks .checks-head { margin-bottom:18px; gap:8px; flex-wrap:wrap; }
+  #checks .checks-head h3 { font-size:18px; }
+  #checks .check-tiles { grid-template-columns:1fr; gap:12px; }
+  #checks .check-tile { grid-template-columns:40px minmax(0,1fr); column-gap:14px; row-gap:4px; min-height:88px; padding:16px; text-align:left; justify-items:start; align-items:center; }
+  #checks .check-tile b { grid-row:1/3; justify-self:center; }
+  #checks .check-tile small { grid-column:2; }
+  #checks .sub { margin-top:18px; }
+}
