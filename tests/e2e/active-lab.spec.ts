@@ -1,0 +1,160 @@
+import {test,expect} from '@playwright/test';
+import {readFile} from 'node:fs/promises';
+
+test.beforeEach(async({page},info)=>{
+  if(info.title.includes('departure'))return;
+  await page.addInitScript(()=>localStorage.setItem('startPoint',JSON.stringify({name:'강릉역',lat:37.764,lng:128.899,confirmed:true})));
+});
+
+test('active app preserves half-price drafts and selected courses on mobile',async({page})=>{
+  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
+  await page.goto('/lab/',{waitUntil:'domcontentloaded'});
+  await page.locator('#halfPkgs summary').click();
+  await page.locator('[data-hp]').first().click();
+  const draft=page.locator('[data-half-draft]').first();
+  await expect(draft).toBeVisible({timeout:30000});
+  await expect(draft).toHaveValue(/예정 일정/);
+  await draft.fill('검증용 신청 메모\n영수증 확인 후 작성');
+  const pending=page.waitForEvent('download');
+  await page.locator('[data-half-download]').first().click();
+  const download=await pending;
+  expect(download.suggestedFilename()).toMatch(/보폭_반값여행/);
+  expect(await readFile((await download.path())!,'utf8')).toContain('검증용 신청 메모');
+  await page.locator('[data-opt="relaxed"]').click();
+  await expect(page.locator('[data-opt="relaxed"]')).toHaveClass(/on/);
+  await expect(page.locator('#options')).toContainText('예상 보행');
+  await page.locator('[data-opt="best"]').click();
+  await expect(draft).toHaveValue('검증용 신청 메모\n영수증 확인 후 작성');
+  await page.setViewportSize({width:390,height:844});
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  expect(errors).toEqual([]);
+});
+
+test('manual share fallback and trip-isolated evidence with explicit legacy migration',async({page})=>{
+  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
+  await page.addInitScript(()=>{
+    Object.defineProperty(navigator,'share',{configurable:true,value:undefined});
+    Object.defineProperty(navigator,'clipboard',{configurable:true,value:undefined});
+  });
+  await page.goto('/lab/',{waitUntil:'domcontentloaded'});
+  await page.locator('#halfPkgs summary').click();await page.locator('[data-hp]').first().click();
+  await expect(page.locator('[data-proof]').first()).toBeAttached({timeout:30000});
+  await page.locator('#shareBtn').click();
+  await expect(page.locator('#shareLinkDialog')).toBeVisible();
+  await expect(page.locator('#shareLinkText')).toHaveValue(page.url());
+  await page.locator('#shareLinkDialog button').click();
+  await page.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:()=>Promise.reject(Error('denied'))}}));
+  await page.locator('#shareBtn').click();await expect(page.locator('#shareLinkDialog')).toBeVisible();
+  await page.locator('#shareLinkDialog button').click();
+  const firstURL=page.url();
+  const proof=await page.locator('[data-proof]').first().getAttribute('data-proof');
+  const secondURL=await page.evaluate(({proof})=>{
+    const snapshot=JSON.parse(decodeURIComponent(escape(atob(location.hash.slice(1)))));
+    localStorage.setItem(`proofs:${snapshot.input.region}:${snapshot.input.date}`,JSON.stringify({[proof!]:['data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j9i8AAAAASUVORK5CYII=']}));
+    snapshot.opts.voteKey='secondtrip12';
+    return location.origin+location.pathname+'#'+btoa(unescape(encodeURIComponent(JSON.stringify(snapshot))));
+  },{proof});
+  await page.reload({waitUntil:'domcontentloaded'});
+  await expect(page.locator('[data-import-proof]')).toBeVisible();
+  const proofLabel=()=>page.locator('[data-proof]').first().locator('..');
+  await expect(proofLabel()).not.toHaveClass(/ok/);
+  await page.locator('[data-import-proof]').click();
+  await expect(proofLabel()).toHaveClass(/ok/);
+  await expect(page.locator('[data-import-proof]')).toHaveCount(0);
+  await page.goto(secondURL,{waitUntil:'domcontentloaded'});await page.reload({waitUntil:'domcontentloaded'});
+  await expect(page.locator('[data-proof]').first()).toBeAttached();
+  await expect(proofLabel()).not.toHaveClass(/ok/);
+  await page.goto(firstURL,{waitUntil:'domcontentloaded'});await page.reload({waitUntil:'domcontentloaded'});
+  await expect(proofLabel()).toHaveClass(/ok/);
+  await expect(page.locator('#costs h3')).toHaveText('결제 예상액');
+  expect(errors).toEqual([]);
+});
+
+test('restores comparison cards, retries failed photos and explains map failures',async({page})=>{
+  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
+  await page.addInitScript(()=>{
+    const original=HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext=function(this:HTMLCanvasElement,type:any,...args:any[]){if(String(type).startsWith('webgl')||type==='experimental-webgl')return null;return original.apply(this,[type,...args] as any);} as any;
+  });
+  let photosRecover=false;
+  const originals=JSON.parse(await readFile('vendor/my-ai-lab/public/photos.json','utf8'));
+  const broken=Object.fromEntries(Object.keys(originals).map(id=>[id,`https://bopok-image.test/${id}.png`]));
+  await page.route('**/photos.json',route=>route.fulfill({json:broken}));
+  await page.route('https://bopok-image.test/**',route=>route.abort());
+  await page.route('**/api/photo?*',route=>route.fulfill({json:{url:photosRecover?'data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"><rect width="20" height="20" fill="green"/></svg>'):''}}));
+  await page.route('https://ko.wikipedia.org/**',route=>route.abort());
+  await page.route('https://tile.openstreetmap.org/**',route=>route.abort());
+  await page.goto('/lab/',{waitUntil:'domcontentloaded'});
+  await page.locator('#halfPkgs summary').click();await page.locator('[data-hp]').first().click();
+  await expect(page.locator('[data-opt]')).toHaveCount(3);
+  await page.locator('[data-opt="relaxed"]').click();
+  await page.reload({waitUntil:'domcontentloaded'});
+  await expect(page.locator('[data-opt]')).toHaveCount(3);
+  await expect(page.locator('[data-opt="relaxed"]')).toHaveClass(/on/);
+  const oldLink=await page.evaluate(()=>{const s=JSON.parse(decodeURIComponent(escape(atob(location.hash.slice(1)))));delete s.baseOpts;delete s.choice;return location.origin+location.pathname+'#'+btoa(unescape(encodeURIComponent(JSON.stringify(s))));});
+  await page.goto(oldLink);await page.reload({waitUntil:'domcontentloaded'});
+  await expect(page.locator('[data-opt]')).toHaveCount(3);
+  await expect(page.locator('#options')).toContainText('저장한 일정');
+  await page.locator('#timeline').scrollIntoViewIfNeeded();
+  const retry=page.locator('[data-photo-retry]').first();await expect(retry).toBeVisible({timeout:20000});
+  const photoId=await retry.locator('..').getAttribute('data-photo');
+  const photo=page.locator(`[data-photo="${photoId}"]`).first();photosRecover=true;await retry.click();await expect(photo).toHaveClass(/has-img/);
+  await page.locator('#map').scrollIntoViewIfNeeded();
+  await expect(page.locator('#mapStatus')).toBeVisible({timeout:20000});
+  await expect(page.locator('[data-map-retry="2d"]')).toBeVisible();
+  await page.locator('[data-map-retry="2d"]').click();
+  await expect(page.locator('#mapStatus')).toBeVisible({timeout:20000});
+  expect(errors).toEqual([]);
+});
+
+test('explicit rest confirmation is assigned and survives reload',async({page})=>{
+  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
+  await page.goto('/lab/',{waitUntil:'domcontentloaded'});
+  await page.locator('[data-profile="senior"]').click();
+  await page.locator('#date').fill('2026-11-20');
+  await page.locator('#form button[type="submit"]').click();
+  await page.locator('[data-rest-config]').first().click();
+  await page.locator('#restDialog [name="seat"]').check();
+  await page.locator('#restDialog [name="toilet"]').check();
+  await page.locator('#restDialog button[type="submit"]').click();
+  await expect(page.locator('#restDialog')).not.toBeVisible();
+  await expect(page.locator('#timeline')).toContainText('사용자가 시설 확인');
+  await page.reload({waitUntil:'domcontentloaded'});
+  await expect(page.locator('#timeline')).toContainText('사용자가 시설 확인');
+  await page.locator('[data-rest-config]').first().click();
+  await page.locator('[data-rest-clear]').click();
+  await expect(page.locator('#timeline')).not.toContainText('사용자가 시설 확인');
+  expect(errors).toEqual([]);
+});
+
+test('combined companions and departure require explicit selection',async({page})=>{
+  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
+  await page.addInitScript(()=>Object.defineProperty(navigator,'geolocation',{value:{getCurrentPosition:(_ok:any,error:any)=>error({code:1})},configurable:true}));
+  await page.route('**/api/location',route=>route.fulfill({json:{locations:[{id:'selected',name:'직접 선택한 출발지',address:'강릉 테스트 주소',latitude:37.764,longitude:128.899}]}}));
+  await page.goto('/lab/',{waitUntil:'domcontentloaded'});
+  await page.locator('#manual summary').click();
+  await expect(page.locator('#startLabel')).toContainText('출발지를 알려');
+  const group=page.locator('.seg[data-name="who"]');
+  await group.locator('[data-v="family"]').click();await group.locator('[data-v="pet"]').click();
+  await expect(group.locator('.on')).toHaveCount(3);
+  await group.locator('[data-v="solo"]').click();await expect(group.locator('.on')).toHaveCount(1);
+  await group.locator('[data-v="parents"]').click();await group.locator('[data-v="family"]').click();await group.locator('[data-v="pet"]').click();
+  await page.locator('#date').fill('2026-11-20');
+  await page.locator('#form button[type="submit"]').click();
+  await expect(page.locator('#result')).not.toBeVisible();
+  await expect(page.locator('#startPanel')).toBeVisible();
+  await page.locator('#startGps').click();
+  await expect(page.locator('#startLabel')).toContainText('출발지를 알려');
+  await page.locator('#startSearch').fill('테스트 주소');await page.locator('#startAddress').click();
+  await page.locator('#startResults [data-start]').first().click();
+  await expect(page.locator('#startLabel')).toHaveText('직접 선택한 출발지');
+  await page.locator('#form button[type="submit"]').click();
+  await expect(page.locator('#result')).toBeVisible({timeout:30000});
+  const snap=()=>page.evaluate(()=>JSON.parse(decodeURIComponent(escape(atob(location.hash.slice(1))))));
+  expect((await snap()).input.companions.sort()).toEqual(['family','parents','pet']);
+  expect((await snap()).opts.start.name).toBe('직접 선택한 출발지');
+  await page.reload({waitUntil:'domcontentloaded'});
+  await expect(page.locator('#result')).toBeVisible();
+  expect((await snap()).input.companions.sort()).toEqual(['family','parents','pet']);
+  expect(errors).toEqual([]);
+});

@@ -1,0 +1,2191 @@
+{
+  "sutasa": {
+    "name": "Sutasa Temple",
+    "nameSrc": "app",
+    "desc": "Thousand-year-old temple at the foot of Gongjaksan, with a valley walking trail",
+    "descSrc": "app"
+  },
+  "alpaca-world": {
+    "name": "Alpaca World",
+    "desc": "Alpaca World is located in the clean, green forests of Hongcheon, Gangwon State, and is an alpaca-themed travel destination where one can meet animals enjoying natural lives up close."
+  },
+  "palbongsan": {
+    "name": "Hongcheon Palbongsan Mountain",
+    "desc": "Hongcheon's Palbongsan Mountain, reaching an elevation of 328 meters, is distinctive for its profile resembling eight peaks aligned side by side."
+  },
+  "hc-mugunghwa": {
+    "name": "Hongcheon Mugunghwa Arboretum",
+    "nameSrc": "app",
+    "desc": "Arboretum of rose of Sharon (mugunghwa) varieties",
+    "descSrc": "app"
+  },
+  "garisan-forest": {
+    "name": "Garisan Recreational Forest",
+    "desc": "Located on Garisan Mountain, the Garisan Recreational Forest offers marvelous scenery of a rich forest, old pine trees, and uniquely shaped rocks."
+  },
+  "hc-ginkgo": {
+    "name": "Hongcheon Ginkgo Forest",
+    "desc": "Hongcheon Ginkgo Forest, adorned with over 2,000 ginkgo trees planted at intervals of every five meters, is a private sanctuary that opens its gates to the public exclusively in October."
+  },
+  "hc-hwaro": {
+    "name": "Yangjimal Hwaro Gui",
+    "desc": "Hwaro Gui Restaurant in Hongcheon This is a popular charcoal grill restaurant in Hongcheon that is always full."
+  },
+  "hc-market": {
+    "name": "Hongcheon Central Market",
+    "nameSrc": "app",
+    "desc": "Market with food stalls; market days on dates ending in 1 and 6 · hours vary by shop",
+    "descSrc": "app"
+  },
+  "vivaldi-ski": {
+    "name": "Vivaldi Park Ski World",
+    "desc": "Vivaldi Park Ski World attracts ski lovers with their one-day skiing and nighttime skiing options as well as offering large accommodation facilities."
+  },
+  "dutayeon": {
+    "name": "Dutayeon Valley",
+    "nameSrc": "app",
+    "desc": "Valley and waterfall inside the Civilian Control Line · fixed entry times, ID required",
+    "descSrc": "app"
+  },
+  "yanggu-observatory": {
+    "name": "Yanggu Gukto Jeongjungang Observatory",
+    "nameSrc": "app",
+    "desc": "Sun and star observing at the geographic center of Korea",
+    "descSrc": "app"
+  },
+  "parksookeun": {
+    "name": "Park Soo Keun Museum",
+    "desc": "Park Soo Keun (1914-1965) was an artist who devoted his life to drawing the lives of ordinary people with a warm gaze."
+  },
+  "eulji-observatory": {
+    "name": "Eulji Observatory",
+    "nameSrc": "app",
+    "desc": "Front-line observatory over the Punchbowl basin and North Korea · tours at set times, ID required",
+    "descSrc": "app"
+  },
+  "yanggu-porcelain": {
+    "name": "Yanggu Porcelain Museum",
+    "desc": "Yanggu Porcelain Museum exhibits white porcelain from the Bangsan area, along with its collection and tools."
+  },
+  "hanbando-island": {
+    "name": "Paroho Lake (Yanggu)",
+    "desc": "Paroho Lake is a manmade lake that was completed in 1943."
+  },
+  "yanggu-modern": {
+    "name": "Yanggu History Museum",
+    "desc": "Yanggu History Museum displays artifacts from the Paleolithic Age found in Sangmuryong-ri, Yanggu-eup and the Neolith Age discovered in Hyeon-ri, Haean-myeon."
+  },
+  "bisugumi": {
+    "name": "Bisugumi Village, Hwacheon",
+    "nameSrc": "app",
+    "desc": "Forest walk to a remote village at the end of Paroho Lake · mountain-vegetable bibimbap",
+    "descSrc": "app"
+  },
+  "peace-dam": {
+    "name": "Peace Dam",
+    "nameSrc": "app",
+    "desc": "World Peace Bell and a huge mural on the dam wall",
+    "descSrc": "app"
+  },
+  "jogyeongcheol": {
+    "name": "Jo Gyeong-cheol Observatory",
+    "nameSrc": "app",
+    "desc": "Stargazing observatory on Gwangdeoksan at 1,010 m",
+    "descSrc": "app"
+  },
+  "kkeomeok-bridge": {
+    "name": "Kkeomeok Bridge, Hwacheon",
+    "nameSrc": "app",
+    "desc": "Black concrete bridge built in 1945 · registered heritage",
+    "descSrc": "app"
+  },
+  "ttansan": {
+    "name": "Ttansan, Hwacheon",
+    "nameSrc": "app",
+    "desc": "Artificial waterfall and riverside park on the Bukhangang",
+    "descSrc": "app"
+  },
+  "baegamsan-cable": {
+    "name": "Baegamsan Cable Car, Hwacheon",
+    "nameSrc": "app",
+    "desc": "Cable car to Baegamsan peak inside the Civilian Control Line · booking and ID required",
+    "descSrc": "app"
+  },
+  "baekdamsa": {
+    "name": "Baekdamsa Temple",
+    "desc": "Baekdamsa Temple is a representative temple of Seoraksan Mountain."
+  },
+  "parkinhwan": {
+    "name": "Park In-hwan Literary Museum",
+    "nameSrc": "app",
+    "desc": "Poet Park In-hwan and a recreated 1950s Myeongdong street",
+    "descSrc": "app"
+  },
+  "inje-folk": {
+    "name": "Inje Mountain Village Folk Museum",
+    "nameSrc": "app",
+    "desc": "Tools and customs of deep-mountain villages",
+    "descSrc": "app"
+  },
+  "naerincheon-rafting": {
+    "name": "Naerincheon Stream Rafting",
+    "desc": "Rafting is a challenging recreational activity in which a team of six to eight people navigates fast-flowing rivers."
+  },
+  "bangtaesan-forest": {
+    "name": "Bangtaesan National Recreational Forest",
+    "desc": "Bangtaesan National Recreational Forest is mostly comprised of natural forests, with some man-made sections included."
+  },
+  "manhae-village": {
+    "name": "Manhae Village",
+    "nameSrc": "app",
+    "desc": "Village and museum honoring the poet and monk Han Yong-un",
+    "descSrc": "app"
+  },
+  "pungsuwon": {
+    "name": "Pungsuwon Catholic Church",
+    "nameSrc": "app",
+    "desc": "Gangwon's first Catholic church (1907), red brick",
+    "descSrc": "app"
+  },
+  "birch-museum": {
+    "name": "Birch Forest Museum",
+    "nameSrc": "app",
+    "desc": "Photo gallery in a birch forest · closed Tue–Thu",
+    "descSrc": "app"
+  },
+  "anheung-bread": {
+    "name": "Anheung Jjinppang Village",
+    "desc": "Anheung Jjinppang Village is a charming rural village famous for its steamed buns made using traditional methods."
+  },
+  "cheongtaesan": {
+    "name": "Cheongtaesan National Recreational Forest",
+    "desc": "The 1,200-meter-high Cheongtaesan Mountain is a mountain where planted and naturally growing trees flourish in harmony, creating dense forests that provide a habitat for woodland creatures."
+  },
+  "hs-luge": {
+    "name": "Hoengseong Luge",
+    "desc": "The Hoengseong Luge offers visitors the chance to ride a luge, descending a sloped course powered by gravity while controlling speed and direction with a handle and brakes."
+  },
+  "welli-ski": {
+    "name": "Welli Hilli Park Snow Park",
+    "desc": "Opened in December 1995, Welli Hilli Park is a resort complex located over 48.6 million square meters around Sulibong Peak in Hoengseong-gun, Gangwon-do."
+  },
+  "jangneung": {
+    "name": "Yeongwol Jangneung Royal Tomb [UNESCO World Heritage]",
+    "desc": "This site is the tomb of King Danjong (1441-1457), the sixth king of the Joseon dynasty."
+  },
+  "gossigul": {
+    "name": "Gossigul Cave",
+    "nameSrc": "app",
+    "desc": "400-million-year-old limestone cave · some narrow, low passages",
+    "descSrc": "app"
+  },
+  "byeolmaro": {
+    "name": "Byeolmaro Observatory",
+    "desc": "Byeolmaro is a public astronomical observatory built on the peak of Bongnaesan Mountain (alt. 799.8 m) in Yeongwol."
+  },
+  "seondol": {
+    "name": "Seondol Cliff [National Geopark]",
+    "desc": "Seondol Cliff features a large split rock standing over the curving river below."
+  },
+  "yoseonam": {
+    "name": "Yoseonjeong Pavilion & Yoseonam Rock",
+    "desc": "Yoseonjeong Pavilion is located in a valley with a clear stream water flowing below."
+  },
+  "kimsatgat": {
+    "name": "Kim Satgat Historic Site",
+    "desc": "Nango Kim Satgat (1807-1863) was a prominent literary figure who traveled extensively across the Korean Peninsula, leaving behind a rich legacy of literary works."
+  },
+  "young-dal": {
+    "name": "Youngwol Y Park",
+    "desc": "Youngwol Y Park is a complex art space that recreated the Sulsaem Museum, which opened in 2014, into a regeneration space that combines contemporary works of art, museums, and workshops."
+  },
+  "hwaam-cave": {
+    "name": "Hwaamdonggul Cave [Gangwon Paleozoic Geopark]",
+    "desc": "Hwaamdonggul Cave, located in the Hwaam Tourist Complex in Jeongseon-gun, Gangwon-do, is Korea's first themed cave that combines a gold mine and a natural limestone cave."
+  },
+  "js-railbike": {
+    "name": "Jeongseon Railbike",
+    "desc": "Jeongseon Railbike was the first railbike location to open in Korea."
+  },
+  "byeongbangchi": {
+    "name": "Byeongbangchi Skywalk",
+    "desc": "Glass skywalk over the Korean-peninsula-shaped bend of the Donggang River",
+    "descSrc": "app"
+  },
+  "auraji": {
+    "name": "Auraji Lake",
+    "desc": "Auraji is the name of a lake located in Yeoryang-myeon in Jeongseon-gun."
+  },
+  "manhangjae": {
+    "name": "Manhangjae Pass",
+    "nameSrc": "app",
+    "desc": "Highest paved pass you can drive (1,330 m) · wildflowers and snow views",
+    "descSrc": "app"
+  },
+  "high1-ski": {
+    "name": "High1 Ski Resort",
+    "desc": "High1 Ski Resort is equipped with lifts and ski slopes for beginners as well as intermediate and advanced skiers, providing an enjoyable environment for the whole family."
+  },
+  "mindungsan": {
+    "name": "Mindungsan Mountain",
+    "desc": "Situated in Jeongseon, Gangwon-do, Mindungsan Mountain (1,118.8 meters) is an unusual site when compared to other national peaks."
+  },
+  "coal-museum": {
+    "name": "Taebaek Coal Museum",
+    "nameSrc": "app",
+    "desc": "Mine tunnel experience and the story of coal mining",
+    "descSrc": "app"
+  },
+  "geomnyongso": {
+    "name": "Geomnyongso Spring",
+    "nameSrc": "app",
+    "desc": "Source of the Hangang River · 1.3 km forest walk from the parking lot",
+    "descSrc": "app"
+  },
+  "gumunso": {
+    "name": "Gumunso",
+    "nameSrc": "app",
+    "desc": "River tunnel through a rock hill and Paleozoic rock layers",
+    "descSrc": "app"
+  },
+  "yongyeon-cave": {
+    "name": "Yongyeon Cave",
+    "nameSrc": "app",
+    "desc": "Limestone cave at 920 m · a small train takes you to the entrance",
+    "descSrc": "app"
+  },
+  "taebaeksan": {
+    "name": "Taebaeksan (Yuilsa Trail)",
+    "nameSrc": "app",
+    "desc": "National park hike to the Cheonjedan altar · famous winter frost flowers",
+    "descSrc": "app"
+  },
+  "cheoram": {
+    "name": "Cheoram Coal Mining History Village",
+    "nameSrc": "app",
+    "desc": "Life-history museum in a mining town's stilt houses",
+    "descSrc": "app"
+  },
+  "daegeumgul": {
+    "name": "Daegeumgul Cave - Daei-ri Cave Area",
+    "desc": "Daegeumgul Cave is believed to be as old as Hwanseongul and Gwaneumgul Caves located nearby."
+  },
+  "sc-railbike": {
+    "name": "Samcheok Ocean Railbike",
+    "desc": "Samcheok Ocean Railbike is Korea's one and only ocean rai lbike facility that offers a landscape view of black pines and bizarre rocks merged together."
+  },
+  "jukseoru": {
+    "name": "Jukseoru Pavilion",
+    "desc": "Pavilion on a cliff above the Osipcheon · first of the Eight Views of Gwandong",
+    "descSrc": "app"
+  },
+  "isabu-park": {
+    "name": "Isabu Lion Park",
+    "nameSrc": "app",
+    "desc": "Seaside theme park and picture-book gallery (gallery closed Mondays)",
+    "descSrc": "app"
+  },
+  "sc-coast-road": {
+    "name": "Isabu-gil (Saecheonnyeon Coastal Road), Samcheok",
+    "nameSrc": "app",
+    "desc": "4.6 km coastal drive from Samcheok Port to Samcheok Beach",
+    "descSrc": "app"
+  },
+  "mureung": {
+    "name": "Mureung Valley",
+    "nameSrc": "app",
+    "desc": "Wide rock slabs, twin falls and Yongchu Falls",
+    "descSrc": "app"
+  },
+  "cheongok-cave": {
+    "name": "Cheongok Golden Bat Cave",
+    "desc": "Cheongok Golden Bat Cave in Donghae is the only natural cave in Korea located in a downtown area."
+  },
+  "hyoseok-village": {
+    "name": "Lee Hyo-seok Culture Village",
+    "desc": "Lee Hyo-seok Culture Village is the place where the author Lee Hyo-seok (pen name “Gasan”) was born and raised."
+  },
+  "herbnara": {
+    "name": "Herbnara Farm",
+    "desc": "Herbnara Farm opened in 1996 as the first herb-themed farm in Korea."
+  },
+  "yongpyong-ski": {
+    "name": "Mona Yongpyong Ski Resort",
+    "nameSrc": "app",
+    "desc": "Korea's flagship ski resort, usually first to open and last to close",
+    "descSrc": "app"
+  },
+  "phoenix-ski": {
+    "name": "Phoenix Snow Park",
+    "desc": "Ski resort in Bongpyeong, Pyeongchang · day and night skiing (grooming 16:00–18:00)",
+    "descSrc": "app"
+  },
+  "alpensia-ski": {
+    "name": "Alpensia Ski Resort",
+    "desc": "Alpensia Ski Resort has six slopes for skiers and snowboarders to enjoy."
+  },
+  "cw-peace-observatory": {
+    "name": "Cheorwon Peace Observatory",
+    "nameSrc": "app",
+    "desc": "Civilian Control Line security tour · set departure times, ID required",
+    "descSrc": "app"
+  },
+  "sambuyeon": {
+    "name": "Sambuyeon Falls",
+    "nameSrc": "app",
+    "desc": "20 m waterfall that drops in three bends",
+    "descSrc": "app"
+  },
+  "soisan": {
+    "name": "Soisan, Cheorwon",
+    "nameSrc": "app",
+    "desc": "Low hill overlooking the Cheorwon Plain · underground bunker exhibit (closed Tuesdays)",
+    "descSrc": "app"
+  },
+  "crane-center": {
+    "name": "Cheorwon Migratory Bird Site (Cranes)",
+    "nameSrc": "app",
+    "desc": "Cheorwon Plain where cranes winter (Nov–Mar)",
+    "descSrc": "app"
+  },
+  "wanggok": {
+    "name": "Goseong Wanggok Village",
+    "desc": "Goseong Wanggok Village is a traditional village located about 1.5 kilometers away from the East Sea."
+  },
+  "geonbongsa": {
+    "name": "Geonbongsa Temple",
+    "nameSrc": "app",
+    "desc": "Old great temple near the Civilian Control Line · enshrines Buddha relics",
+    "descSrc": "app"
+  },
+  "cheonggan": {
+    "name": "Cheongganjeong Pavilion",
+    "desc": "Cheongganjeong Pavilion, located atop a cliff, was built during the mid-Joseon period."
+  },
+  "songjiho": {
+    "name": "Songjiho Beach",
+    "desc": "Located near Songjiho Lake, one of the most famous lagoons on the eastern coast of Korea, Songjiho Beach stretches 2 kilometers in length and is 100 meters wide."
+  },
+  "naksansa": {
+    "name": "Naksansa Temple",
+    "desc": "This ancient temple was built in the 11th year of King Munmu&rsquo;s reign of Silla (671) by the Buddhist monk Uisang."
+  },
+  "hyuhyuam": {
+    "name": "Gangwon Hyuhyuam Hermitage",
+    "desc": "This hermitage is located by the sea at Hyeonnam-myeon, Yangyang-gun, Gangwon-do."
+  },
+  "namae-port": {
+    "name": "Namaehang Port",
+    "desc": "Small harbor and lighthouse, counted among Gangwon's three most beautiful ports",
+    "descSrc": "app"
+  },
+  "jujeongol": {
+    "name": "Seoraksan Osaek Jujeongol Valley",
+    "desc": "Osaek Jujeongol Valley in Seoraksan Mountain is renowned for its vibrant autumn maple leaves."
+  },
+  "oak-valley-ski": {
+    "name": "Oak Valley Snow Park",
+    "desc": "Oak Valley Snow Park is a premium ski resort that everyone in the family can enjoy."
+  },
+  "sinheungsa": {
+    "name": "Sinheungsa Temple (Seoraksan Mountain)",
+    "desc": "Sinheungsa Temple is a temple located in Seoraksan Mountain near Sokcho."
+  },
+  "biseondae": {
+    "name": "Biseondae, Seoraksan",
+    "nameSrc": "app",
+    "desc": "3 km valley walk from Sogongwon to a great rock slab at the mouth of Cheonbuldong",
+    "descSrc": "app"
+  },
+  "ulsanbawi": {
+    "name": "Seoraksan Ulsanbawi Rock",
+    "desc": "Ulsanbawi is a rock formation in Seoraksan Mountain that consists of six massive peaks, each reaching 900 meters above sea level."
+  },
+  "gwangchi-forest": {
+    "name": "Gwangchi Recreational Forest",
+    "nameSrc": "app",
+    "desc": "Waterfalls and old-growth forest along the Gwangchi Valley at 800 m",
+    "descSrc": "app"
+  },
+  "yanggu-goral": {
+    "name": "Yanggu Goral and Musk Deer Center",
+    "nameSrc": "app",
+    "desc": "Center protecting the long-tailed goral and musk deer (natural monuments)",
+    "descSrc": "app"
+  },
+  "taebaek-food": {
+    "name": "Hwangji Restaurant Area, Taebaek",
+    "nameSrc": "app",
+    "desc": "Spicy chicken stew (mul-dakgalbi) and Korean meals around Hwangji Pond",
+    "descSrc": "app"
+  },
+  "yanggu-food": {
+    "name": "Yanggu Town Restaurants",
+    "nameSrc": "app",
+    "desc": "Dried radish greens (siraegi) meals and buckwheat noodles",
+    "descSrc": "app"
+  },
+  "inje-food": {
+    "name": "Inje Town Restaurants",
+    "nameSrc": "app",
+    "desc": "Buckwheat noodles and dried pollack dishes",
+    "descSrc": "app"
+  },
+  "dh-jjolmyeon": {
+    "name": "Chodang Jjolmyeon Sundubu, Donghae",
+    "nameSrc": "app",
+    "desc": "Spicy soft tofu stew with chewy jjolmyeon noodles",
+    "descSrc": "app"
+  },
+  "dh-bakery": {
+    "name": "Donghae Bakery",
+    "nameSrc": "app",
+    "desc": "Bakery café known for its Donghae potato bread",
+    "descSrc": "app"
+  },
+  "tb-dakgalbi": {
+    "name": "Taebaek Dakgalbi",
+    "nameSrc": "app",
+    "desc": "Taebaek-style mul-dakgalbi (spicy chicken in broth)",
+    "descSrc": "app"
+  },
+  "tb-cafe": {
+    "name": "Cafe Geonneolmok, Taebaek",
+    "nameSrc": "app",
+    "desc": "Mining-town café with coal-briquette-shaped bread and lattes",
+    "descSrc": "app"
+  },
+  "sc-makguksu": {
+    "name": "Bongpyeong Makguksu, Samcheok",
+    "nameSrc": "app",
+    "desc": "Buckwheat noodles and potato pancakes",
+    "descSrc": "app"
+  },
+  "sc-cafe": {
+    "name": "Bobojeong, Samcheok",
+    "nameSrc": "app",
+    "desc": "Dessert café in Samcheok town",
+    "descSrc": "app"
+  },
+  "hc-makguksu": {
+    "name": "Geumsugangsan Makguksu, Hongcheon",
+    "nameSrc": "app",
+    "desc": "Buckwheat noodles and boiled pork",
+    "descSrc": "app"
+  },
+  "hc-cafe": {
+    "name": "Rustic Life",
+    "desc": "Rustic Life is a unique type of cafe, located in the forest of Hongcheon."
+  },
+  "hs-makguksu": {
+    "name": "Taegisan Makguksu, Hoengseong",
+    "nameSrc": "app",
+    "desc": "Perilla buckwheat noodles and potato pancakes",
+    "descSrc": "app"
+  },
+  "hs-cafe": {
+    "name": "Norang Gongjang, Hoengseong",
+    "nameSrc": "app",
+    "desc": "Brunch café with Hoengseong hanwoo dishes",
+    "descSrc": "app"
+  },
+  "yw-gondre": {
+    "name": "Donggang-ui Achim, Yeongwol",
+    "nameSrc": "app",
+    "desc": "Gondre (thistle) rice set and smoked duck",
+    "descSrc": "app"
+  },
+  "yw-cafe": {
+    "name": "Gibunjoeun Bakery Cafe, Yeongwol",
+    "nameSrc": "app",
+    "desc": "Bakery café with Yeongwol bread and millet desserts",
+    "descSrc": "app"
+  },
+  "pc-makguksu": {
+    "name": "Yucheon Makguksu, Pyeongchang",
+    "nameSrc": "app",
+    "desc": "Buckwheat noodles and pheasant dumpling soup",
+    "descSrc": "app"
+  },
+  "pc-cafe": {
+    "name": "Sumi Cafe, Pyeongchang",
+    "nameSrc": "app",
+    "desc": "Café known for Pyeongchang potato bread · closed Tuesdays",
+    "descSrc": "app"
+  },
+  "js-kotdeung": {
+    "name": "Donggwang Sikdang, Jeongseon",
+    "nameSrc": "app",
+    "desc": "Kotdeungchigi and olchaengi noodles, astragalus pork hocks",
+    "descSrc": "app"
+  },
+  "js-cafe": {
+    "name": "Najeon Station Cafe",
+    "nameSrc": "app",
+    "desc": "Café in an old country railway station",
+    "descSrc": "app"
+  },
+  "cw-tofu": {
+    "name": "Samjeong Kongmaeul Tofu House, Cheorwon",
+    "nameSrc": "app",
+    "desc": "Kettle-made tofu hot pot and cheonggukjang",
+    "descSrc": "app"
+  },
+  "cw-cafe": {
+    "name": "Cafe Eunhasu, Cheorwon",
+    "nameSrc": "app",
+    "desc": "Café in Cheorwon town",
+    "descSrc": "app"
+  },
+  "hw-makguksu": {
+    "name": "Haetgol Makguksu, Hwacheon",
+    "nameSrc": "app",
+    "desc": "Buckwheat noodles and handmade tofu",
+    "descSrc": "app"
+  },
+  "hw-cafe": {
+    "name": "Gwangdeok Byeolarae, Hwacheon",
+    "nameSrc": "app",
+    "desc": "Fermented-coffee café below Gwangdeoksan · closed Mon, Tue, Thu",
+    "descSrc": "app"
+  },
+  "yg-makguksu": {
+    "name": "Dochon Makguksu, Yanggu",
+    "nameSrc": "app",
+    "desc": "Buckwheat noodles and buckwheat crepes",
+    "descSrc": "app"
+  },
+  "yg-cafe": {
+    "name": "Yanggu Nongsakkun",
+    "nameSrc": "app",
+    "desc": "Café with Yanggu apple drinks and potato bread",
+    "descSrc": "app"
+  },
+  "ij-makguksu": {
+    "name": "Haneullaerin Makguksu, Inje",
+    "nameSrc": "app",
+    "desc": "Perilla-oil and pollack buckwheat noodles",
+    "descSrc": "app"
+  },
+  "ij-cafe": {
+    "name": "Cafe Hachuri, Inje",
+    "nameSrc": "app",
+    "desc": "Café by the Naerincheon River",
+    "descSrc": "app"
+  },
+  "gs-makguksu": {
+    "name": "Songjiho Makguksu",
+    "desc": "Buckwheat noodles with marinated pollack",
+    "descSrc": "app"
+  },
+  "gs-cafe": {
+    "name": "Coffee Go, Goseong",
+    "nameSrc": "app",
+    "desc": "Specialty coffee by the sea in Goseong",
+    "descSrc": "app"
+  },
+  "yy-makguksu": {
+    "name": "Ibam Memil Town, Yangyang",
+    "nameSrc": "app",
+    "desc": "Buckwheat noodles and boiled pork",
+    "descSrc": "app"
+  },
+  "yy-cafe": {
+    "name": "P.E.I Coffee, Yangyang",
+    "nameSrc": "app",
+    "desc": "Yangyang café known for cream lattes",
+    "descSrc": "app"
+  },
+  "dh-kalguksu": {
+    "name": "Ottugi Kalguksu, Donghae",
+    "nameSrc": "app",
+    "desc": "Spicy Donghae-style jang-kalguksu noodles",
+    "descSrc": "app"
+  },
+  "dh-crab": {
+    "name": "Donghae Russian Snow Crab Village",
+    "nameSrc": "app",
+    "desc": "Steamed snow crab and crab seafood ramyeon",
+    "descSrc": "app"
+  },
+  "tb-hanwoo2": {
+    "name": "Taebaek Eutteum Hanwoo",
+    "nameSrc": "app",
+    "desc": "Grilled Taebaek hanwoo beef and yukhoe",
+    "descSrc": "app"
+  },
+  "tb-neowa": {
+    "name": "Neowajip, Taebaek",
+    "nameSrc": "app",
+    "desc": "Korean set meals and wild-vegetable bibimbap",
+    "descSrc": "app"
+  },
+  "sc-dakgalbi": {
+    "name": "Teotbat-e Noneun Dak, Samcheok",
+    "nameSrc": "app",
+    "desc": "Samcheok-style mul-dakgalbi",
+    "descSrc": "app"
+  },
+  "sc-hoe": {
+    "name": "Samcheok Hoetjip",
+    "nameSrc": "app",
+    "desc": "Sliced raw fish and cold mulhoe",
+    "descSrc": "app"
+  },
+  "hc-hanwoo": {
+    "name": "Hongcheon Hanwoo Sarangmal",
+    "nameSrc": "app",
+    "desc": "Hongcheon hanwoo beef and ox-foot soup",
+    "descSrc": "app"
+  },
+  "hc-jobaksa": {
+    "name": "Hongcheon Jo Baksa Hwaro-gui",
+    "nameSrc": "app",
+    "desc": "Gochujang pork belly grilled over charcoal",
+    "descSrc": "app"
+  },
+  "hs-gwangam": {
+    "name": "Gwangam Makguksu, Hoengseong",
+    "nameSrc": "app",
+    "desc": "Buckwheat noodles, also with spicy pollack",
+    "descSrc": "app"
+  },
+  "hs-sundae": {
+    "name": "Saemal Tojong Sundae, Hoengseong",
+    "nameSrc": "app",
+    "desc": "Homemade sundae sausage and sundae soup",
+    "descSrc": "app"
+  },
+  "yw-hanwoo": {
+    "name": "Yeongwol Donggang Hanwoo",
+    "nameSrc": "app",
+    "desc": "Grilled hanwoo and bulgogi set meals",
+    "descSrc": "app"
+  },
+  "yw-trout": {
+    "name": "Okdong Fish Farm Restaurant, Yeongwol",
+    "nameSrc": "app",
+    "desc": "Raw and fried trout",
+    "descSrc": "app"
+  },
+  "pc-sanchae": {
+    "name": "Dongdaesan Sikdang, Pyeongchang",
+    "nameSrc": "app",
+    "desc": "Odaesan wild-vegetable set meal and grilled dried pollack",
+    "descSrc": "app"
+  },
+  "pc-trout": {
+    "name": "Gangwon Susan Hoetjip, Pyeongchang",
+    "nameSrc": "app",
+    "desc": "Pyeongchang raw and fried trout",
+    "descSrc": "app"
+  },
+  "js-hwanggi": {
+    "name": "Jeongseon Hwanggi Makguksu",
+    "nameSrc": "app",
+    "desc": "Buckwheat noodles with astragalus and gondre rice",
+    "descSrc": "app"
+  },
+  "js-gondre": {
+    "name": "Daesup Maeul, Jeongseon",
+    "nameSrc": "app",
+    "desc": "Stone-pot gondre rice and grilled fish",
+    "descSrc": "app"
+  },
+  "cw-hanwoo": {
+    "name": "Cheorwon Hanwoo Village",
+    "nameSrc": "app",
+    "desc": "Hanwoo bulgogi and yukhoe bibimbap",
+    "descSrc": "app"
+  },
+  "cw-duck": {
+    "name": "Odae Ori, Cheorwon",
+    "nameSrc": "app",
+    "desc": "Duck soup with scorched rice and smoked duck",
+    "descSrc": "app"
+  },
+  "hw-mandarin": {
+    "name": "Gangbyeon Hoetjip, Hwacheon",
+    "nameSrc": "app",
+    "desc": "Spicy mandarin-fish stew and masu-salmon sashimi",
+    "descSrc": "app"
+  },
+  "hw-baeksuk": {
+    "name": "Chueok Mandeulgi, Hwacheon",
+    "nameSrc": "app",
+    "desc": "Chicken soup with scorched rice and spicy braised chicken",
+    "descSrc": "app"
+  },
+  "yg-trout": {
+    "name": "Bamnamujip, Yanggu",
+    "nameSrc": "app",
+    "desc": "Raw trout and wild-vegetable bibimbap",
+    "descSrc": "app"
+  },
+  "yg-tofu": {
+    "name": "Jeonju Sikdang, Yanggu",
+    "nameSrc": "app",
+    "desc": "Country tofu hot pot and pan-fried tofu",
+    "descSrc": "app"
+  },
+  "ij-hwangtae": {
+    "name": "Baekdam Sanchon Sikdang, Inje",
+    "nameSrc": "app",
+    "desc": "Grilled dried pollack set and pollack soup",
+    "descSrc": "app"
+  },
+  "gs-hoe": {
+    "name": "Yeongsun-ne Hoetjip, Goseong",
+    "nameSrc": "app",
+    "desc": "Sliced raw fish and mulhoe",
+    "descSrc": "app"
+  },
+  "gs-maeuntang": {
+    "name": "Cheongbo Hoetjip, Goseong",
+    "nameSrc": "app",
+    "desc": "Local fish spicy stew and sea-squirt bibimbap",
+    "descSrc": "app"
+  },
+  "yy-donghae": {
+    "name": "Donghae Makguksu, Yangyang",
+    "nameSrc": "app",
+    "desc": "Buckwheat noodles and buckwheat dumplings",
+    "descSrc": "app"
+  },
+  "yy-songwol": {
+    "name": "Songwol Memil-guksu, Yangyang",
+    "nameSrc": "app",
+    "desc": "Cold buckwheat noodles and soft tofu",
+    "descSrc": "app"
+  },
+  "gyeongpo-beach": {
+    "name": "Gangneung Gyeongpo Beach",
+    "desc": "Located 1 kilometer away from Gyeongpodae Pavilion and 6 kilometers from downtown Gangneung, Gyeongpo Beach is a sand bank formed between Gyeongpoho Lake and the ocean."
+  },
+  "gangmun-beach": {
+    "name": "Gangmun Beach",
+    "desc": "Located in Gangmun-dong, Gangmun Beach is lined with fresh hoe (sliced raw fish) restaurants along Gangmunhang Port."
+  },
+  "anmok-beach": {
+    "name": "Anmokhaebyeon Beach",
+    "desc": "Anmokhaebyeon Beach spans over 500 meters in length and covers an area of 20,000 square meters."
+  },
+  "namhangjin-beach": {
+    "name": "Namhangjin Beach",
+    "nameSrc": "app",
+    "desc": "Quiet beach with the Solbaram Bridge",
+    "descSrc": "app"
+  },
+  "sacheon-beach": {
+    "name": "Sacheon Beach",
+    "desc": "Nestled between Gyeongpodae Beach and Yeongok Beach, Sacheon Beach is a clean and quiet beach covering an area of 18,000 ㎡ over a length of 300 meters."
+  },
+  "yeongjin-beach": {
+    "name": "Yeongjin Beach",
+    "desc": "Yeongjinhaebyeon Beach is a quiet and clean beach filled with the blue hue of the sea, making it a popular attraction among the locals."
+  },
+  "hyangho-beach": {
+    "name": "Hyanghohaebyeon Beach",
+    "desc": "Hyanghohaebyeon Beach is a white sandy beach backed by pine forest complete with a campground."
+  },
+  "jeongdongjin": {
+    "name": "Jeongdongjinhaebyeon Beach",
+    "desc": "Jeongdongjinhaebyeon Beach is a nice, sandy beach with three major swimming spots: in front of Jeongdongjin Station, by Sandglass Park, and by the Jeongdongjin Breakwater."
+  },
+  "sea-trail": {
+    "name": "Jeongdong-Simgok Badabuchae-gil Trail",
+    "nameSrc": "app",
+    "desc": "2.9 km clifftop coastal trail · closed during high-wave warnings",
+    "descSrc": "app"
+  },
+  "anmok-coffee": {
+    "name": "Gangneung Coffee Street",
+    "desc": "About 30 ocean-view cafes",
+    "descSrc": "app"
+  },
+  "terarosa": {
+    "name": "Terarosa Coffee Factory (Gangneung Main Store)",
+    "nameSrc": "app",
+    "desc": "Roastery and coffee museum",
+    "descSrc": "app"
+  },
+  "bohemian": {
+    "name": "Bohemian Roasters Park Yi-chu Coffee Factory",
+    "nameSrc": "app",
+    "desc": "Hand-drip coffee from a first-generation Korean barista",
+    "descSrc": "app"
+  },
+  "toetmaru": {
+    "name": "Cafe Toetmaru",
+    "nameSrc": "app",
+    "desc": "Chodang cafe famous for its black sesame latte",
+    "descSrc": "app"
+  },
+  "chodang-tofu": {
+    "name": "Chodang Halmeoni Sundubu",
+    "desc": "Chodang tofu set with seawater",
+    "descSrc": "app"
+  },
+  "jjamppong-tofu": {
+    "name": "Gangneung Jjamppong Sundubu Donghwa Garden",
+    "desc": "This restaurant was the first to start selling jjamppong sundubu (spicy seafood and soft bean curd soup) in Chodang Dubu Village."
+  },
+  "central-market": {
+    "name": "Gangneung Jungang Market",
+    "nameSrc": "app",
+    "desc": "Dakgangjeong fried chicken, jang-kalguksu noodles and potato pancakes",
+    "descSrc": "app"
+  },
+  "jumunjin-market": {
+    "name": "Jumunjin Fish Market",
+    "nameSrc": "app",
+    "desc": "Seasonal raw fish and seafood",
+    "descSrc": "app"
+  },
+  "sacheon-mulhoe": {
+    "name": "Sacheonjin Port Mulhoe Street",
+    "nameSrc": "app",
+    "desc": "Alley of cold raw-fish soup (mulhoe) restaurants by the port",
+    "descSrc": "app"
+  },
+  "jeongdongjin-food": {
+    "name": "Jeongdongjin Station Restaurant Street",
+    "nameSrc": "app",
+    "desc": "Restaurants in front of the station",
+    "descSrc": "app"
+  },
+  "anmok-hoe": {
+    "name": "Namhangjin Raw Fish Street",
+    "nameSrc": "app",
+    "desc": "Raw fish with a sea view",
+    "descSrc": "app"
+  },
+  "ojukheon": {
+    "name": "Ojukheon House & Municipal Museum",
+    "desc": "Ojukheon House, a Treasure, is an important house which shows the lifestyle and architectual style of the early Joseon dynasty."
+  },
+  "seongyojang": {
+    "name": "Seongyojang House",
+    "desc": "Seongyojang House is the former upper class residence of Lee Nae-beon (1703-1781) and his family in Gangneung, Gangwon State."
+  },
+  "gyeongpodae": {
+    "name": "Gyeongpodae Pavilion",
+    "desc": "Gyeongpodae Pavilion, located on a small hill north of Gyeongpoho Lake, is one of the eight scenic sites of Gwangdong (northeastern coast)."
+  },
+  "chamsori": {
+    "name": "Chamsori Gramophone & Edison Museum",
+    "nameSrc": "app",
+    "desc": "Gramophones and Edison's inventions on display",
+    "descSrc": "app"
+  },
+  "heo-park": {
+    "name": "Heo Gyun and Heo Nanseolheon Memorial Park",
+    "desc": "Birthplace site and memorial hall in a pine forest",
+    "descSrc": "app"
+  },
+  "arte": {
+    "name": "ARTE Museum Valley Gangneung",
+    "desc": "ARTE Museum Valley Gangneung, located by Gyeongpo Lake, is the third immersive media art exhibition presented by d'strict, a digital media design company."
+  },
+  "gwana": {
+    "name": "Gangneung Daedohobu Government Office",
+    "nameSrc": "app",
+    "desc": "Government office buildings from the Goryeo to Joseon eras",
+    "descSrc": "app"
+  },
+  "wolhwa": {
+    "name": "Wolhwa Street",
+    "nameSrc": "app",
+    "desc": "Walking path and night market on a former railway line",
+    "descSrc": "app"
+  },
+  "haslla": {
+    "name": "Haslla Art World",
+    "desc": "Haslla Art World is an art space that harmonizes nature, people and art."
+  },
+  "time-museum": {
+    "name": "Jeongdongjin Time Museum",
+    "desc": "Jeongdongjin Time Museum is comprised of a steam locomotive and 180-meter-long train at the famous Sandglass Park."
+  },
+  "gyeongpo-lake": {
+    "name": "Gyeongpoho Lake",
+    "desc": "Gyeongpoho Lake is a popular attraction, with beautiful natural scenery and many cultural relics nearby."
+  },
+  "gasiyeon": {
+    "name": "Gasiyeon Wetland",
+    "nameSrc": "app",
+    "desc": "Wetland walk along a boardwalk",
+    "descSrc": "app"
+  },
+  "solhyang": {
+    "name": "Gangneung Solhyang Arboretum",
+    "desc": "Gangneung Solhyang Arboretum was built in 2008 and opened on October 30, 2013 in Gujeong-ri, Gujeong-myeon."
+  },
+  "jumunjin-lighthouse": {
+    "name": "Jumunjin Lighthouse",
+    "nameSrc": "app",
+    "desc": "Gangwon's first lighthouse · free",
+    "descSrc": "app"
+  },
+  "songjeong": {
+    "name": "Songjeong Pine Forest",
+    "nameSrc": "app",
+    "desc": "Pine forest path along the beach",
+    "descSrc": "app"
+  },
+  "chuam": {
+    "name": "Chuam Chotdaebawi Rock",
+    "desc": "Chuam Chotdaebawi Rock in Donghae-si, Gangwon-do is one of Korea’s most famous tourist attractions."
+  },
+  "nongoldam": {
+    "name": "Donghae Nongoldam-gil Street (Deungdae Damhwa Village)",
+    "desc": "Nongoldam-gil Street, formed in 1941, was transformed in 2010 with the \"Nongoldam-gil Street\" project by the Donghae Culture Center."
+  },
+  "dojjaebi": {
+    "name": "Dojjaebigol Sky Valley",
+    "desc": "Dojjaebigol Sky Valley, located between Mukho Lighthouse and Wolsotaekji, provides a beautiful view of East Sea with various activities."
+  },
+  "haerang": {
+    "name": "Dojjaebigol Haerang Observatory",
+    "desc": "Free observatory walkway over the sea · closed when waves are high",
+    "descSrc": "app"
+  },
+  "mukho-port": {
+    "name": "Mukho Port Fish Market",
+    "nameSrc": "app",
+    "desc": "Seasonal raw fish and mulhoe",
+    "descSrc": "app"
+  },
+  "mangsang": {
+    "name": "Mangsanghaebyeon Beach",
+    "desc": "Mangsang Beach is sought out by many families and tourists for its beautiful white sand, lush pine forest, shallow waters, and location in a neighborhood full of convenient facilities."
+  },
+  "hwanseon": {
+    "name": "Hwanseongul Cave (Daei-ri Cave System)",
+    "desc": "Hwanseongul Cave is the largest limestone cave in Asia, formed estimated 530 million years ago."
+  },
+  "samcheok-cable": {
+    "name": "Samcheok Sea Cable Car",
+    "nameSrc": "app",
+    "desc": "874 m cable car over the sea at Jangho Port",
+    "descSrc": "app"
+  },
+  "jangho": {
+    "name": "Jangho Port",
+    "nameSrc": "app",
+    "desc": "Small port with clear water",
+    "descSrc": "app"
+  },
+  "sokcho-beach": {
+    "name": "Sokcho Beach",
+    "desc": "Sokcho Beach opened in 1976 and is one of Korea's representative beaches."
+  },
+  "yeonggeumjeong": {
+    "name": "Yeonggeumjeong",
+    "desc": "Yeonggeumjeong refers to the area covering the shore by the Sokcho Lighthouse in Sokcho-si City."
+  },
+  "abai": {
+    "name": "Abai Village Ferry",
+    "desc": "Gaetbae (boat without engine) is an exotic means of transportation to cross the Abai Village at the mouth of Cheongchoho Lake."
+  },
+  "sokcho-market": {
+    "name": "Sokcho Tourist & Fishery Market",
+    "nameSrc": "app",
+    "desc": "Dakgangjeong fried chicken, squid sundae and raw fish",
+    "descSrc": "app"
+  },
+  "cheongcho": {
+    "name": "Cheongchoho Lake Park",
+    "desc": "Cheongchoho Lake Park is where the 1999 International Tourism & Culture Expo was held."
+  },
+  "seorak-cable": {
+    "name": "Seoraksan Cable Car",
+    "desc": "A ride on the Seoraksan Cable Car is the best way to enjoy the unexplored regions of Seoraksan Mountain."
+  },
+  "unification": {
+    "name": "Goseong Unification Observatory",
+    "desc": "The Goseong Unification Observatory stands as the northernmost observatory in South Korea."
+  },
+  "hwajinpo": {
+    "name": "Hwajinpo Lake",
+    "desc": "Hwajinpo Lake is one of the most famous lagoons in Korea."
+  },
+  "ayajin": {
+    "name": "Ayajin Beach",
+    "nameSrc": "app",
+    "desc": "Rocks and emerald water",
+    "descSrc": "app"
+  },
+  "naksan-beach": {
+    "name": "Naksan Beach",
+    "desc": "Naksan Beach is one of the most famous beaches in Yangyang, located in Joseon-ri, Yangyang-eup, Yangyang-gun, Gangwon-do."
+  },
+  "surfyy": {
+    "name": "Yangyang Surfyy Beach",
+    "desc": "Surfyy Beach is a 1 kilometer-long beach designated for surfing, just north of Hajodae Beach in Yangyang."
+  },
+  "hajodae": {
+    "name": "Hajodae Scenic Point",
+    "desc": "The rocky coastline along Hyeonbuk-myeon in Yangyang called Hajodae is one of the Eight Sights of Yangyang."
+  },
+  "jukdo": {
+    "name": "Jukdo Beach",
+    "nameSrc": "app",
+    "desc": "Surf village with a street of cafes",
+    "descSrc": "app"
+  },
+  "birch": {
+    "name": "Wondae-ri Birch Forest (Whispering Birch Forest)",
+    "desc": "Wondae-ri Birch Forest near Inje-eup is an exemplar of natural eco-tourism, established by planting 690,000 birch trees across 138 hectares from 1974 to 1995."
+  },
+  "daepo": {
+    "name": "Daepohang Port",
+    "desc": "Located on the southernmost point of Sokcho, Daephohang Port is known as a place to find quality fish with the rise of Seoraksan Mountain as a popular tourist destination."
+  },
+  "dongmyeong": {
+    "name": "Dongmyeong Live Fish Center",
+    "desc": "Dongmyeong Live Fish Center, operated by the Sokcho Fisheries Cooperative, is located at Dongmyeong Port in Sokcho."
+  },
+  "yongdae": {
+    "name": "Inje Hwangtae Village",
+    "desc": "Inje&rsquo;s winter landscape is at its most picturesque at the Dried Pollack Deokjang, the area&rsquo;s premier seasonal attraction, within Inje Hwangtae Village."
+  },
+  "yangyang-market": {
+    "name": "Yangyang Traditional Market",
+    "desc": "Geographically situated where Seoraksan Mountain and Odaesan Mountain meet, Yangyang is rich in local specialties due to its unique soil and climate characteristics."
+  },
+  "geojin": {
+    "name": "Geojin Port Restaurant Street",
+    "nameSrc": "app",
+    "desc": "Gomchi-guk (snailfish soup) and braised fish",
+    "descSrc": "app"
+  },
+  "chilsung": {
+    "name": "Chilsung Shipyard",
+    "nameSrc": "app",
+    "desc": "Lakeside cafe in a converted old shipyard",
+    "descSrc": "app"
+  },
+  "nami": {
+    "name": "Nami Island",
+    "desc": "Metasequoia island reached by ferry",
+    "descSrc": "app"
+  },
+  "kimyoujeong": {
+    "name": "The Literary Village of Kim You Jeong",
+    "desc": "Village of the short story \"Spring, Spring\" (Bombom)",
+    "descSrc": "app"
+  },
+  "soyang-skywalk": {
+    "name": "Soyanggang Skywalk",
+    "desc": "The Soyanggang Skywalk, extending over the river, spans 174 meters in length, with a transparent glass floor covering 156 meters of its section."
+  },
+  "cc-museum": {
+    "name": "Chuncheon National Museum",
+    "desc": "Opened in 2002, Chuncheon National Museum was established to identify and promote the original form and characteristics of the regional culture of Gangwon State."
+  },
+  "dakgalbi": {
+    "name": "Chuncheon Myeongdong Dakgalbi Street",
+    "desc": "This alley is lined with dakgalbi (spicy stir-fried chicken) restaurants in Myeong-dong, which is Chuncheon's main street."
+  },
+  "makguksu": {
+    "name": "Soyangho Makguksu Street",
+    "desc": "Makguksu (buckwheat noodles) is a traditional dish made from coarse buckwheat flour, where only the outer husk of the grain is removed."
+  },
+  "gongjicheon": {
+    "name": "Gongjicheon Recreation Area",
+    "desc": "The area of Gongjicheon Stream connected to the Bukhangang River is a shelter in the middle of Chuncheon City."
+  },
+  "hantan-trail": {
+    "name": "Hantangang River Jusangjeolli-gil",
+    "desc": "This 3.6-km trail in the Hantangang River UNESCO Global Geopark is filled with awe-inspiring cliffs and various size rocks."
+  },
+  "goseokjeong": {
+    "name": "Goseokjeong Pavilion",
+    "nameSrc": "app",
+    "desc": "Rock pavilion in the Hantangang River gorge",
+    "descSrc": "app"
+  },
+  "hwacheon-river": {
+    "name": "Bungeoseom Island",
+    "desc": "Bungeoseom Island was created as a result of the construction of the Chuncheon Dam."
+  },
+  "nangman": {
+    "name": "Chuncheon Jungang Market",
+    "desc": "Established in 1960, Chuncheon Jungang Market is one of Chuncheon’s representative traditional markets and is connected to the bustling Chuncheon Myeongdong area."
+  },
+  "dongsong": {
+    "name": "Cheorwon Dongsong Restaurant Street",
+    "nameSrc": "app",
+    "desc": "Restaurants serving Cheorwon Odae rice",
+    "descSrc": "app"
+  },
+  "hwacheon-food": {
+    "name": "Hwacheon-eup Restaurant Street",
+    "nameSrc": "app",
+    "desc": "Fish porridge (eojuk) and makguksu noodles",
+    "descSrc": "app"
+  },
+  "samak-cable": {
+    "name": "Chuncheon Samaksan Mountain Lake Cable Car",
+    "desc": "Samaksan Mountain Lake Cable Car is the longest cable car in Korea, which connects Samcheon-dong and Samaksan Mountain across Uiamho Lake."
+  },
+  "labor-party": {
+    "name": "Cheorwon Korean Workers' Party Headquarters",
+    "desc": "This three-story building located in Cheorwon-eup was constructed in 1946."
+  },
+  "jiktang": {
+    "name": "Jiktangpokpo Falls [National Geopark]",
+    "desc": "Jiktangpokpo Falls is location in the middle of Hantangang River."
+  },
+  "gangchon": {
+    "name": "Gangchon Dakgalbi Street",
+    "nameSrc": "app",
+    "desc": "Dakgalbi and makguksu on the way to Nami Island",
+    "descSrc": "app"
+  },
+  "gamjabat": {
+    "name": "Cafe Gamjabat",
+    "nameSrc": "app",
+    "desc": "Garden cafe famous for its potato bread",
+    "descSrc": "app"
+  },
+  "sheep": {
+    "name": "Daegwallyeong Yangtte Ranch",
+    "desc": "Daegwallyeong Yangtte Ranch is situated at an elevation of 920 meters, sprawling across 205,000 square meters of open grassland."
+  },
+  "samyang": {
+    "name": "Samyang Round Hill",
+    "desc": "Grassland with the East Sea observatory and wind turbines",
+    "descSrc": "app"
+  },
+  "ohsam": {
+    "name": "Hoenggye Osam Bulgogi Street",
+    "nameSrc": "app",
+    "desc": "Squid and pork belly bulgogi (osam bulgogi)",
+    "descSrc": "app"
+  },
+  "balwang": {
+    "name": "Balwangsan Cable Car",
+    "desc": "Equipped with 100 eight-passenger cabins, Balwangsan Cable Car is a 7.4-kilometer-long cable car that ensures a swift and safe ride."
+  },
+  "woljeongsa": {
+    "name": "Woljeongsa Temple & Needle Fir Forest",
+    "desc": "Woljeongsa Temple, established in 643 during the Silla dynasty, is located on Odaesan Mountain."
+  },
+  "arirang-market": {
+    "name": "Jeongseon Arirang Market",
+    "nameSrc": "app",
+    "desc": "Gondeure rice and kotdeungchigi noodles · 5-day market on dates ending in 2 and 7",
+    "descSrc": "app"
+  },
+  "samtan": {
+    "name": "Samtan Art Mine",
+    "desc": "Samtan Art Mine is an art complex transformed from an abandoned mine."
+  },
+  "cheongnyeongpo": {
+    "name": "Cheongnyeongpo Meandering Stream",
+    "desc": "King Danjong's place of exile, reached by ferry",
+    "descSrc": "app"
+  },
+  "hanbando": {
+    "name": "Korean Peninsula Terrain [National Geopark]",
+    "desc": "Korean Peninsula Terrain was formed by soil transported from upstream to the curvature of the confluence of two rivers."
+  },
+  "yw-market": {
+    "name": "Yeongwol Seobu Morning Market",
+    "desc": "Established in 1959, Yeongwol Seobu Morning Market is located in the bustling downtown area of ​​Yeongwol."
+  },
+  "hwangji": {
+    "name": "Hwangji Pond",
+    "desc": "Hwangji Pond, located in downtown Taebaek, is a source of the Nakdonggang River, flowing all the way to the Yeongnam Plain."
+  },
+  "windhill": {
+    "name": "Maebongsan Wind Hill",
+    "nameSrc": "app",
+    "desc": "Wind turbines and highland cabbage fields",
+    "descSrc": "app"
+  },
+  "bongpyeong": {
+    "name": "Bongpyeong Buckwheat Food Village",
+    "nameSrc": "app",
+    "desc": "Buckwheat makguksu and buckwheat crepes",
+    "descSrc": "app"
+  },
+  "jinbu-food": {
+    "name": "Jinbu Downtown Restaurants",
+    "nameSrc": "app",
+    "desc": "Mountain-vegetable set meals",
+    "descSrc": "app"
+  },
+  "taebaek-hanwoo": {
+    "name": "Taebaek Hanwoo Silbi Street",
+    "nameSrc": "app",
+    "desc": "Korean beef grilled over coal briquettes",
+    "descSrc": "app"
+  },
+  "sogeumsan": {
+    "name": "Sogeumsan Mountain Grand Valley",
+    "desc": "Home to beautiful rivers, majestic cliffs, and stunning old trees, Sogeum Mountain Grand Valley offers an impressive view."
+  },
+  "museum-san": {
+    "name": "Museum SAN",
+    "nameSrc": "app",
+    "desc": "Art museum designed by Tadao Ando · the James Turrell wing requires a reservation",
+    "descSrc": "app"
+  },
+  "bangyeri": {
+    "name": "Wonju Bangye-ri Ginkgo Tree",
+    "desc": "Although the exact age of the Bankye-ri Ginkgo Tree is unknown, it is estimated to be over 800 years old."
+  },
+  "guryongsa": {
+    "name": "Guryongsa Temple",
+    "desc": "Guryongsa Temple is located 6 kilometers from Birobong Peak on Chiaksan Mountain, in the direction of Hakkok-ri."
+  },
+  "wj-market": {
+    "name": "Wonju Jungang Market",
+    "desc": "Opened in the 1950s as a five-day market, Wonju Jungang Market is now a permanently operated market."
+  },
+  "hanwoo": {
+    "name": "Hoengseong Hanwoo Restaurants",
+    "nameSrc": "app",
+    "desc": "Korean beef (hanwoo) restaurants in Hoengseong-eup",
+    "descSrc": "app"
+  },
+  "guryong-food": {
+    "name": "Guryongsa Entrance Restaurants",
+    "nameSrc": "app",
+    "desc": "Mountain-vegetable bibimbap and acorn jelly",
+    "descSrc": "app"
+  },
+  "ganhyeon-food": {
+    "name": "Ganhyeon Tourist Area Restaurants",
+    "nameSrc": "app",
+    "desc": "Restaurants below Sogeumsan",
+    "descSrc": "app"
+  },
+  "hoengseong-lake": {
+    "name": "Hoengseong Lake Trail",
+    "nameSrc": "app",
+    "desc": "Forest trail around the lake",
+    "descSrc": "app"
+  },
+  "ganhyeon-park": {
+    "name": "Ganhyeon Tourist Area",
+    "desc": "Riverside walk along the Seomgang River",
+    "descSrc": "app"
+  },
+  "pet-10": {
+    "name": "Sageunjinhaebyeon Beach",
+    "desc": "Sageunjinhaebyeon Beach is a white sandy beach connected to Gyeongpohaebyeon Beach in Anhyeon-dong, Gangneung."
+  },
+  "pet-18": {
+    "name": "Sodol Adeul Rock Park"
+  },
+  "pet-25": {
+    "name": "Jumunjin Port",
+    "desc": "Jumunjin Port, one of the main fishing ports on the east coast, is home to over 350 fishing boats."
+  },
+  "pet-26": {
+    "name": "Jumunjin Beach",
+    "desc": "Jumunjin Beach is located in the northernmost part of Gangneung, and is a great place for summertime family vacations due to the beach's shallow water."
+  },
+  "pet-122": {
+    "name": "Chuam Beach",
+    "desc": "Chuam Beach is a white sandy beach with various unique rock formations."
+  },
+  "pet-142": {
+    "name": "Maengbanghaebyeon Beach",
+    "desc": "Maengbanghaebyeon Beach is located 7 kilometers from downtown Samcheok and was developed as a tourist attraction."
+  },
+  "pet-170": {
+    "name": "Sokch Seorak Sunrise Park",
+    "desc": "Referred to as \"Namulchi,\" Sokcho Seorak Sunrise Park is located in the area of National Highway 7, the main point toward Daepohang Port, Yangyang, and Seoraksan Mountain."
+  },
+  "pet-212": {
+    "name": "Seorak Beach",
+    "desc": "Known for its shallow waters and clean white sand, this beach is a sanctuary for surfers."
+  },
+  "pet-214": {
+    "name": "Jukdojeong Pavilion & Jukdo Observatory",
+    "desc": "Jukdojeong Pavilion is located on Jukdo Island in Yangyang, which is a small island with an average circumference of 1 kilometer."
+  },
+  "pet-218": {
+    "name": "Hajodae Beach",
+    "desc": "Hajodae Beach, located in Yangyang-gun, is famous for the beautiful scenery of the deep blue ocean, soft sandy shore, a nearby lighthouse, and unique rock formations and stony islets."
+  },
+  "pet-471": {
+    "name": "Soyang Dam",
+    "desc": "Built in October 1973, Soyang Dam is the largest dam in Korea."
+  },
+  "pet-565": {
+    "name": "Daegwallyeong Sky Ranch",
+    "desc": "Daegwallyeong Sky Ranch, located in the highlands of Daegwallyeong Pass, is an environmentally friendly ranch that raises over 400 cows, sheep, and horses."
+  },
+  "f-hwacheon": {
+    "name": "Hwacheon Sancheoneo Ice Festival",
+    "desc": "Ice fishing and bare-hand trout catching",
+    "descSrc": "app"
+  },
+  "f-trout": {
+    "name": "Pyeongchang Trout Festival",
+    "desc": "Details for the 2027 festivals will be updated as they become available.*In the past, winters in this region were unforgiving."
+  },
+  "f-ginkgo": {
+    "name": "Wonju Bangye-ri Ginkgo Festival",
+    "nameSrc": "app",
+    "desc": "Autumn colors of an 800-year-old ginkgo tree",
+    "descSrc": "app"
+  },
+  "t-christmas": {
+    "name": "Gangneung Christmas Winter Festival",
+    "nameSrc": "app",
+    "desc": "Light festival on Wolhwa Street and Anmok Beach",
+    "descSrc": "app"
+  },
+  "t-sunrise": {
+    "name": "Jeongdongjin & Gyeongpo New Year Sunrise",
+    "nameSrc": "app",
+    "desc": "Sunrise on January 1",
+    "descSrc": "app"
+  },
+  "t-hongcheon": {
+    "name": "Hongcheon River Kkongkkong Festival",
+    "nameSrc": "app",
+    "desc": "Ice fishing on the Hongcheon River",
+    "descSrc": "app"
+  },
+  "t-daegwallyeong": {
+    "name": "Daegwallyeong Snow Festival",
+    "nameSrc": "app",
+    "desc": "Snow sculptures and snow sledding",
+    "descSrc": "app"
+  },
+  "t-taebaek": {
+    "name": "Taebaeksan Snow Festival",
+    "nameSrc": "app",
+    "desc": "Snow sculptures in Taebaeksan National Park",
+    "descSrc": "app"
+  },
+  "t-yeongwol": {
+    "name": "Yeongwol Danjong Cultural Festival",
+    "nameSrc": "app",
+    "desc": "Reenactment of King Danjong's state funeral",
+    "descSrc": "app"
+  },
+  "t-mime": {
+    "name": "Chuncheon Mime Festival",
+    "nameSrc": "app",
+    "desc": "Street performance festival",
+    "descSrc": "app"
+  },
+  "t-rose": {
+    "name": "Samcheok Rose Festival",
+    "nameSrc": "app",
+    "desc": "Osipcheon Rose Park",
+    "descSrc": "app"
+  },
+  "t-dano": {
+    "name": "Gangneung Danoje Festival",
+    "nameSrc": "app",
+    "desc": "UNESCO Intangible Cultural Heritage of Humanity",
+    "descSrc": "app"
+  },
+  "t-corn": {
+    "name": "Hongcheon Waxy Corn Festival",
+    "nameSrc": "app",
+    "desc": "Corn activities and food",
+    "descSrc": "app"
+  },
+  "t-tomato": {
+    "name": "Hwacheon Tomato Festival",
+    "nameSrc": "app",
+    "desc": "Tomato pool",
+    "descSrc": "app"
+  },
+  "t-dakgalbi": {
+    "name": "Chuncheon Dakgalbi & Makguksu Festival",
+    "nameSrc": "app",
+    "desc": "Dakgalbi and makguksu food",
+    "descSrc": "app"
+  },
+  "t-hyoseok": {
+    "name": "Pyeongchang Hyoseok Cultural Festival",
+    "nameSrc": "app",
+    "desc": "Bongpyeong buckwheat flower fields",
+    "descSrc": "app"
+  },
+  "t-dancing": {
+    "name": "Wonju Dynamic Dancing Carnival",
+    "nameSrc": "app",
+    "desc": "Street parade dance festival",
+    "descSrc": "app"
+  },
+  "t-coffee": {
+    "name": "Gangneung Coffee Festival",
+    "nameSrc": "app",
+    "desc": "Coffee street and hand-drip coffee experiences",
+    "descSrc": "app"
+  },
+  "t-arirang": {
+    "name": "Jeongseon Arirang Festival",
+    "nameSrc": "app",
+    "desc": "Arirang performances",
+    "descSrc": "app"
+  },
+  "t-hanwoo": {
+    "name": "Hoengseong Hanwoo Festival",
+    "nameSrc": "app",
+    "desc": "Hanwoo (Korean beef) food",
+    "descSrc": "app"
+  },
+  "t-salmon": {
+    "name": "Yangyang Salmon Festival",
+    "nameSrc": "app",
+    "desc": "Catch salmon by hand in Namdaecheon Stream",
+    "descSrc": "app"
+  },
+  "t-seorak": {
+    "name": "Sokcho Seorak Cultural Festival",
+    "nameSrc": "app",
+    "desc": "Sokcho's signature cultural festival",
+    "descSrc": "app"
+  },
+  "k-gn-cherry": {
+    "name": "Gangneung Gyeongpo Cherry Blossom Festival",
+    "nameSrc": "app",
+    "desc": "Gyeongpo Wetland Square",
+    "descSrc": "app"
+  },
+  "k-gn-heritage-night": {
+    "name": "Gangneung National Heritage Night",
+    "nameSrc": "app",
+    "desc": "Gangneung Daedohobu Government Office, Seobu Market and Myeongju-dong",
+    "descSrc": "app"
+  },
+  "k-gn-noodle": {
+    "name": "Gangneung Noodle Festival",
+    "nameSrc": "app",
+    "desc": "Wolhwa Street",
+    "descSrc": "app"
+  },
+  "k-gn-ojuk-bread": {
+    "name": "Gangneung Bread Village Ojuk",
+    "nameSrc": "app",
+    "desc": "Ojuk Hanok Village",
+    "descSrc": "app"
+  },
+  "k-gn-beer": {
+    "name": "Gangneung Beach Beer Festival",
+    "nameSrc": "app",
+    "desc": "Gyeongpo Beach Central Square",
+    "descSrc": "app"
+  },
+  "k-gn-pork": {
+    "name": "Gangwon Korean Pork Festa",
+    "nameSrc": "app",
+    "desc": "Wolhwa Street",
+    "descSrc": "app"
+  },
+  "k-gn-summer": {
+    "name": "Gyeongpo Summer Festival",
+    "nameSrc": "app",
+    "desc": "Gyeongpo Beach special stage and Central Square",
+    "descSrc": "app"
+  },
+  "k-gn-puppet": {
+    "name": "Myeongju Puppet Festival",
+    "nameSrc": "app",
+    "desc": "Myeongju Art Madang",
+    "descSrc": "app"
+  },
+  "k-dh-lavender": {
+    "name": "Mureung Byeolyucheonji Lavender Festival",
+    "nameSrc": "app",
+    "desc": "Mureung Byeolyucheonji, Donghae",
+    "descSrc": "app"
+  },
+  "k-gn-bread": {
+    "name": "Gangneung Bread Festa",
+    "nameSrc": "app",
+    "desc": "Gangneung Daedohobu Government Office",
+    "descSrc": "app"
+  },
+  "f-gn-dandandan": {
+    "name": "Gangneung Dandandan Festival",
+    "nameSrc": "app",
+    "desc": "Gangneung Danoje Training Center",
+    "descSrc": "app"
+  },
+  "k-sc-summer": {
+    "name": "Sokcho Summer Festival",
+    "nameSrc": "app",
+    "desc": "Sokcho Beach",
+    "descSrc": "app"
+  },
+  "k-sc-displaced": {
+    "name": "Displaced People's Culture Festival",
+    "nameSrc": "app",
+    "desc": "Sokcho Expo Lawn Square",
+    "descSrc": "app"
+  },
+  "k-yy-bonfire": {
+    "name": "Yangyang Naksan Beach Moonlight Bonfire Festival",
+    "nameSrc": "app",
+    "desc": "Naksan Beach Zone B · advance booking",
+    "descSrc": "app"
+  },
+  "k-yy-cherry": {
+    "name": "Yangyang Namdaecheon Cherry Blossom Festival",
+    "nameSrc": "app",
+    "desc": "Yangyang Songi Sculpture Park",
+    "descSrc": "app"
+  },
+  "k-sc-yeongnang-cherry": {
+    "name": "Yeongnangho Lake Cherry Blossom Festival",
+    "nameSrc": "app",
+    "desc": "Yeongnangho Lake lawn",
+    "descSrc": "app"
+  },
+  "k-ij-flower": {
+    "name": "Inje Autumn Flower Festival",
+    "nameSrc": "app",
+    "desc": "Yongdae Tourist Site, Buk-myeon, Inje",
+    "descSrc": "app"
+  },
+  "k-gs-octopus": {
+    "name": "Goseong Jeodo Giant Octopus Festival",
+    "nameSrc": "app",
+    "desc": "Daejin Port",
+    "descSrc": "app"
+  },
+  "k-cw-mediaart": {
+    "name": "National Heritage Media Art: Cheorwon Labor Party HQ",
+    "nameSrc": "app",
+    "desc": "Cheorwon Labor Party HQ and Cheorwon History & Culture Park",
+    "descSrc": "app"
+  },
+  "k-yg-belly": {
+    "name": "Yanggu Navel Festival (Center of Korea)",
+    "nameSrc": "app",
+    "desc": "Yanggu Seocheon Leisure Sports Park",
+    "descSrc": "app"
+  },
+  "k-cw-yeogijeogi": {
+    "name": "Yeogijeogi Festival in Cheorwon",
+    "nameSrc": "app",
+    "desc": "Gimhwa Eco Sports Park, Cheorwon",
+    "descSrc": "app"
+  },
+  "k-cc-puppet": {
+    "name": "Chuncheon Puppet Festival",
+    "nameSrc": "app",
+    "desc": "Chuncheon Puppet Theater",
+    "descSrc": "app"
+  },
+  "k-cc-military": {
+    "name": "K-Military Festival: Battle of Chuncheon",
+    "nameSrc": "app",
+    "desc": "Chuncheon Waterfront Park",
+    "descSrc": "app"
+  },
+  "f-cw-ice": {
+    "name": "Cheorwon Hantangang River Ice Trekking Festival",
+    "desc": "Ice trekking on the Hantangang River water trail · ₩10,000 entry (₩5,000 back in Cheorwon gift vouchers)",
+    "descSrc": "app"
+  },
+  "k-yg-gomchi": {
+    "name": "Yanggu Gomchi Festival",
+    "nameSrc": "app",
+    "desc": "Yanggu Leisure Sports Park",
+    "descSrc": "app"
+  },
+  "k-cc-sul": {
+    "name": "Chuncheon Sul (Liquor) Festa",
+    "nameSrc": "app",
+    "desc": "KT&G Sangsang Madang Chuncheon · mini edition in June",
+    "descSrc": "app"
+  },
+  "k-cc-water": {
+    "name": "Chuncheon Summer Water Festival",
+    "nameSrc": "app",
+    "desc": "Chuncheon Waterfront Park · paid entry",
+    "descSrc": "app"
+  },
+  "k-hc-sannamul": {
+    "name": "Hongcheon Wild Greens Festival",
+    "nameSrc": "app",
+    "desc": "Tori Forest, Urban Forest Park",
+    "descSrc": "app"
+  },
+  "k-hc-beer": {
+    "name": "Hongcheon River Starlight Music & Beer Festival",
+    "nameSrc": "app",
+    "desc": "Tori Forest, Urban Forest Park",
+    "descSrc": "app"
+  },
+  "k-js-duwibong": {
+    "name": "Duwibong Azalea & Mountain Range Festival",
+    "nameSrc": "app",
+    "desc": "Daebak Market and Dangok Valley, Sindong-eup",
+    "descSrc": "app"
+  },
+  "k-js-heritage-night": {
+    "name": "Jeongseon National Heritage Night",
+    "nameSrc": "app",
+    "desc": "Jeongseon-eup",
+    "descSrc": "app"
+  },
+  "k-js-jeonbyeong": {
+    "name": "Jeongseon Buckwheat Crepe Festival",
+    "nameSrc": "app",
+    "desc": "Jeongseon Arirang Market",
+    "descSrc": "app"
+  },
+  "k-js-skytrail": {
+    "name": "Sky Forest Trail Walking Festival",
+    "nameSrc": "app",
+    "desc": "Jeongseon Sky Forest Trail · entry fee",
+    "descSrc": "app"
+  },
+  "k-yw-photo": {
+    "name": "Donggang International Photo Festival",
+    "nameSrc": "app",
+    "desc": "Donggang Museum of Photography · closed Mondays",
+    "descSrc": "app"
+  },
+  "k-js-coal": {
+    "name": "Coal Mining Culture Festival",
+    "nameSrc": "app",
+    "desc": "Sabuk-eup (M650 Museum and 650 Street)",
+    "descSrc": "app"
+  },
+  "k-tb-sannamul": {
+    "name": "Taebaek Heavenly Wild Greens Festival",
+    "nameSrc": "app",
+    "desc": "Jangseong Tantan Madang",
+    "descSrc": "app"
+  },
+  "k-tb-sunflower": {
+    "name": "Taebaek Sunflower Festival",
+    "nameSrc": "app",
+    "desc": "Taebaek Sunflower Festival grounds · paid entry",
+    "descSrc": "app"
+  },
+  "k-tb-festival": {
+    "name": "Taebaek Festival",
+    "nameSrc": "app",
+    "desc": "Around Taebaek City Hall",
+    "descSrc": "app"
+  },
+  "k-pc-heat": {
+    "name": "Pyeongchang Heat-Hunting Festival",
+    "nameSrc": "app",
+    "desc": "Daehwa-myeon festival grounds · paid entry",
+    "descSrc": "app"
+  },
+  "k-pc-music": {
+    "name": "Music in PyeongChang",
+    "nameSrc": "app",
+    "desc": "Alpensia Concert Hall and Daegwallyeong Music Tent",
+    "descSrc": "app"
+  },
+  "k-wj-naora": {
+    "name": "Naora Show",
+    "nameSrc": "app",
+    "desc": "Naora Show Plaza in Sogeumsan Grand Valley · evenings",
+    "descSrc": "app"
+  },
+  "k-hs-tomato": {
+    "name": "Dunnae Highland Tomato Festival",
+    "nameSrc": "app",
+    "desc": "Dunnae Sports Park · tomato pool ₩15,000",
+    "descSrc": "app"
+  },
+  "k-wj-samto": {
+    "name": "Samto Festival",
+    "nameSrc": "app",
+    "desc": "Wonju Sports Complex",
+    "descSrc": "app"
+  },
+  "k-wj-heritage-night": {
+    "name": "Wonju National Heritage Night",
+    "nameSrc": "app",
+    "desc": "Gangwon Gamyeong (provincial office)",
+    "descSrc": "app"
+  },
+  "k-wj-sweetpotato": {
+    "name": "Chiaksan Sweet Potato Festival",
+    "nameSrc": "app",
+    "desc": "Ganhyeon Tourist Area parking lot 3",
+    "descSrc": "app"
+  },
+  "k-wj-poppy": {
+    "name": "Wonju Yongsugol Poppy Festival",
+    "nameSrc": "app",
+    "desc": "Poppy festival grounds · paid entry",
+    "descSrc": "app"
+  },
+  "k-hs-summernight": {
+    "name": "Hoengseong Summer Night Festa",
+    "nameSrc": "app",
+    "desc": "Seomgang riverside, Hoengseong",
+    "descSrc": "app"
+  },
+  "k-hs-lake": {
+    "name": "Hoengseong Lake Trail Festival",
+    "nameSrc": "app",
+    "desc": "Manghyang Hill and Hoengseong Lake Trail section 5 · paid entry",
+    "descSrc": "app"
+  },
+  "k-wj-rooftop": {
+    "name": "Wonju Rooftop Film Festival",
+    "nameSrc": "app",
+    "desc": "Rooftop of the Korea Tourism Organization HQ",
+    "descSrc": "app"
+  },
+  "wj-gamyeong": {
+    "name": "Gangwon Gamyeong (Wonju)",
+    "nameSrc": "app",
+    "desc": "Joseon-era provincial governor's office in central Wonju, open until late",
+    "descSrc": "app"
+  },
+  "wj-hanji": {
+    "name": "Wonju Hanji Theme Park",
+    "nameSrc": "app",
+    "desc": "Exhibits and hands-on making of hanji, Korean mulberry paper",
+    "descSrc": "app"
+  },
+  "wj-parkkyongni": {
+    "name": "Park Kyong-ni Literary Park",
+    "nameSrc": "app",
+    "desc": "Former home of the author of Toji and its garden",
+    "descSrc": "app"
+  },
+  "wj-baramgil": {
+    "name": "Chiaksan Baramgil Forest",
+    "nameSrc": "app",
+    "desc": "Urban forest trail built on the old Jungang Line railway through central Wonju",
+    "descSrc": "app"
+  },
+  "wj-gopanhwa": {
+    "name": "Museum of Old Woodblock Prints (Myeongjusa)",
+    "nameSrc": "app",
+    "desc": "Mountain-temple museum of old woodblock prints",
+    "descSrc": "app"
+  },
+  "wj-gukhyeongsa": {
+    "name": "Gwaneumsa & Gukhyeongsa Valley",
+    "nameSrc": "app",
+    "desc": "Valley with two temples on the edge of Chiaksan National Park",
+    "descSrc": "app"
+  },
+  "wj-beopcheonsa": {
+    "name": "Beopcheonsa Temple Site, Wonju",
+    "nameSrc": "app",
+    "desc": "Unified Silla temple ruins where the Jigwang National Preceptor stupa returned",
+    "descSrc": "app"
+  },
+  "wj-geodonsa": {
+    "name": "Geodonsa Temple Site, Wonju",
+    "nameSrc": "app",
+    "desc": "Quiet temple ruins guarded by a thousand-year-old zelkova tree",
+    "descSrc": "app"
+  },
+  "wj-seomgang-birch": {
+    "name": "Seomgang Birch Forest Trail, Wonju",
+    "nameSrc": "app",
+    "desc": "Birch forest walk along the Seomgang River",
+    "descSrc": "app"
+  },
+  "wj-chilbong": {
+    "name": "Chilbong Resort Area",
+    "nameSrc": "app",
+    "desc": "Riverside park below seven peaks on the Seomgang River",
+    "descSrc": "app"
+  },
+  "hs-forest": {
+    "name": "National Hoengseong Forest Healing Center",
+    "nameSrc": "app",
+    "desc": "Forest decks and trails at 850 m on Cheongtaesan",
+    "descSrc": "app"
+  },
+  "hs-byeongjibang": {
+    "name": "Byeongjibang Valley",
+    "nameSrc": "app",
+    "desc": "Clear mountain valley stream in Hoengseong",
+    "descSrc": "app"
+  },
+  "wj-seomgang-makguksu": {
+    "name": "Seomgang Makguksu",
+    "nameSrc": "app",
+    "desc": "Buckwheat noodles near Ganhyeon",
+    "descSrc": "app"
+  },
+  "wj-chueotang": {
+    "name": "Gimgane Wonju Chueotang",
+    "nameSrc": "app",
+    "desc": "Wonju-style loach soup, lunch only (last order 14:30)",
+    "descSrc": "app"
+  },
+  "wj-bok-chueotang": {
+    "name": "Bok Chueotang",
+    "nameSrc": "app",
+    "desc": "Wonju's first loach soup house since 1965",
+    "descSrc": "app"
+  },
+  "wj-borit": {
+    "name": "Boritgogae (main store)",
+    "nameSrc": "app",
+    "desc": "Third-generation Korean set meals in the Innovation City",
+    "descSrc": "app"
+  },
+  "wj-hamheung": {
+    "name": "Cheonjin Hamheung Naengmyeon",
+    "nameSrc": "app",
+    "desc": "Hamheung-style cold noodles in Dangye-dong",
+    "descSrc": "app"
+  },
+  "hs-deodeok": {
+    "name": "Park Hyeon-ja's Deodeok Rice",
+    "nameSrc": "app",
+    "desc": "Set meals built on Hoengseong's deodeok root",
+    "descSrc": "app"
+  },
+  "hs-hambat": {
+    "name": "Hambat Sikdang",
+    "nameSrc": "app",
+    "desc": "30-year Hoengseong hanwoo beef restaurant in town",
+    "descSrc": "app"
+  },
+  "hs-kkwong-mandu": {
+    "name": "Netherlands Pheasant Dumplings (Saemal)",
+    "nameSrc": "app",
+    "desc": "Pheasant dumpling soup in bone broth near Saemal",
+    "descSrc": "app"
+  },
+  "wj-teodeukgol": {
+    "name": "Teodeukgol Book Shop",
+    "nameSrc": "app",
+    "desc": "Independent bookshop and book café in the woods, open Thursday to Sunday",
+    "descSrc": "app"
+  },
+  "wj-rotonda": {
+    "name": "Cafe Rotonda",
+    "nameSrc": "app",
+    "desc": "Bakery café with a large garden and pond",
+    "descSrc": "app"
+  },
+  "wj-okhee": {
+    "name": "Kkae Roastery Okhee Bangatgan",
+    "nameSrc": "app",
+    "desc": "Third-generation sesame mill and dessert café",
+    "descSrc": "app"
+  },
+  "wj-eunseok": {
+    "name": "Coffee Eunseokssi",
+    "nameSrc": "app",
+    "desc": "Brunch café, daytime only (last order 15:30)",
+    "descSrc": "app"
+  },
+  "dh-hansum": {
+    "name": "Hansum (Donghae)",
+    "nameSrc": "app",
+    "desc": "Set meal of seasonal Donghae ingredients and potato gnocchi",
+    "descSrc": "app"
+  },
+  "dh-mukho287": {
+    "name": "Mukho 287",
+    "nameSrc": "app",
+    "desc": "Café overlooking the Mukho sea; opens 08:00 on weekends",
+    "descSrc": "app"
+  },
+  "sc-buil": {
+    "name": "Buil Makguksu",
+    "nameSrc": "app",
+    "desc": "Samcheok cold buckwheat noodles and boiled pork, lunch only",
+    "descSrc": "app"
+  },
+  "sc-mannam": {
+    "name": "Mannam Sikdang",
+    "nameSrc": "app",
+    "desc": "Samcheok gomchi (snailfish) hangover soup from 8 a.m",
+    "descSrc": "app"
+  },
+  "sc-obok": {
+    "name": "Obok Miga",
+    "nameSrc": "app",
+    "desc": "Samcheok cold raw-fish soup (mulhoe) and stone-pot set meals",
+    "descSrc": "app"
+  },
+  "yy-cheonseon": {
+    "name": "Cheonseon Sikdang",
+    "nameSrc": "app",
+    "desc": "Namdaecheon river goby soup and tofu hot pot from 6 a.m",
+    "descSrc": "app"
+  },
+  "yy-yetteul": {
+    "name": "Yetteul",
+    "nameSrc": "app",
+    "desc": "Yangyang mussel soup (seopguk) and mussel bibimbap, until 14:30",
+    "descSrc": "app"
+  },
+  "yy-memilkkot": {
+    "name": "Memilkkot Hyanggi",
+    "nameSrc": "app",
+    "desc": "Perilla-oil buckwheat noodles and potato ongsimi",
+    "descSrc": "app"
+  },
+  "ij-baekdam-tofu": {
+    "name": "Baekdam Sundubu",
+    "nameSrc": "app",
+    "desc": "Soft tofu and grilled dried pollack sets at the Baekdamsa entrance; opens early",
+    "descSrc": "app"
+  },
+  "ij-wondae": {
+    "name": "Wondae Makguksu",
+    "nameSrc": "app",
+    "desc": "Buckwheat noodles and gomchwi boiled pork on the way to the birch forest; closes around 16:00",
+    "descSrc": "app"
+  },
+  "gs-badajeongwon": {
+    "name": "Bada Jeongwon",
+    "nameSrc": "app",
+    "desc": "Goseong café with a seaside garden, open until 21:00",
+    "descSrc": "app"
+  },
+  "hc-memilga": {
+    "name": "Hongcheon Memilga",
+    "nameSrc": "app",
+    "desc": "Perilla-oil bracken buckwheat noodles and boiled pork",
+    "descSrc": "app"
+  },
+  "hc-yakbapsang": {
+    "name": "Yagi Doeneun Bapsang",
+    "nameSrc": "app",
+    "desc": "Gondre and dried radish-greens stone-pot rice and herbal chicken",
+    "descSrc": "app"
+  },
+  "cw-eorang": {
+    "name": "Eorang Son Mandu",
+    "nameSrc": "app",
+    "desc": "Cheorwon hand-made dumpling soup; weekdays until 15:00, weekends until 19:30",
+    "descSrc": "app"
+  },
+  "hw-eojuk": {
+    "name": "Hwacheon Eojuktang",
+    "nameSrc": "app",
+    "desc": "Freshwater fish porridge soup; closes on irregular days",
+    "descSrc": "app"
+  },
+  "yg-naengmyeon": {
+    "name": "Yanggu Son Naengmyeon",
+    "nameSrc": "app",
+    "desc": "Yanggu cold noodles with spicy raw fish, lunch only (11:30–14:30)",
+    "descSrc": "app"
+  },
+  "pc-migayeon": {
+    "name": "Bongpyeong Memil Migayeon",
+    "nameSrc": "app",
+    "desc": "100% buckwheat noodles and buckwheat-sprout bibim",
+    "descSrc": "app"
+  },
+  "pc-gohyang": {
+    "name": "Gohyang Iyagi",
+    "nameSrc": "app",
+    "desc": "Daegwallyeong gondre stone-pot rice and hanwoo",
+    "descSrc": "app"
+  },
+  "js-hambaek": {
+    "name": "Hambaeksan Dolsotbap",
+    "nameSrc": "app",
+    "desc": "Jeongseon gondre stone-pot set, lunch only",
+    "descSrc": "app"
+  },
+  "js-gun-eon": {
+    "name": "Gun-eon Songeo Hoetjip",
+    "nameSrc": "app",
+    "desc": "Jeongseon trout sashimi and fried trout",
+    "descSrc": "app"
+  },
+  "tb-gwangcheon": {
+    "name": "Gwangcheon Makguksu",
+    "nameSrc": "app",
+    "desc": "Taebaek buckwheat noodles and buckwheat crepes, lunch only",
+    "descSrc": "app"
+  },
+  "tb-guwau": {
+    "name": "Guwau Sundubu",
+    "nameSrc": "app",
+    "desc": "Soft tofu at Guwau, Taebaek's sunflower village",
+    "descSrc": "app"
+  },
+  "js-pigojigo": {
+    "name": "Pigojigo",
+    "nameSrc": "app",
+    "desc": "Coal-mine-town café known for briquette-shaped bread",
+    "descSrc": "app"
+  },
+  "yw-ogrann": {
+    "name": "Ogrann Danpatbbang",
+    "nameSrc": "app",
+    "desc": "Yeongwol hand-made red-bean buns; open Friday to Sunday only",
+    "descSrc": "app"
+  },
+  "pc-sangwonsa": {
+    "name": "Sangwonsa Temple (Odaesan)",
+    "nameSrc": "app",
+    "desc": "Thousand-year-old temple with a national-treasure bronze bell and a Manjusri statue",
+    "descSrc": "app"
+  },
+  "pc-sillok": {
+    "name": "National Annals of the Joseon Dynasty Museum",
+    "nameSrc": "app",
+    "desc": "Odaesan copies of the Joseon annals and royal protocols, returned after 110 years",
+    "descSrc": "app"
+  },
+  "pc-hangang-source": {
+    "name": "Hangang River Source Experience Center",
+    "nameSrc": "app",
+    "desc": "Story of Utongsu, the spring said to start the Hangang, with tea tasting",
+    "descSrc": "app"
+  },
+  "pc-sago": {
+    "name": "Odaesan Archive (Pyeongchang)",
+    "nameSrc": "app",
+    "desc": "One of five Joseon archives that guarded the royal annals, rebuilt in the forest",
+    "descSrc": "app"
+  },
+  "pc-dalbit": {
+    "name": "Hyoseok Moonlight Hill",
+    "nameSrc": "app",
+    "desc": "Hill themed on the moonlight of 'When Buckwheat Flowers Bloom', with the writer's restored birthplace",
+    "descSrc": "app"
+  },
+  "pc-heungjeong": {
+    "name": "Heungjeong Valley",
+    "nameSrc": "app",
+    "desc": "Clear, wide valley on the way to Herbnara, popular for summer wading",
+    "descSrc": "app"
+  },
+  "pc-mui": {
+    "name": "Mui Art Museum (Pyeongchang)",
+    "nameSrc": "app",
+    "desc": "Art museum in a former school, with a sculpture garden on the playground",
+    "descSrc": "app"
+  },
+  "pc-leeseungbok": {
+    "name": "Lee Seung-bok Memorial Hall",
+    "nameSrc": "app",
+    "desc": "Memorial and site of the 1968 armed infiltration incident",
+    "descSrc": "app"
+  },
+  "pc-jeonggangwon": {
+    "name": "Jeonggangwon Korean Traditional Food Culture Center",
+    "nameSrc": "app",
+    "desc": "Hanok village by Geumdang Valley with crock terraces and traditional cooking classes",
+    "descSrc": "app"
+  },
+  "pc-bangadari": {
+    "name": "Bangadari Mineral Spring (Mill Bridge)",
+    "nameSrc": "app",
+    "desc": "Carbonated spring at the end of a 10-minute fir forest walk",
+    "descSrc": "app"
+  },
+  "pc-lavender": {
+    "name": "Pyeongchang Lavender Farm",
+    "nameSrc": "app",
+    "desc": "Organic herb farm at 700 m; lavender blooms June–July",
+    "descSrc": "app"
+  },
+  "pc-kensington": {
+    "name": "Kensington French Garden",
+    "nameSrc": "app",
+    "desc": "Large French-style garden modeled on Villandry's embroidery garden",
+    "descSrc": "app"
+  },
+  "pc-machu": {
+    "name": "Alpaca Café Machu Picchu",
+    "nameSrc": "app",
+    "desc": "Feed alpacas and relax in the café near Phoenix Park",
+    "descSrc": "app"
+  },
+  "pc-botanic": {
+    "name": "Korea National Native Plant Garden",
+    "nameSrc": "app",
+    "desc": "Garden of rare and endemic Korean plants at the foot of Odaesan",
+    "descSrc": "app"
+  },
+  "pc-skijump": {
+    "name": "Alpensia Ski Jump Observatory",
+    "nameSrc": "app",
+    "desc": "Monorail up to the observatory atop the Olympic ski jump",
+    "descSrc": "app"
+  },
+  "pc-olympic": {
+    "name": "PyeongChang 2018 Olympic Memorial Hall",
+    "nameSrc": "app",
+    "desc": "Memorial hall on the site of the 2018 Winter Olympics opening and closing ceremonies",
+    "descSrc": "app"
+  },
+  "pc-seonjaryeong": {
+    "name": "Seonjaryeong Ridge",
+    "nameSrc": "app",
+    "desc": "Baekdudaegan ridge trail past wind turbines from Daegwallyeong, 3–4 hours round trip",
+    "descSrc": "app"
+  },
+  "pc-doam": {
+    "name": "Doamho Lake",
+    "nameSrc": "app",
+    "desc": "Lake filling a mountain valley at the top of the Namhangang, a scenic drive",
+    "descSrc": "app"
+  },
+  "pc-animal-farm": {
+    "name": "Forest Animal Farm (Daegwallyeong)",
+    "nameSrc": "app",
+    "desc": "Feed calves, rabbits and prairie dogs, with indoor and outdoor areas",
+    "descSrc": "app"
+  },
+  "pc-inart": {
+    "name": "INART Pyeongchang",
+    "nameSrc": "app",
+    "desc": "Immersive media-art exhibition at Mona Yongpyong, at the foot of Balwangsan",
+    "descSrc": "app"
+  },
+  "pc-buil": {
+    "name": "Buil Sikdang (Jinbu)",
+    "nameSrc": "app",
+    "desc": "Jinbu wild-greens set meal restaurant for over 50 years",
+    "descSrc": "app"
+  },
+  "pc-memil": {
+    "name": "Memilkkot Pil Muryeop",
+    "nameSrc": "app",
+    "desc": "Buckwheat local-food restaurant inside Lee Hyo-seok's birthplace",
+    "descSrc": "app"
+  },
+  "pc-hwangtae": {
+    "name": "Daegwallyeong Hwangtae Village (restaurant)",
+    "nameSrc": "app",
+    "desc": "Dried-pollack soup and grilled pollack set meals from 7 a.m.",
+    "descSrc": "app"
+  },
+  "pc-napjak": {
+    "name": "Napjak Sikdang",
+    "nameSrc": "app",
+    "desc": "Daegwallyeong squid-and-pork bulgogi since 1974",
+    "descSrc": "app"
+  },
+  "pc-yeonworil": {
+    "name": "Café Yeonworil",
+    "nameSrc": "app",
+    "desc": "Window views of green-onion fields and snow; potato cake and scallion bread",
+    "descSrc": "app"
+  },
+  "pc-7hundred": {
+    "name": "7HUNDRED Café",
+    "nameSrc": "app",
+    "desc": "Three-storey café in Hoenggye, Daegwallyeong, with cold brew and bread",
+    "descSrc": "app"
+  }
+}

@@ -11,12 +11,13 @@ export type Fact<T> = {
 const fact = <T>(id: string, field: string, value: T | null): Fact<T> => ({
   value,
   evidenceId: `${id}:${field}`,
-  source: "여행잇 가상 시연 데이터 v1 · 실제 조사 없음",
+  source: "보폭 가상 시연 데이터 v1 · 실제 조사 없음",
   nature: "demo",
   checked: "simulated",
 });
 export type Place = {
-  visitorInfo?:{address?:string;hoursText?:string;phone?:string;website?:string};
+  accessNotes?:{entry:string;route:string;parking:string;toilet:string;source:string;collectedAt:string};
+  visitorInfo?:{imageUrls?:string[];imageUrl?:string;address?:string;hoursText?:string;phone?:string;website?:string};
   facilities?:Partial<Record<Facility,Fact<boolean>>>;
   opening?:Fact<OpeningInfo>;
   id: string;

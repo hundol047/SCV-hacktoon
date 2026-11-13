@@ -9,6 +9,7 @@ if ! command -v docker >/dev/null; then
   sudo -n apt-get update
   sudo -n apt-get install -y docker.io
 fi
+sudo -n systemctl daemon-reload
 sudo -n systemctl start docker
 sudo -n docker info >/dev/null
 name=yeohaengit-web
@@ -29,9 +30,10 @@ if [[ "$mode" == "--anonymous-ai" || "$mode" == "--experiment-ai" ]]; then
   options=(); [[ "$mode" != "--experiment-ai" ]] || options+=(--experiment)
   sudo -n python3 scripts/configure-anonymous-ai.py "$envfile" "${options[@]}"
 fi
+bash scripts/prepare-deploy-space.sh
 image="yeohaengit-preview:$(date +%s)-$$"
 echo 'Building the Next.js web app. The first build can take several minutes.'
-sudo -n docker build -t "$image" .
+sudo -n docker build --force-rm -t "$image" .
 # Validate inside the same image/network before stopping the previous deployment.
 # This performs one short paid Converse request using the instance profile.
 sudo -n docker run --rm --env-file "$envfile" -e AWS_EC2_METADATA_V1_DISABLED=true \
@@ -52,16 +54,17 @@ sudo -n docker run -d --name "$name" --label "app.deployer=$owner" \
   --restart unless-stopped --log-opt max-size=10m --log-opt max-file=3 \
   --env-file "$envfile" -e AWS_EC2_METADATA_V1_DISABLED=true \
   -e NO_PROXY=169.254.169.254,localhost,127.0.0.1 \
+  --mount type=volume,source=yeohaengit-lab-data,target=/app/.lab-data \
   -p "$port:3000" "$image"
 ready=false
 for attempt in {1..30}; do
-  if sudo -n docker exec "$name" node -e 'fetch("http://127.0.0.1:3000/").then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))' >/dev/null 2>&1; then ready=true; break; fi
+  if sudo -n docker exec "$name" node -e 'fetch("http://127.0.0.1:3000/lab/").then(async r=>{const html=await r.text();const css=await fetch("http://127.0.0.1:3000/lab/bopok-bright.css").then(x=>x.text());process.exit(r.ok&&html.includes("bopok-bright-v4")&&css.includes("color-scheme:only light")?0:1)}).catch(()=>process.exit(1))' >/dev/null 2>&1; then ready=true; break; fi
   sleep 2
 done
 [[ "$ready" == true ]]
 trap - ERR
 if [[ -n "$old" ]]; then sudo -n docker rm "$old" >/dev/null; fi
-echo "Web home page responded successfully. Port: $port"
+echo "Verified Bopok bright-v4 HTML and light stylesheet. Port: $port"
 echo 'Logs: sudo -n docker logs --tail 100 yeohaengit-web'
 echo 'Stop: sudo -n docker stop yeohaengit-web'
 echo 'Restart: sudo -n docker start yeohaengit-web'

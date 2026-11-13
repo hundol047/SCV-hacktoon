@@ -127,7 +127,7 @@ docker build -f Dockerfile.runtime -t bopok .
 
 standalone은 비루트 Node 사용자로 실행합니다. HTTPS 앞단과 같은 환경 설정이 필요합니다. runtime 경로는 CPU 아키텍처·Node·Linux libc가 호환되는 Linux 빌드 결과만 사용합니다.
 
-이 클라우드의 소스 빌드는 기존 프록시 호스트의 해석 주소를 `--add-host`로 전달하고 `--network host`, `--build-arg HTTP_PROXY --build-arg HTTPS_PROXY --build-arg NO_PROXY`, 신뢰 CA `--secret id=proxy-ca,src=CA_파일`을 사용해 검증했습니다. 프록시 주소·인증값을 고정하거나 TLS 검증을 끄지 않습니다. 최종 이미지에는 프록시 CA를 복사하지 않습니다.
+기본 `Dockerfile`은 구형 Docker 빌더와 BuildKit 모두를 지원합니다. 프록시 CA 주입이 필요한 관리형 환경에서는 `docker build -f Dockerfile.buildkit`과 BuildKit을 사용합니다. 이 클라우드의 소스 빌드는 기존 프록시 호스트의 해석 주소를 `--add-host`로 전달하고 `--network host`, `--build-arg HTTP_PROXY --build-arg HTTPS_PROXY --build-arg NO_PROXY`, 신뢰 CA `--secret id=proxy-ca,src=CA_파일`을 사용해 검증했습니다. 프록시 주소·인증값을 고정하거나 TLS 검증을 끄지 않습니다. 최종 이미지에는 프록시 CA를 복사하지 않습니다.
 
 설치/시작 지침과 필요한 도메인·변수 요구사항은 클라우드 설정 초안으로 저장합니다. 초안 저장은 실제 적용·게시·앱 배포가 아닙니다. 환경 설정에서 값을 입력하고 검토·저장한 뒤 환경을 게시해야 다음 환경에 적용됩니다.
 

@@ -9,3 +9,7 @@ android/build
 downloads
 .cache
 *.tsbuildinfo
+
+**/node_modules
+.lab-data
+artifacts

@@ -16,3 +16,10 @@ next-env.d.ts
 data/korea-tourism/*.tmp
 android/build/
 .android-signing/
+
+/public/vendor/maplibre-worker.mjs
+/public/vendor/maplibre-LICENSE.txt
+
+.lab-data/
+/vendor/my-ai-lab/.local/
+/vendor/my-ai-lab/store/*.sqlite*

@@ -1,0 +1,60 @@
+import assert from 'node:assert/strict';
+import http from 'node:http';
+import {createECDH} from 'node:crypto';
+import {mkdtemp,rm} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {serviceAPI} from '../service-api.mjs';
+const dir=await mkdtemp(`${tmpdir()}/api-test-`), admin='a'.repeat(48), token='t'.repeat(48);
+const handle=serviceAPI({file:dir+'/db.sqlite',adminToken:admin,pushSender:{publicKey:"test-only"}});
+const server=http.createServer((req,res)=>handle(req,res,new URL(req.url,'http://localhost')));
+await new Promise(r=>server.listen(0,'127.0.0.1',r));const base=`http://127.0.0.1:${server.address().port}`;
+const call=async(path,method='GET',body,auth,extra={})=>{const r=await fetch(base+path,{method,headers:{'content-type':'application/json',...(auth?{authorization:`Bearer ${auth}`} : {}),...extra},...(body?{body:JSON.stringify(body)}:{})});return {status:r.status,data:await r.json()};};
+try{
+ assert.equal((await call('/api/admin/bookings')).status,401);
+ const body={kind:'tour',product:'HTTP test',date:'2099-01-01',people:2,name:'Test',contact:'test@example.com',consent:true};
+ const b=await call('/api/bookings','POST',body,token,{'idempotency-key':'k'.repeat(48)});assert.equal(b.status,201);
+ assert.equal((await call(`/api/bookings/${b.data.id}`)).status,404);
+ assert.equal((await call(`/api/bookings/${b.data.id}`,'GET',null,token)).data.status,'received');
+ assert.equal((await call(`/api/admin/bookings/${b.data.id}/status`,'POST',{status:'reviewing'},admin)).status,200);
+ assert.equal((await call(`/api/admin/bookings/${b.data.id}/quote`,'POST',{amount:20000,description:'투어'},admin)).data.quote.amount,20000);
+ assert.equal((await call('/api/payments/checkout','POST',{bookingId:b.data.id},token)).status,503);
+ assert.equal((await call('/api/reviews','POST',{place:'unknown',nickname:'X',rating:5,text:'테스트 후기 내용입니다.'})).status,400);
+ const review=await call('/api/reviews','POST',{place:'ojukheon',nickname:'Test',rating:5,text:'테스트 후기 내용입니다.'});assert.equal(review.status,201);
+ assert.equal((await call('/api/reviews?place=ojukheon')).data.length,0);
+ assert.equal((await call(`/api/admin/reviews/${review.data.id}`,'POST',{state:'published'},admin)).status,200);
+ assert.equal((await call('/api/reviews?place=ojukheon')).data.length,1);
+ assert.equal((await call(`/api/reviews/${review.data.id}/report`,'POST',{reason:'검토 필요합니다.'})).status,201);
+ assert.equal((await call('/api/admin/reports','GET',null,admin)).data.length,1);
+ // 장소 정보 오류 제보: 등록된 장소·정해진 종류만, 관리자만 목록 조회
+ assert.equal((await call('/api/place-reports','POST',{place:'ojukheon',kind:'hours',note:'월요일에도 엽니다'})).status,201);
+ assert.equal((await call('/api/place-reports','POST',{place:'no-such-place',kind:'hours'})).status,400);
+ assert.equal((await call('/api/place-reports','POST',{place:'ojukheon',kind:'nope'})).status,400);
+// 같이 고르기 투표: 바꾸기·취소, 다른 사람 표와 합산, 잘못된 키·장소 거절
+{const v=(b)=>call('/api/votes','POST',{trip:'tripkey0001',...b});
+ assert.equal((await v({place:'ojukheon',voter:'voteraaaa1',vote:1})).status,200);
+ assert.equal((await v({place:'ojukheon',voter:'voterbbbb2',vote:-1})).status,200);
+ await v({place:'ojukheon',voter:'voteraaaa1',vote:-1}); await v({place:'ojukheon',voter:'voteraaaa1',vote:1});
+ const r=(await call('/api/votes?trip=tripkey0001&voter=voteraaaa1')).data;
+ assert.deepEqual(r.places.ojukheon,{up:1,down:1,mine:1});
+ await v({place:'ojukheon',voter:'voterbbbb2',vote:0});
+ assert.deepEqual((await call('/api/votes?trip=tripkey0001')).data.places.ojukheon,{up:1,down:0,mine:0});
+ assert.equal((await v({place:'no-such-place',voter:'voteraaaa1',vote:1})).status,400);
+ assert.equal((await call('/api/votes','POST',{trip:'BAD KEY',place:'ojukheon',voter:'voteraaaa1',vote:1})).status,400);
+ assert.equal((await v({place:'ojukheon',voter:'voteraaaa1',vote:5})).status,400);}
+// 기기 옮기기: 6자리 코드로 한 번만 받기, 없는 코드·빈 내용 거절
+{const r=await call('/api/transfer','POST',{data:'abc123'}); assert.equal(r.status,201); assert.match(r.data.code,/^\d{6}$/);
+ const g=await call(`/api/transfer/${r.data.code}`); assert.equal(g.status,200); assert.equal(g.data.data,'abc123');
+ assert.equal((await call(`/api/transfer/${r.data.code}`)).status,404,'두 번째는 없음');
+ assert.equal((await call('/api/transfer','POST',{data:''})).status,400);}
+ assert.equal((await call('/api/admin/place-reports')).status,401);
+ const pr=(await call('/api/admin/place-reports','GET',null,admin)).data; assert.equal(pr.length,1); assert.equal(pr[0].kind,'hours');
+ const curve=createECDH('prime256v1');curve.generateKeys();const sub={endpoint:'https://fcm.googleapis.com/fcm/send/test-only',keys:{p256dh:curve.getPublicKey().toString('base64url'),auth:Buffer.alloc(16,1).toString('base64url')}};
+ assert.equal((await call('/api/push-config')).data.enabled,true);
+ assert.equal((await call(`/api/bookings/${b.data.id}/push`,'POST',{subscription:sub})).status,404);
+ assert.equal((await call(`/api/bookings/${b.data.id}/push`,'POST',{subscription:sub,lang:'ja'},token)).status,200);
+ assert.equal((await call('/api/admin/push','GET',null,admin)).data.subscriptions,1);
+ assert.equal((await call(`/api/bookings/${b.data.id}/push`,'DELETE',{endpoint:sub.endpoint},token)).status,200);
+ assert.equal((await call(`/api/bookings/${b.data.id}/cancel`,'POST',null,token)).data.status,'cancelled');
+ assert.equal((await call('/api/reviews','POST',{},null,{origin:'https://other.example'})).status,403);
+ console.log('ok - HTTP 인증·신청·상태 변경·견적·결제 차단·후기 공개·신고·장소 제보·취소·교차 출처 차단');
+}finally{await new Promise(r=>server.close(r));await rm(dir,{recursive:true,force:true});}

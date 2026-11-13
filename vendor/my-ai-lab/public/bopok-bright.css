@@ -1,0 +1,68 @@
+/* A separate release stylesheet prevents an old cached dark theme from winning. */
+:root {color-scheme:only light;--bg:#fffdf7;--surface:#ffffff;--text:#213e48;--sub:#526675;--line:#dbe7ed;--brand:#146b99;--brand-soft:#e9f6fd;--on-brand:#ffffff;--shadow:0 8px 28px #2463860a;}
+html,body {background-color:#fffdf7;color:#213e48;}
+body {background-image:radial-gradient(ellipse at 8% 15%,#fff2ba 0,transparent 43%),radial-gradient(ellipse at 92% 18%,#daf3ff 0,transparent 47%);}
+.top {background:#fffffff5;}.brand {color:#146b99;}.dot {background:#37acd0;box-shadow:7px 0 0 #ffbc59;}
+.setup .hero {background:linear-gradient(135deg,#77d2f4,#a8e7e0 55%,#ffe7a3);}
+.hero::after {background:linear-gradient(180deg,transparent 25%,#153c5333 70%,#153c5370);}
+.setup .voice-start {background:white;border-color:#daedf3;box-shadow:0 12px 35px #337e9e0a;}
+.mic {background:#e4f6ff!important;color:#146b99!important;box-shadow:0 0 0 10px #f4fbff!important;}
+.voice-row button,.seg button.on {background:#146b99!important;color:white!important;}
+.profile-picks button {background:#e9f7ee;border-color:#cee8d5;}.profile-picks button:nth-child(2) {background:#fff2d8;}.profile-picks button:nth-child(3) {background:#e6f4ff;}
+.manual>summary {color:#146b99;border-color:#cfe4f0;}.card {background:#fff;border-color:#dbe7ed;}
+.source-credits {max-width:1120px;margin:0 auto;padding:18px 24px;font-size:12px;color:#647784;line-height:1.7;}
+#lodgingCard {display:block;padding:24px;margin-top:18px;border:1px solid #d9e8ef;border-radius:24px;background:#fff;}
+.stay-summary {display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,.75fr);gap:24px;align-items:start;padding-bottom:18px;border-bottom:1px solid #e5edf2;}
+#lodgingCard h3 {font-size:21px;margin:8px 0;}.stay-booking {padding:16px;background:#f0f8fd;border-radius:16px;}
+#lodgingCard .booking-options {margin:0;display:flex;flex-wrap:wrap;gap:12px;justify-content:flex-start;font-size:14px;}
+#lodgingCard .booking-options input {width:72px;min-height:44px;background:white;border:1px solid #bed8e6;border-radius:8px;}
+#lodgingCard .stays {margin:20px 0 0;}.stays>b {font-size:17px;}.stays ul {grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;}
+#lodgingCard .stays li {display:flex;flex-direction:column;align-items:stretch;gap:12px;padding:14px;border:1px solid #e0eaf0;border-radius:18px;background:#fff;}
+#lodgingCard .stay-img {width:100%;height:140px;border-radius:12px;flex:none;}
+#lodgingCard .stay-info strong {white-space:normal;font-size:17px;line-height:1.5;}
+#lodgingCard .stay-info span {font-size:13px;}#lodgingCard .stay-acts {margin-top:auto;display:flex;flex-wrap:wrap;gap:8px;}
+#lodgingCard .stay-acts .ghost {min-height:44px;display:flex;align-items:center;justify-content:center;font-size:13px;}
+.stay-tools {margin-top:18px;padding-top:14px;border-top:1px solid #e2ebf1;}.stay-tools>summary {cursor:pointer;color:#146b99;font-weight:600;padding:8px 0;}
+#lodgingCard .stay-main {margin-top:12px;width:100%;}.stay-tools .safe {margin-top:12px;}
+.place .for {display:block;}.place .for .intro {display:block!important;margin:12px 0 0;font-size:15px;font-weight:400;line-height:1.8;color:#385460;}
+.place-acts {display:grid!important;grid-template-columns:1fr 1fr!important;gap:8px;}.place-extra {grid-column:1/-1;padding-top:4px;font-size:13px;color:#607683;}.place-extra>summary {cursor:pointer;padding:6px 0;}.extra-actions {display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;}
+@media(max-width:800px) {.stay-summary {grid-template-columns:1fr;gap:14px;}.stays ul {grid-template-columns:repeat(2,minmax(0,1fr));}}
+@media(max-width:520px) {#lodgingCard {padding:16px;}.stays ul {grid-template-columns:1fr;}#lodgingCard .stay-img {height:160px;}.stay-summary {gap:12px;}.place .for .intro {font-size:14px;}}
+
+.half-document { margin-top:16px; padding:16px; border:1px solid #c9dfe9; border-radius:14px; background:#f5fbff; }
+.half-document textarea { display:block; width:100%; box-sizing:border-box; min-height:180px; margin:8px 0; padding:12px; line-height:1.6; font:inherit; color:#16384a; background:white; border:1px solid #afcbd9; border-radius:10px; resize:vertical; }
+.half-document [role="status"] { margin-left:8px; font-size:13px; }
+
+/* Departure checks: give the heading, links and note their own space. */
+#checks { padding:28px; margin-top:24px; border-radius:24px; }
+#checks .checks-head { align-items:center; gap:16px; margin-bottom:22px; }
+#checks .checks-head h3 { font-size:20px; line-height:1.5; }
+#checks .checks-head>span { padding:6px 12px; border-radius:999px; background:#eef7fb; font-size:13px; line-height:1.5; white-space:nowrap; }
+#checks .check-tiles { gap:16px; }
+#checks .check-tile { min-width:0; min-height:126px; box-sizing:border-box; align-content:center; padding:22px 16px; gap:10px; border-radius:18px; background:#f8fbfd; }
+#checks .check-tile b { font-size:28px; }
+#checks .check-tile span { font-size:16px; line-height:1.5; overflow-wrap:anywhere; }
+#checks .check-tile small { font-size:12px; line-height:1.5; }
+#checks .check-tile:hover { background:#edf7fc; border-color:#91bed4; }
+#checks .check-tile:focus-visible { outline:3px solid #146b99; outline-offset:4px; }
+#checks .sub { margin:20px 0 0; text-align:left; font-size:13px; line-height:1.7; }
+@media(max-width:600px) {
+  #checks { padding:20px; border-radius:20px; }
+  #checks .checks-head { margin-bottom:18px; gap:8px; flex-wrap:wrap; }
+  #checks .checks-head h3 { font-size:18px; }
+  #checks .check-tiles { grid-template-columns:1fr; gap:12px; }
+  #checks .check-tile { grid-template-columns:40px minmax(0,1fr); column-gap:14px; row-gap:4px; min-height:88px; padding:16px; text-align:left; justify-items:start; align-items:center; }
+  #checks .check-tile b { grid-row:1/3; justify-self:center; }
+  #checks .check-tile small { grid-column:2; }
+  #checks .sub { margin-top:18px; }
+}
+
+.photo-retry { position:relative; z-index:2; max-width:100%; padding:8px 6px; border:1px solid #bed4df; border-radius:8px; background:#fff; color:#164e6b; font-size:12px; cursor:pointer; }
+#mapStatus { padding:16px; margin:12px 0; border:1px solid #e8ce8e; border-radius:14px; background:#fff8e8; color:#584622; font-size:14px; line-height:1.6; }
+#mapStatus p { margin:0 0 10px; }
+
+.seg[data-name="who"] { flex-wrap:wrap; gap:8px; padding:8px; }
+.seg[data-name="who"] button { flex:1 1 110px; min-height:44px; }
+#startLabel { overflow-wrap:anywhere; }
+#startResults small { display:block; margin-top:5px; font-size:12px; color:var(--sub); white-space:normal; }
+#startPanel .start-acts { flex-wrap:wrap; gap:8px; }

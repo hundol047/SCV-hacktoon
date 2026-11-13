@@ -1,6 +1,6 @@
 import {it,expect} from 'vitest';
 import {converseJSON,converseInput} from '../src/server/bedrock';
-import {GET} from '../src/app/api/tourism/route';
+import {osmCatalog} from '../src/adapters/real-data';
 import {defaultBasics,defaultConditions} from '../src/domain/schema';
 import {courseInput,regionalCourse} from '../src/domain/regional-course';
 import {savePlan} from '../src/domain/course-plans';
@@ -16,7 +16,8 @@ it('rejects truncated, malformed, and non-text tool responses',async()=>{
  }
 });
 it('Gangneung catalog can produce three distinct daily courses using validated candidate selections',async()=>{
- const response=await GET(new Request('http://localhost/api/tourism?action=catalog&q='+encodeURIComponent('강릉')+'&limit=200'));expect(response.status).toBe(200);const catalog=await response.json();
+ // Course validation is deterministic; live TourAPI credentials/photos belong in provider probes.
+ const catalog=osmCatalog('강릉',{elements:Array.from({length:18},(_,i)=>({type:'node',id:i+1,lat:37.75+i/10000,lon:128.9,tags:{name:`문화 관광지 ${i+1}`,tourism:'museum'}}))},'2026-11-01T00:00:00Z');
  let basics={...defaultBasics,mode:'real' as const,region:catalog.region,date:'2026-11-03',days:3,transport:'taxi' as const};
  for(let day=1;day<=3;day++){const input=courseInput(basics,defaultConditions,catalog,day);expect(input.candidates.length).toBeGreaterThanOrEqual(2);basics=savePlan(basics,regionalCourse(basics,defaultConditions,catalog,day,{candidateIds:input.candidates.slice(0,3).map(p=>p.place.id)}).plan) as typeof basics;}
 },20000);

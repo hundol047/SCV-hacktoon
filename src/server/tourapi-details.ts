@@ -1,3 +1,5 @@
+import {createOfficialPlacePhotos} from './place-photos';
+import {placePhotoURL} from '../domain/place-photo';
 import type {KoreaRecord} from '../data/korea-tourism';
 import {haversineKm} from '../domain/taxi-plan';
 import {z} from 'zod';
@@ -13,9 +15,10 @@ export function matchingTourismPlace(place:Pick<KoreaRecord,'name'|'latitude'|'l
 export function tourInfo(basic:Record<string,string|number>,intro:Record<string,string|number>):Info{
  const address=text([basic.addr1,basic.addr2].filter(Boolean).join(' '));const phone=text(intro.infocenter||intro.infocenterculture||intro.infocenterleports||intro.infocenterfood||basic.tel);
  const hours=text(intro.usetime||intro.usetimeculture||intro.usetimeleports||intro.opentimefood,2500);const closed=text(intro.restdate||intro.restdateculture||intro.restdateleports||intro.restdatefood,400);
- return {...(address?{address}:{}),...(phone?{phone}:{}),...(hours||closed?{hoursText:[hours,closed?'휴무: '+closed:''].filter(Boolean).join(' · ')}:{})};
+ return {imageUrl:placePhotoURL(basic.firstimage||basic.firstimage2),...(address?{address}:{}),...(phone?{phone}:{}),...(hours||closed?{hoursText:[hours,closed?'휴무: '+closed:''].filter(Boolean).join(' · ')}:{})};
 }
 export function createTourAPIEnricher(fetcher:typeof fetch=fetch){
+ const officialPlacePhotos=createOfficialPlacePhotos();
  const cache=new Map<string,{at:number;info:Info}>();const pending=new Map<string,Promise<Info>>();let day='',requests=0;
  async function items(operation:string,params:Record<string,string>,key:string,deadline:number){
   const now=Date.now(),today=new Date(now).toISOString().slice(0,10);if(day!==today){day=today;requests=0;}if(now>=deadline||requests>=1000)throw Error('Tourism lookup limit');requests++;
@@ -27,7 +30,7 @@ export function createTourAPIEnricher(fetcher:typeof fetch=fetch){
  }
  async function lookup(place:KoreaRecord,key:string,deadline:number):Promise<Info>{
   const saved=cache.get(place.id);if(saved&&Date.now()-saved.at<6*3600000)return saved.info;const inflight=pending.get(place.id);if(inflight)return inflight;
-  const work=(async()=>{try{const rows=await items('searchKeyword2',{keyword:place.name},key,deadline);const basic=matchingTourismPlace(place,rows);let info:Info={};if(basic){let intro:Record<string,string|number>={};try{intro=(await items('detailIntro2',{contentId:String(basic.contentid),contentTypeId:String(basic.contenttypeid)},key,deadline))[0]??{};}catch{}info=tourInfo(basic,intro);}if(cache.size>=500)cache.delete(cache.keys().next().value!);cache.set(place.id,{at:Date.now(),info});return info;}catch{return {};}})();
+  const work=(async()=>{try{const rows=await items('searchKeyword2',{keyword:place.name},key,deadline);const basic=matchingTourismPlace(place,rows);let info:Info={};if(basic){let intro:Record<string,string|number>={};try{intro=(await items('detailIntro2',{contentId:String(basic.contentid),contentTypeId:String(basic.contenttypeid)},key,deadline))[0]??{};}catch{}info=tourInfo(basic,intro);const id='tourapi:'+basic.contentid;const photos=await officialPlacePhotos([id],fetcher,key);if(photos[id])info={...info,...photos[id]};}if(cache.size>=500)cache.delete(cache.keys().next().value!);cache.set(place.id,{at:Date.now(),info});return info;}catch{return {};}})();
   pending.set(place.id,work);try{return await work;}finally{pending.delete(place.id);}
  }
  return async(places:KoreaRecord[],key=process.env.BOPok_TOURAPI_KEY??'')=>{const output:Record<string,Info>={};if(!key)return output;let next=0;const deadline=Date.now()+7000;await Promise.all(Array.from({length:4},async()=>{while(next<Math.min(places.length,20)&&Date.now()<deadline){const place=places[next++];if(place.nameKnown&&place.latitude!==null&&place.longitude!==null)output[place.id]=await lookup(place,key,deadline);}}));return output;};

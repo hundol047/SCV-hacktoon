@@ -1,0 +1,13 @@
+원본 리소스 로딩 검증
+
+s3.amazonaws.com: HTTP 200 128건
+tile.openstreetmap.org: HTTP 200 92건
+tiles.openfreemap.org: HTTP 200 2건
+tong.visitkorea.or.kr: HTTP 200 33건
+실패한 요청: 0건
+
+호텔 사진: 라카이 샌드파인 / 컨피네스 오션 스위트 호텔
+관광지 사진: 남항진해변 / 첫 화면 관광지 원본 사진
+지도 배경: OpenStreetMap + AWS 고도 타일 + OpenFreeMap
+이미지는 브라우저에서 디코딩 완료를 검사했고, 지도와 사진 화면을 육안 검토했습니다.
+사진 대체용 route.fulfill 처리는 제거했습니다.

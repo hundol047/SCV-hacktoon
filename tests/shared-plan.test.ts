@@ -7,3 +7,9 @@ it('roundtrips a bounded public snapshot without private trip fields',async()=>{
 it('rejects malformed, oversized and invalid schedule links',async()=>{await expect(decodePlan('#v1=not-valid')).rejects.toThrow();await expect(decodePlan('#v0='+'a'.repeat(12001))).rejects.toThrow();expect(()=>publicPlanSchema.parse({...plan,items:[{...plan.items[0],placeId:'missing'}]})).toThrow();const zip=await new Response(new Blob(['a'.repeat(61000)]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer();await expect(decodePlan('v1='+Buffer.from(zip).toString('base64url'))).rejects.toThrow('크기');});
 it('merges contiguous same-place rest without mutating the saved trip',()=>{const trip=sharedTrip(plan);const stops=itineraryStops(trip,1);expect(stops).toHaveLength(2);expect(stops[0].restMinutes).toBe(15);expect(stops[0].item.end).toBe(615);expect(trip.items[0].end).toBe(600);});
 it('exports Korean times as UTC and safely escapes/folds calendar content',()=>{const p={...plan,places:plan.places.map(x=>({...x,name:'한글'.repeat(50)+',;\nEND:VEVENT'}))};const ics=calendarFile(p,new Date('2026-11-01T00:00:00Z'));expect(ics).toContain('DTSTART:20261104T000000Z');expect(ics).toContain('DTEND:20261104T010000Z');expect(ics).toContain('\\,\\;\\nEND:VEVENT');expect(ics.match(/^BEGIN:VEVENT$/gm)).toHaveLength(4);expect(ics.split('\r\n').every(s=>Buffer.byteLength(s)<=75)).toBe(true);const url=new URL(googleCalendarURL(plan,2)!);expect(url.origin).toBe('https://calendar.google.com');expect(url.searchParams.get('dates')).toBe('20261105T000000Z/20261105T010000Z');expect(googleCalendarURL(plan,3)).toBeNull();});
+it('merges generated labelled rests but preserves hotel check-in and later return visits',()=>{
+ const trip=sharedTrip(plan);trip.items[1].label='휴식';
+ expect(itineraryStops(trip,1)).toHaveLength(2);
+ expect(itineraryStops(trip,1)[0].restMinutes).toBe(15);
+ trip.items[1].label='체크인';expect(itineraryStops(trip,1)).toHaveLength(3);
+});
